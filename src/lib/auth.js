@@ -1,0 +1,82 @@
+import { supabase } from './supabase'
+
+/**
+ * Normalise an Ethiopian phone number to E.164 (+251XXXXXXXXX).
+ * Accepts: 09XXXXXXXX  → +2519XXXXXXXX
+ *          07XXXXXXXX  → +2517XXXXXXXX
+ *          +251...     → unchanged
+ *          251...      → +251...
+ *          9XXXXXXXX   → +2519XXXXXXXX  (digits only, no leading 0)
+ */
+export function formatPhone(raw) {
+  const cleaned = raw.trim().replace(/[\s\-()]/g, '')
+  if (cleaned.startsWith('+251')) return cleaned
+  if (cleaned.startsWith('251')) return '+' + cleaned
+  if (cleaned.startsWith('0')) return '+251' + cleaned.slice(1)
+  if (/^[79]/.test(cleaned)) return '+251' + cleaned
+  return cleaned
+}
+
+/**
+ * Returns true for valid Ethiopian mobile numbers after normalisation.
+ * Valid network prefixes after +251: 9x (Ethio Telecom) or 7x (Safaricom ET).
+ */
+export function isValidEthiopianPhone(raw) {
+  return /^\+251[79]\d{8}$/.test(formatPhone(raw))
+}
+
+/**
+ * Create a new account with email + password.
+ * Phone is passed via options.data so the handle_new_user trigger can store it.
+ * Returns { data, error }. When data.session is null, email confirmation is required.
+ */
+export async function signUp(email, password, phone, name) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        phone: formatPhone(phone),
+        name: (name || '').trim(),
+      },
+    },
+  })
+  return { data, error }
+}
+
+/**
+ * Sign in with email + password.
+ * Returns { data, error }.
+ */
+export async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  return { data, error }
+}
+
+/**
+ * Fetch the profiles row for an authenticated user.
+ *
+ * On any error (row not found, RLS denial, network) this returns a safe
+ * non-admin default so admin access is never accidentally granted on failure.
+ */
+export async function fetchProfile(userId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, phone, name, role')
+    .eq('id', userId)
+    .single()
+
+  if (error) {
+    // Profile row may not exist yet (handle_new_user trigger may be delayed).
+    return { profile: { id: userId, email: '', phone: '', name: '', role: 'user' }, error: null }
+  }
+  return { profile: data, error: null }
+}
+
+/**
+ * Sign out the current user.
+ * Automatically triggers onAuthStateChange(SIGNED_OUT) in the store.
+ */
+export async function signOut() {
+  return supabase.auth.signOut()
+}

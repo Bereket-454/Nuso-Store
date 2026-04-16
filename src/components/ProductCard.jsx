@@ -1,0 +1,84 @@
+import { Link } from 'react-router-dom'
+import { useStore } from '../app/store'
+import { birr } from '../utils/format'
+import { useTranslation } from '../i18n'
+
+export function ProductCard({ product }) {
+  const { t } = useTranslation()
+  const { state, dispatch } = useStore()
+  const isInCart = state.cart.some((item) => item.productId === product.id)
+  const line = `${t(`category.${product.category}`)} · ${t(`subcategory.${product.subcategory || 'apparel'}`)}`
+  const defaultSize = product.sizes[0] ?? ''
+  const defaultColor = product.colors[0] ?? ''
+  const priceStr = birr(product.price)
+
+  return (
+    <article className="card product-card">
+      <Link
+        className="product-card__link"
+        to={`/products/${product.id}`}
+        aria-label={t('productCard.viewA11y', { name: product.name, price: priceStr })}
+      >
+        <span className="visually-hidden">
+          {t('productCard.viewHidden', { name: product.name })}
+        </span>
+      </Link>
+      <div className="product-card__content">
+        <img src={product.images[0]} alt="" loading="lazy" />
+        <div className="card-body">
+          <div className="muted">{line}</div>
+          <h3>{product.name}</h3>
+          <p className="price">{priceStr}</p>
+          <p className="muted">
+            {product.stock > 0
+              ? t('productCard.inStock', { count: product.stock })
+              : t('productCard.outOfStock')}
+          </p>
+        </div>
+      </div>
+      <div className="product-card__actions">
+        {isInCart ? (
+          <p
+            role="status"
+            aria-live="polite"
+            style={{
+              fontSize: '0.78rem',
+              lineHeight: 1.3,
+              color: 'var(--success)',
+              margin: '0 0 0.45rem',
+              padding: 0,
+              fontWeight: 500,
+            }}
+          >
+            {t('productCard.addedToCart')}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={product.stock <= 0}
+          aria-label={
+            isInCart
+              ? t('productCard.addAgainA11y', { name: product.name })
+              : t('productCard.addA11y', { name: product.name })
+          }
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            dispatch({
+              type: 'CART_ADD',
+              payload: {
+                productId: product.id,
+                quantity: 1,
+                size: defaultSize,
+                color: defaultColor,
+              },
+            })
+          }}
+        >
+          {isInCart ? t('productCard.addAgain') : t('productCard.addToCart')}
+        </button>
+      </div>
+    </article>
+  )
+}
