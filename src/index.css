@@ -96,11 +96,20 @@ a {
   padding: 0.45rem 0.72rem;
   border-radius: 999px;
   font-size: 0.92rem;
+  /* Reserve bottom-border space on all states so active indicator never shifts layout */
+  border-bottom: 3px solid transparent;
+  transition: background 0.18s ease, color 0.18s ease, border-bottom-color 0.18s ease;
 }
 
-.nav-link.active,
 .nav-link:hover {
   background: var(--surface);
+}
+
+.nav-link.active {
+  background: rgba(10, 132, 255, 0.09);
+  color: var(--accent);
+  font-weight: 700;
+  border-bottom-color: var(--accent);
 }
 
 .actions {
@@ -231,6 +240,11 @@ button {
   .product-card:hover {
     transform: none;
   }
+
+  .nav-link,
+  .pill {
+    transition: none;
+  }
 }
 
 .product-card__link {
@@ -325,12 +339,22 @@ textarea {
   padding: 0.35rem 0.65rem;
   font-size: 0.8rem;
   background: #fff;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
+/* Language toggle active state */
 .pill-active {
   border-color: var(--accent);
   background: rgba(10, 132, 255, 0.12);
   color: var(--text);
+  font-weight: 600;
+}
+
+/* NavLink active state for action pills (Account, Track, Cart, Admin) */
+.pill.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
   font-weight: 600;
 }
 

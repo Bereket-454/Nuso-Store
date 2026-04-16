@@ -90,15 +90,15 @@ export function Layout() {
                 {t('language.amShort')}
               </button>
             </div>
-            <NavLink className="pill" to="/account">
+            <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/account">
               {state.user
                 ? t('auth.helloUser', { name: getFirstName(state.user.name) })
                 : t('nav.account')}
             </NavLink>
-            <NavLink className="pill" to="/tracking">
+            <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/tracking">
               {t('nav.track')}
             </NavLink>
-            <NavLink className="pill" to="/cart">
+            <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/cart">
               <span
                 key={cartAnimKey}
                 className={cartAnimKey > 0 ? 'header-cart--bump' : undefined}
@@ -108,7 +108,7 @@ export function Layout() {
               </span>
             </NavLink>
             {isAdminUser(state.user) ? (
-              <NavLink className="pill" to="/admin">
+              <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/admin">
                 {t('nav.admin')}
               </NavLink>
             ) : null}
