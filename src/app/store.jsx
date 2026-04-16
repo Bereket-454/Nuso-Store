@@ -115,7 +115,9 @@ function reducer(state, action) {
         subcategories: action.payload.subcategories,
       }
     case 'AUTH_CHANGED':
-      return { ...state, user: action.payload }
+      // Always reset cart on any auth change (sign-in or sign-out).
+      // Prevents one user's cart leaking into another user's session.
+      return { ...state, user: action.payload, cart: [] }
     default:
       return state
   }
