@@ -42,6 +42,9 @@ a {
 
 #root {
   min-height: 100vh;
+  /* dvh (dynamic viewport height) accounts for the browser chrome on iOS Safari.
+     100vh on iOS includes the address bar; 100dvh tracks the actual usable height. */
+  min-height: 100dvh;
 }
 
 .container {
@@ -368,6 +371,16 @@ textarea {
   .header-inner {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  /* On mobile the header stacks into a column. Both .nav and .actions must
+     fill the full container width and wrap their items so they never overflow
+     the sticky header horizontally. Horizontal overflow inside a sticky element
+     is the primary cause of iOS Safari freezing the vertical scroll. */
+  .nav,
+  .actions {
+    width: 100%;
+    flex-wrap: wrap;
   }
 }
 
