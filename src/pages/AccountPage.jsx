@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
@@ -683,6 +684,16 @@ function DashboardSection({ title, children }) {
 function ProfileCard({ user, t, state, dispatch }) {
   const firstName = getFirstName(user.name)
   const [editing, setEditing] = useState(false)
+  const navigate = useNavigate()
+
+  function handleSignOut() {
+    // Clear state and navigate immediately — don't wait for the Supabase network
+    // round-trip. The onAuthStateChange SIGNED_OUT event will fire shortly after
+    // and dispatch AUTH_CHANGED again (a no-op since user is already null).
+    dispatch({ type: 'AUTH_CHANGED', payload: null })
+    navigate('/')
+    signOut() // fire-and-forget — cleans up the Supabase session in the background
+  }
 
   return (
     <>
@@ -734,7 +745,7 @@ function ProfileCard({ user, t, state, dispatch }) {
           />
         ) : (
           <div className="actions">
-            <button type="button" className="btn btn-secondary" onClick={signOut}>
+            <button type="button" className="btn btn-secondary" onClick={handleSignOut}>
               {t('auth.signOut')}
             </button>
           </div>
