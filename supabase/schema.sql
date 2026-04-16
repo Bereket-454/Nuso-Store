@@ -204,3 +204,24 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ────────────────────────────────────────────
+-- phone_exists(p_phone)
+-- Called by unauthenticated clients during sign-up to detect duplicate phone
+-- numbers before submitting. Returns BOOLEAN only — no profile data is exposed.
+-- SECURITY DEFINER bypasses RLS; GRANT TO anon makes it callable with the
+-- Supabase anon key without a session.
+-- ────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION phone_exists(p_phone TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN EXISTS (SELECT 1 FROM profiles WHERE phone = p_phone);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION phone_exists TO anon;
+GRANT EXECUTE ON FUNCTION phone_exists TO authenticated;

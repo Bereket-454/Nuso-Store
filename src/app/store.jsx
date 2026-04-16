@@ -139,27 +139,37 @@ export function StoreProvider({ children }) {
 
   // Sync Supabase Auth session into store state.
   // Fires immediately on mount with INITIAL_SESSION (restores existing session on refresh),
-  // then again on SIGNED_IN (after OTP verify) and SIGNED_OUT (after signOut()).
+  // then again on SIGNED_IN and SIGNED_OUT.
+  //
+  // IMPORTANT: the callback must NOT be async and must NOT await Supabase calls directly.
+  // Supabase holds an internal auth lock while firing this callback. Any awaited Supabase
+  // query (e.g. fetchProfile) inside an async callback will deadlock — the query is queued
+  // behind the same lock and never resolves, so dispatch never fires and the UI never updates.
+  // setTimeout(fn, 0) defers the async work to the next event loop tick, after the lock drops.
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('onAuthStateChange fired', event, session?.user?.id)
       if (
         (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') &&
         session?.user
       ) {
-        const { profile } = await fetchProfile(session.user.id)
-        dispatch({
-          type: 'AUTH_CHANGED',
-          payload: {
+        // Defer past the Supabase auth lock so fetchProfile can run freely.
+        setTimeout(async () => {
+          const { profile } = await fetchProfile(session.user.id)
+          const payload = {
             id: session.user.id,
             email: session.user.email || profile?.email || '',
             phone: session.user.phone || profile?.phone || '',
             name: profile?.name || session.user.user_metadata?.name || '',
             role: profile?.role || 'user',
-          },
-        })
+          }
+          console.log('auth changed', payload)
+          dispatch({ type: 'AUTH_CHANGED', payload })
+        }, 0)
       } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+        console.log('auth changed', null)
         dispatch({ type: 'AUTH_CHANGED', payload: null })
       }
     })

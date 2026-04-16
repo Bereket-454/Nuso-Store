@@ -74,6 +74,45 @@ export async function fetchProfile(userId) {
 }
 
 /**
+ * Check whether a phone number is already registered in the profiles table.
+ * Calls an RPC function (SECURITY DEFINER + GRANT TO anon) so this works
+ * for unauthenticated users during sign-up validation.
+ * Returns { exists: boolean, error }.
+ */
+export async function checkPhoneExists(raw) {
+  const { data, error } = await supabase.rpc('phone_exists', {
+    p_phone: formatPhone(raw),
+  })
+  return { exists: !!data, error }
+}
+
+/**
+ * Update a user's profile name / phone, and optionally their auth password.
+ * Requires an active authenticated session.
+ * Returns { error }.
+ */
+export async function updateProfile({ userId, name, phone, newPassword }) {
+  const profileUpdate = { name: (name || '').trim() }
+  if (phone !== undefined && phone !== null && phone !== '') {
+    profileUpdate.phone = formatPhone(phone)
+  }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update(profileUpdate)
+    .eq('id', userId)
+
+  if (profileError) return { error: profileError }
+
+  if (newPassword) {
+    const { error: authError } = await supabase.auth.updateUser({ password: newPassword })
+    if (authError) return { error: authError }
+  }
+
+  return { error: null }
+}
+
+/**
  * Sign out the current user.
  * Automatically triggers onAuthStateChange(SIGNED_OUT) in the store.
  */
