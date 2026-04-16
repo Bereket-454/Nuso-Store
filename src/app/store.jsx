@@ -7,6 +7,26 @@ import { supabase } from '../lib/supabase'
 import { fetchProfile } from '../lib/auth'
 
 const STORAGE_KEY = 'dire-store-v1'
+const CART_KEY_PREFIX = 'dire-cart-'
+
+// Load the saved cart for a specific user from localStorage.
+function loadUserCart(userId) {
+  try {
+    const raw = localStorage.getItem(CART_KEY_PREFIX + userId)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+// Persist the cart for a specific user to localStorage.
+function saveUserCart(userId, cart) {
+  try {
+    localStorage.setItem(CART_KEY_PREFIX + userId, JSON.stringify(cart))
+  } catch {
+    // Ignore quota / private-mode errors.
+  }
+}
 
 const StoreContext = createContext(null)
 
@@ -31,14 +51,15 @@ function loadState() {
     merged.categories = CATEGORIES
     merged.subcategories = SUBCATEGORIES
     merged.user = null // session is managed by Supabase, not localStorage
+    merged.cart = []   // cart is managed per-user; loaded after auth resolves
     return merged
   } catch {
     return initialState
   }
 }
 
-function persist({ user: _user, ...rest }) {
-  // Exclude `user` — Supabase manages session persistence in its own keys.
+function persist({ user: _user, cart: _cart, ...rest }) {
+  // Exclude `user` (Supabase manages session) and `cart` (managed per-user below).
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
 }
 
@@ -115,9 +136,13 @@ function reducer(state, action) {
         subcategories: action.payload.subcategories,
       }
     case 'AUTH_CHANGED':
-      // Always reset cart on any auth change (sign-in or sign-out).
-      // Prevents one user's cart leaking into another user's session.
-      return { ...state, user: action.payload, cart: [] }
+      if (!action.payload) {
+        // Sign-out: clear user and cart.
+        return { ...state, user: null, cart: [] }
+      }
+      // Sign-in: set user and restore their saved cart in one atomic update
+      // so there is no intermediate render with the wrong (empty or stale) cart.
+      return { ...state, user: action.payload.user, cart: action.payload.cart }
     default:
       return state
   }
@@ -129,6 +154,14 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     persist(state)
   }, [state])
+
+  // Persist the cart to a user-specific localStorage key whenever it changes.
+  // Runs only while a user is signed in; anonymous browsing is not persisted.
+  useEffect(() => {
+    if (state.user?.id) {
+      saveUserCart(state.user.id, state.cart)
+    }
+  }, [state.cart, state.user?.id])
 
   // Load live catalogue from Supabase on mount; falls back to mockData if unavailable.
   useEffect(() => {
@@ -160,15 +193,17 @@ export function StoreProvider({ children }) {
         // Defer past the Supabase auth lock so fetchProfile can run freely.
         setTimeout(async () => {
           const { profile } = await fetchProfile(session.user.id)
-          const payload = {
+          const user = {
             id: session.user.id,
             email: session.user.email || profile?.email || '',
             phone: session.user.phone || profile?.phone || '',
             name: profile?.name || session.user.user_metadata?.name || '',
             role: profile?.role || 'user',
           }
-          console.log('auth changed', payload)
-          dispatch({ type: 'AUTH_CHANGED', payload })
+          // Restore this user's saved cart. loadUserCart returns [] if nothing saved yet.
+          const cart = loadUserCart(session.user.id)
+          console.log('auth changed', user, 'cart items:', cart.length)
+          dispatch({ type: 'AUTH_CHANGED', payload: { user, cart } })
         }, 0)
       } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
         console.log('auth changed', null)
