@@ -3,7 +3,7 @@ import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
-import { checkPhoneExists, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
+import { checkEmailExists, checkPhoneExists, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
 
 export function getFirstName(fullName) {
   if (!fullName || !fullName.trim()) return 'User'
@@ -220,29 +220,11 @@ function EditProfileForm({ user, t, dispatch, onClose }) {
 
 // ─── Sign-in form — centered, logo, bordered box ──────────────────────────────
 
-// Classify a Supabase sign-in error into one of three buckets:
-//   'notFound'     — "Invalid login credentials" (no account or wrong password;
-//                    Supabase deliberately returns the same message for both to
-//                    prevent email enumeration, so we can't distinguish them)
-//   'notConfirmed' — "Email not confirmed" (account exists, email unverified)
-//   'generic'      — anything else (network, server error, etc.)
-function classifySignInError(err) {
-  const msg = (err?.message || '').toLowerCase()
-  if (msg.includes('email not confirmed')) return 'notConfirmed'
-  if (
-    msg.includes('invalid login credentials') ||
-    msg.includes('invalid_credentials') ||
-    msg.includes('user not found') ||
-    msg.includes('no user found')
-  ) return 'notFound'
-  return 'generic'
-}
-
 function SignInForm({ t, onSwitchToSignUp }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  // null | 'emailRequired' | 'notFound' | 'notConfirmed' | 'generic'
+  // null | 'emailRequired' | 'wrongPassword' | 'notFound' | 'notConfirmed' | 'generic'
   const [errorType, setErrorType] = useState(null)
 
   async function handleSignIn() {
@@ -255,7 +237,23 @@ function SignInForm({ t, onSwitchToSignUp }) {
       const { data, error: err } = await signIn(email.trim(), password)
       console.log('signIn result:', err, data)
       if (err) {
-        setErrorType(classifySignInError(err))
+        console.log('signIn error message:', err.message)
+        const msg = (err.message || '').toLowerCase()
+        if (msg.includes('email not confirmed')) {
+          setErrorType('notConfirmed')
+        } else if (
+          msg.includes('invalid login credentials') ||
+          msg.includes('invalid_credentials') ||
+          msg.includes('user not found') ||
+          msg.includes('no user found')
+        ) {
+          // Supabase returns the same error for wrong password and no account.
+          // Do a profile lookup to tell them apart.
+          const { exists } = await checkEmailExists(email.trim())
+          setErrorType(exists ? 'wrongPassword' : 'notFound')
+        } else {
+          setErrorType('generic')
+        }
       }
       // Success — onAuthStateChange listener updates state.user automatically.
     } catch (e) {
@@ -313,7 +311,7 @@ function SignInForm({ t, onSwitchToSignUp }) {
           {errorType === 'emailRequired' && (
             <p className="error-text">{t('auth.emailRequired')}</p>
           )}
-          {(errorType === 'notFound' || errorType === 'notConfirmed' || errorType === 'generic') && (
+          {(errorType === 'wrongPassword' || errorType === 'notFound' || errorType === 'notConfirmed' || errorType === 'generic') && (
             <div
               style={{
                 background: '#fef2f2',
@@ -325,6 +323,7 @@ function SignInForm({ t, onSwitchToSignUp }) {
                 color: 'var(--danger)',
               }}
             >
+              {errorType === 'wrongPassword' && t('auth.signInErrorWrongPassword')}
               {errorType === 'notFound' && (
                 <>
                   {t('auth.signInErrorNotFound')}{' '}

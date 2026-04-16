@@ -74,6 +74,19 @@ export async function fetchProfile(userId) {
 }
 
 /**
+ * Check whether an email address is already registered in the profiles table.
+ * Calls a SECURITY DEFINER RPC so it works for unauthenticated callers (RLS bypass).
+ * Used during sign-in error handling to distinguish "wrong password" from "no account".
+ * Returns { exists: boolean, error }.
+ */
+export async function checkEmailExists(email) {
+  const { data, error } = await supabase.rpc('email_exists', {
+    p_email: email.trim().toLowerCase(),
+  })
+  return { exists: !!data, error }
+}
+
+/**
  * Check whether a phone number is already registered in the profiles table.
  * Calls an RPC function (SECURITY DEFINER + GRANT TO anon) so this works
  * for unauthenticated users during sign-up validation.

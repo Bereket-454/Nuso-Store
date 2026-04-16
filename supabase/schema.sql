@@ -225,3 +225,22 @@ $$;
 
 GRANT EXECUTE ON FUNCTION phone_exists TO anon;
 GRANT EXECUTE ON FUNCTION phone_exists TO authenticated;
+
+-- ────────────────────────────────────────────
+-- email_exists(p_email)
+-- Called during sign-in error handling to distinguish "wrong password" from
+-- "no account". SECURITY DEFINER bypasses RLS so it works for anon callers.
+-- ────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION email_exists(p_email TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN EXISTS (SELECT 1 FROM profiles WHERE email = lower(p_email));
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION email_exists TO anon;
+GRANT EXECUTE ON FUNCTION email_exists TO authenticated;
