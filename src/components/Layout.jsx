@@ -47,6 +47,8 @@ export function Layout() {
   const cartItemsCount = state.cart.reduce((sum, item) => sum + item.quantity, 0)
   const prevCartCount = useRef(null)
   const [cartAnimKey, setCartAnimKey] = useState(0)
+  const [headerHidden, setHeaderHidden] = useState(false)
+  const lastScrollY = useRef(0)
 
   useEffect(() => {
     if (prevCartCount.current === null) {
@@ -58,6 +60,26 @@ export function Layout() {
       setCartAnimKey((key) => key + 1) // eslint-disable-line react-hooks/set-state-in-effect -- sync animation to cart total
     }
   }, [cartItemsCount])
+
+  // Hide header on scroll down, show on scroll up — mobile only (CSS gates the visual effect).
+  useEffect(() => {
+    const onScroll = () => {
+      const currentY = window.scrollY
+      if (currentY <= 60) {
+        // Always visible at the very top of the page.
+        setHeaderHidden(false)
+      } else if (currentY > lastScrollY.current) {
+        // Scrolling down — slide header out.
+        setHeaderHidden(true)
+      } else {
+        // Scrolling up — slide header back in immediately.
+        setHeaderHidden(false)
+      }
+      lastScrollY.current = currentY
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
     <>
@@ -80,7 +102,7 @@ export function Layout() {
         }
       `}</style>
       <div className="top-note">{t('layout.topNote')}</div>
-      <header className="header">
+      <header className={`header${headerHidden ? ' header--hidden' : ''}`}>
         <div className="container header-inner">
           <NavLink to="/" className="brand">
             DI<span className="accent">RE</span>
@@ -155,6 +177,11 @@ export function Layout() {
       <footer className="footer">
         <div className="container muted">{t('layout.footer')}</div>
       </footer>
+      {/* Floating cart button — mobile only, always accessible even when header is hidden */}
+      <NavLink to="/cart" className="fab-cart" aria-label={`Cart, ${cartItemsCount} items`}>
+        <IconCart />
+        <span className="fab-cart__count">{cartItemsCount}</span>
+      </NavLink>
     </>
   )
 }

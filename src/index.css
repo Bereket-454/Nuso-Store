@@ -242,7 +242,8 @@ button {
   }
 
   .nav-link,
-  .pill {
+  .pill,
+  .header {
     transition: none;
   }
 }
@@ -423,6 +424,55 @@ textarea {
   .grid.cols-3,
   .grid.cols-4 {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Floating cart button — hidden on desktop */
+.fab-cart {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Smooth hide/show transition — only applied on mobile so desktop is untouched */
+  .header {
+    transition: transform 0.28s ease;
+  }
+
+  /* Scroll-down: slide the sticky header fully off the top of the viewport */
+  .header--hidden {
+    transform: translateY(-100%);
+  }
+
+  /* Floating cart button */
+  .fab-cart {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 50;
+    background: var(--accent);
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 0.8rem 1.1rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(10, 132, 255, 0.4);
+    min-width: 3.2rem;
+    min-height: 3.2rem;
+    justify-content: center;
+    /* Ensure it is always tappable even when header animates */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .fab-cart:hover {
+    background: #0070d8;
+  }
+
+  .fab-cart__count {
+    line-height: 1;
   }
 }
 
