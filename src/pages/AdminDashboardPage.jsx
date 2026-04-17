@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useStore } from '../app/store'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
 import { useTranslation } from '../i18n'
+import { supabase } from '../lib/supabase'
 
 const defaultProduct = {
   id: '',
@@ -23,6 +24,9 @@ export function AdminDashboardPage() {
   const { t } = useTranslation()
   const { state, dispatch } = useStore()
   const [productForm, setProductForm] = useState(defaultProduct)
+  const [uploadLoading, setUploadLoading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const fileInputRef = useRef(null)
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
 
   const saveProduct = () => {
@@ -36,6 +40,40 @@ export function AdminDashboardPage() {
       },
     })
     setProductForm(defaultProduct)
+    setUploadError('')
+  }
+
+  // Upload a selected image file to the Supabase Storage 'products' bucket.
+  // Requires the bucket to exist and be set to public in the Supabase dashboard.
+  async function handleImageUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadLoading(true)
+    setUploadError('')
+
+    try {
+      const ext = file.name.split('.').pop().toLowerCase()
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+      const { data, error } = await supabase.storage
+        .from('Products')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false })
+
+      if (error) {
+        setUploadError(error.message || t('admin.uploadImageError'))
+      } else {
+        const { data: { publicUrl } } = supabase.storage
+          .from('Products')
+          .getPublicUrl(data.path)
+        setProductForm((prev) => ({ ...prev, images: [...prev.images, publicUrl] }))
+      }
+    } catch (err) {
+      setUploadError(err.message || t('admin.uploadImageError'))
+    } finally {
+      setUploadLoading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   return (
@@ -122,6 +160,96 @@ export function AdminDashboardPage() {
               }
             />
           </div>
+          <div className="form-group">
+            <label>{t('admin.productImage')}</label>
+            {/* Thumbnail strip — first image is the cover */}
+            {productForm.images?.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                {productForm.images.map((url, idx) => (
+                  <div key={url} style={{ position: 'relative', flexShrink: 0 }}>
+                    <img
+                      src={url}
+                      alt={`Product image ${idx + 1}`}
+                      style={{
+                        width: '72px',
+                        height: '72px',
+                        objectFit: 'cover',
+                        borderRadius: '6px',
+                        border: idx === 0
+                          ? '2px solid var(--accent)'
+                          : '1px solid var(--border)',
+                        display: 'block',
+                      }}
+                    />
+                    {idx === 0 && (
+                      <span style={{
+                        position: 'absolute',
+                        bottom: '2px',
+                        left: '2px',
+                        background: 'var(--accent)',
+                        color: '#fff',
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        padding: '1px 4px',
+                        borderRadius: '3px',
+                        lineHeight: 1.4,
+                      }}>
+                        COVER
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      aria-label="Remove image"
+                      onClick={() =>
+                        setProductForm((prev) => ({
+                          ...prev,
+                          images: prev.images.filter((_, i) => i !== idx),
+                        }))
+                      }
+                      style={{
+                        position: 'absolute',
+                        top: '-6px',
+                        right: '-6px',
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: 'var(--danger)',
+                        color: '#fff',
+                        border: 'none',
+                        padding: 0,
+                        fontSize: '0.7rem',
+                        lineHeight: '18px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Hidden file input — triggered by the button below */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              style={{ display: 'none' }}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadLoading}
+            >
+              {uploadLoading ? t('admin.uploading') : t('admin.uploadImage')}
+            </button>
+            {uploadError && (
+              <p className="error-text" style={{ marginTop: '0.4rem' }}>{uploadError}</p>
+            )}
+          </div>
+
           <button className="btn btn-primary" onClick={saveProduct}>
             {t('admin.saveProduct')}
           </button>

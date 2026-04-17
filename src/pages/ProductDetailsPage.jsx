@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
@@ -19,9 +19,17 @@ export function ProductDetailsPage() {
   const related = useMemo(() => {
     if (!product) return []
     return state.products
-      .filter((item) => item.category === product.category && item.id !== product.id)
+      .filter((item) => item.category === product.category && item.subcategory === product.subcategory && item.id !== product.id)
       .slice(0, 4)
   }, [state.products, product])
+
+  useEffect(() => {
+    setSelectedImage(0)
+    setSize(product?.sizes[0] || '')
+    setColor(product?.colors[0] || '')
+    setFeedback('')
+    window.scrollTo({ top: 0 })
+  }, [id])
 
   usePageMeta(product?.name || t('meta.product.title'), product?.description || t('meta.product.desc'))
 
@@ -40,18 +48,60 @@ export function ProductDetailsPage() {
     <div>
       <section className="layout-split">
         <article className="card">
-          <img src={product.images[selectedImage]} alt={product.name} />
-          <div className="card-body" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {product.images.map((image, index) => (
-              <button
-                className="btn btn-secondary"
-                key={image}
-                onClick={() => setSelectedImage(index)}
-              >
-                {t('productDetail.photo', { n: index + 1 })}
-              </button>
-            ))}
+          {/* Main image — contain so the full product is always visible */}
+          <div style={{
+            background: '#f9f9f9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            maxHeight: '420px',
+            overflow: 'hidden',
+          }}>
+            <img
+              src={product.images[selectedImage]}
+              alt={product.name}
+              style={{
+                width: '100%',
+                maxHeight: '420px',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
           </div>
+          {/* Thumbnail strip — only shown when there are multiple images */}
+          {product.images.length > 1 && (
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', padding: '0.75rem' }}>
+              {product.images.map((image, index) => (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => setSelectedImage(index)}
+                  style={{
+                    padding: 0,
+                    border: index === selectedImage
+                      ? '2px solid var(--accent)'
+                      : '2px solid transparent',
+                    borderRadius: '6px',
+                    background: 'none',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src={image}
+                    alt={`${product.name} ${index + 1}`}
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      objectFit: 'cover',
+                      borderRadius: '4px',
+                      display: 'block',
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </article>
         <article className="card card-body">
           <h1>{product.name}</h1>
