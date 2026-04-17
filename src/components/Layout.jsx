@@ -39,6 +39,7 @@ const navRoutes = [
   { to: '/category/men', key: 'men' },
   { to: '/category/women', key: 'women' },
   { to: '/category/children', key: 'children' },
+  { to: '/request', key: 'request' },
 ]
 
 export function Layout() {

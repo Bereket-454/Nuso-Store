@@ -11,6 +11,7 @@ import { OrderConfirmationPage } from '../pages/OrderConfirmationPage'
 import { AccountPage } from '../pages/AccountPage'
 import { TrackingPage } from '../pages/TrackingPage'
 import { AdminDashboardPage } from '../pages/AdminDashboardPage'
+import { RequestProductPage } from '../pages/RequestProductPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
 export function AppRouter() {
@@ -26,6 +27,7 @@ export function AppRouter() {
         <Route path="order-confirmation/:id" element={<OrderConfirmationPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="tracking" element={<TrackingPage />} />
+        <Route path="request" element={<RequestProductPage />} />
         <Route element={<AdminRoute />}>
           <Route path="admin" element={<AdminDashboardPage />} />
         </Route>

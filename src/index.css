@@ -403,6 +403,31 @@ textarea {
   padding: 1.5rem 0 2.5rem;
 }
 
+.request-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: linear-gradient(to right, rgba(10, 132, 255, 0.07), rgba(10, 132, 255, 0.03));
+  border: 1px solid rgba(10, 132, 255, 0.22);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.6rem;
+  margin: 1.75rem 0;
+  flex-wrap: wrap;
+}
+
+.request-banner--compact {
+  padding: 0.85rem 1.1rem;
+  margin: 1rem 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.request-banner--compact span {
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
 @media (max-width: 980px) {
   .grid.cols-4,
   .grid.cols-3 {

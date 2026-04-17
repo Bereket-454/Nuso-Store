@@ -3,6 +3,7 @@ import { useStore } from '../app/store'
 import { PROMOTIONS } from '../data/mockData'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { ProductCard } from '../components/ProductCard'
+import { RequestBanner } from '../components/RequestBanner'
 import { useTranslation } from '../i18n'
 
 export function HomePage() {
@@ -52,6 +53,8 @@ export function HomePage() {
           ))}
         </div>
       </section>
+
+      <RequestBanner />
 
       <section>
         <h2 className="section-title">{t('home.promotions')}</h2>

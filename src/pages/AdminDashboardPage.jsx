@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useStore } from '../app/store'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
@@ -32,7 +32,31 @@ export function AdminDashboardPage() {
   const [toast, setToast] = useState('')        // green success message
   const toastTimer = useRef(null)
   const fileInputRef = useRef(null)
+  const [requests, setRequests] = useState([])
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
+
+  // Load all product requests on mount.
+  useEffect(() => {
+    supabase
+      .from('product_requests')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data) setRequests(data)
+      })
+  }, [])
+
+  const updateRequestStatus = async (id, status) => {
+    const { error } = await supabase
+      .from('product_requests')
+      .update({ status })
+      .eq('id', id)
+    if (!error) {
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status } : r))
+      )
+    }
+  }
 
   // Show a green toast for 3 seconds then clear it.
   const showToast = useCallback((message) => {
@@ -327,6 +351,51 @@ export function AdminDashboardPage() {
             ))
           )}
         </article>
+      </section>
+
+      <section className="card card-body" style={{ marginTop: '1rem' }}>
+        <h3>{t('admin.requestsTitle')}</h3>
+        {requests.length === 0 ? (
+          <p className="muted">{t('admin.requestsEmpty')}</p>
+        ) : (
+          requests.map((req) => (
+            <article key={req.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.9rem 0', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              {req.photo_url && (
+                <img
+                  src={req.photo_url}
+                  alt={req.product_name}
+                  style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0, border: '1px solid var(--border)' }}
+                />
+              )}
+              <div style={{ flex: 1, minWidth: '180px' }}>
+                <p style={{ margin: '0 0 0.25rem' }}><strong>{req.product_name}</strong></p>
+                <p className="muted" style={{ margin: '0 0 0.2rem', fontSize: '0.85rem' }}>{req.description}</p>
+                <p style={{ margin: '0 0 0.2rem', fontSize: '0.85rem' }}>
+                  <strong>{t('admin.requestCustomer')}:</strong> {req.customer_name}
+                </p>
+                <p style={{ margin: '0 0 0.4rem', fontSize: '0.85rem' }}>
+                  <strong>{t('admin.requestTelegram')}:</strong> {req.telegram_phone}
+                </p>
+                {req.extra_details && (
+                  <p className="muted" style={{ margin: '0 0 0.4rem', fontSize: '0.82rem' }}>{req.extra_details}</p>
+                )}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label htmlFor={`req-status-${req.id}`} style={{ fontSize: '0.8rem' }}>{t('admin.requestStatus')}</label>
+                  <select
+                    id={`req-status-${req.id}`}
+                    value={req.status}
+                    onChange={(e) => updateRequestStatus(req.id, e.target.value)}
+                    style={{ width: 'auto', fontSize: '0.85rem' }}
+                  >
+                    {['pending', 'contacted', 'fulfilled', 'rejected'].map((s) => (
+                      <option key={s} value={s}>{t(`requestStatus.${s}`)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </article>
+          ))
+        )}
       </section>
 
       <section className="card card-body" style={{ marginTop: '1rem' }}>

@@ -41,6 +41,54 @@ CREATE POLICY "products_write_admin"
   WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- ────────────────────────────────────────────
+-- product_requests
+-- Customers can submit a product request with a photo, description, and Telegram contact.
+-- Admins review and update the status from the admin dashboard.
+-- ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS product_requests (
+  id             BIGSERIAL    PRIMARY KEY,
+  photo_url      TEXT         NOT NULL,
+  product_name   TEXT         NOT NULL,
+  description    TEXT         NOT NULL,
+  budget         TEXT,
+  customer_name  TEXT         NOT NULL,
+  telegram_phone TEXT         NOT NULL,
+  extra_details  TEXT,
+  status         TEXT         NOT NULL DEFAULT 'pending'
+                   CHECK (status IN ('pending', 'contacted', 'fulfilled', 'rejected')),
+  created_at     TIMESTAMPTZ  DEFAULT NOW()
+);
+
+ALTER TABLE product_requests ENABLE ROW LEVEL SECURITY;
+
+-- Grant the basic table privilege first — RLS policies alone are not enough.
+-- Both anon (unauthenticated visitors) and authenticated users must be able to submit.
+GRANT INSERT ON product_requests TO anon;
+GRANT INSERT ON product_requests TO authenticated;
+
+-- Allow SELECT/UPDATE for authenticated users so the admin dashboard can read and
+-- update requests (the policy below further restricts to admin-role users only).
+GRANT SELECT, UPDATE ON product_requests TO authenticated;
+
+-- Sequence must also be granted so BIGSERIAL can generate the id.
+GRANT USAGE, SELECT ON SEQUENCE product_requests_id_seq TO anon;
+GRANT USAGE, SELECT ON SEQUENCE product_requests_id_seq TO authenticated;
+
+-- Anyone (including unauthenticated visitors) can insert a request.
+CREATE POLICY "product_requests_insert_public"
+  ON product_requests FOR INSERT WITH CHECK (true);
+
+-- Only admins can read all requests.
+CREATE POLICY "product_requests_select_admin"
+  ON product_requests FOR SELECT
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+
+-- Only admins can update status.
+CREATE POLICY "product_requests_update_admin"
+  ON product_requests FOR UPDATE
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+
+-- ────────────────────────────────────────────
 -- categories  (primary audience nav: men / women / children)
 -- ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS categories (

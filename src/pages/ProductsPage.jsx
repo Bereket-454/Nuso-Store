@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
+import { RequestBanner } from '../components/RequestBanner'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 
@@ -101,6 +102,8 @@ export function ProductsPage() {
           </div>
         </div>
       </section>
+
+      <RequestBanner compact />
 
       {filtered.length === 0 ? (
         <article className="card card-body" style={{ marginTop: '1rem' }}>
