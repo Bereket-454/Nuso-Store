@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { useStore } from '../app/store'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
@@ -28,8 +28,18 @@ export function AdminDashboardPage() {
   const [uploadLoading, setUploadLoading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [saveLoading, setSaveLoading] = useState(false)
+  const [priceError, setPriceError] = useState('')
+  const [toast, setToast] = useState('')        // green success message
+  const toastTimer = useRef(null)
   const fileInputRef = useRef(null)
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
+
+  // Show a green toast for 3 seconds then clear it.
+  const showToast = useCallback((message) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    setToast(message)
+    toastTimer.current = setTimeout(() => setToast(''), 3000)
+  }, [])
 
   // Reload the full product list from Supabase and update the store.
   const reloadProducts = async () => {
@@ -38,7 +48,12 @@ export function AdminDashboardPage() {
   }
 
   const saveProduct = async () => {
-    if (!productForm.name.trim() || Number(productForm.price) <= 0) return
+    if (!productForm.name.trim()) return
+    if (Number(productForm.price) <= 0) {
+      setPriceError('Price must be greater than 0')
+      return
+    }
+    setPriceError('')
     setSaveLoading(true)
     try {
       const { error } = await upsertProduct({
@@ -52,6 +67,7 @@ export function AdminDashboardPage() {
         setProductForm(defaultProduct)
         setUploadError('')
         await reloadProducts()
+        showToast('Product saved successfully')
       }
     } finally {
       setSaveLoading(false)
@@ -152,8 +168,12 @@ export function AdminDashboardPage() {
               type="number"
               min="0"
               value={productForm.price}
-              onChange={(event) => setProductForm((value) => ({ ...value, price: event.target.value }))}
+              onChange={(event) => {
+                setProductForm((value) => ({ ...value, price: event.target.value }))
+                if (Number(event.target.value) > 0) setPriceError('')
+              }}
             />
+            {priceError && <p className="error-text">{priceError}</p>}
           </div>
           <div className="form-group">
             <label htmlFor="admin-stock">{t('admin.stock')}</label>
@@ -268,6 +288,7 @@ export function AdminDashboardPage() {
           <button className="btn btn-primary" onClick={saveProduct} disabled={saveLoading}>
             {saveLoading ? '...' : t('admin.saveProduct')}
           </button>
+          {toast && <p className="success-text" style={{ marginTop: '0.5rem' }}>{toast}</p>}
         </article>
 
         <article className="card card-body">
@@ -331,6 +352,7 @@ export function AdminDashboardPage() {
                     console.error('[AdminDashboard] deleteProduct error:', error.message)
                   } else {
                     await reloadProducts()
+                    showToast('Product deleted')
                   }
                 }}
               >

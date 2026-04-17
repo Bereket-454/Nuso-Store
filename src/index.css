@@ -272,6 +272,16 @@ button {
   display: block;
 }
 
+.product-card__placeholder {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbb;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

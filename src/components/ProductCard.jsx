@@ -24,10 +24,26 @@ export function ProductCard({ product }) {
         </span>
       </Link>
       <div className="product-card__content">
-        <img src={product.images[0]} alt="" loading="lazy" />
+        {product.images?.[0] ? (
+          <img src={product.images[0]} alt="" loading="lazy" />
+        ) : (
+          <div className="product-card__placeholder" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+          </div>
+        )}
         <div className="card-body">
           <div className="muted">{line}</div>
-          <h3>{product.name}</h3>
+          <h3 style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>{product.name}</h3>
           <p className="price">{priceStr}</p>
           <p className="muted">
             {product.stock > 0
