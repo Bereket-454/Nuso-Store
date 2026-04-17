@@ -5,6 +5,34 @@ import { isAdminUser } from '../utils/auth'
 import { useTranslation } from '../i18n'
 import { getFirstName } from '../pages/AccountPage'
 
+const IconPerson = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="8" r="4"/>
+    <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
+  </svg>
+)
+
+const IconPin = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/>
+    <circle cx="12" cy="9" r="2.5"/>
+  </svg>
+)
+
+const IconCart = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <path d="M16 10a4 4 0 01-8 0"/>
+  </svg>
+)
+
+const IconShield = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 2l8 4v6c0 5-3.6 9.7-8 11-4.4-1.3-8-6-8-11V6l8-4z"/>
+  </svg>
+)
+
 const navRoutes = [
   { to: '/', key: 'home' },
   { to: '/products', key: 'shop' },
@@ -91,12 +119,16 @@ export function Layout() {
               </button>
             </div>
             <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/account">
-              {state.user
-                ? t('auth.helloUser', { name: getFirstName(state.user.name) })
-                : t('nav.account')}
+              <span className="nav-icon"><IconPerson /></span>
+              <span className="nav-label">
+                {state.user
+                  ? t('auth.helloUser', { name: getFirstName(state.user.name) })
+                  : t('nav.account')}
+              </span>
             </NavLink>
             <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/tracking">
-              {t('nav.track')}
+              <span className="nav-icon"><IconPin /></span>
+              <span className="nav-label">{t('nav.track')}</span>
             </NavLink>
             <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/cart">
               <span
@@ -104,12 +136,14 @@ export function Layout() {
                 className={cartAnimKey > 0 ? 'header-cart--bump' : undefined}
                 style={{ display: 'inline-block' }}
               >
-                {t('nav.cart')} ({cartItemsCount})
+                <span className="nav-icon"><IconCart /></span>
+                <span className="nav-label">{t('nav.cart')} </span>({cartItemsCount})
               </span>
             </NavLink>
             {isAdminUser(state.user) ? (
               <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/admin">
-                {t('nav.admin')}
+                <span className="nav-icon"><IconShield /></span>
+                <span className="nav-label">{t('nav.admin')}</span>
               </NavLink>
             ) : null}
           </div>

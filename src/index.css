@@ -358,6 +358,16 @@ textarea {
   font-weight: 600;
 }
 
+/* Action pill icon/label — icon hidden on desktop, label always visible */
+.nav-icon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.nav-label {
+  display: inline;
+}
+
 .filter-grid {
   display: grid;
   gap: 1rem;
@@ -413,5 +423,41 @@ textarea {
   .grid.cols-3,
   .grid.cols-4 {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Bug 1: nav links scroll horizontally instead of wrapping */
+  .nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  .nav::-webkit-scrollbar {
+    display: none; /* Chrome / Safari */
+  }
+  .nav-link {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Bug 2: action bar — show icons only, hide text labels */
+  .nav-icon {
+    display: inline-flex;
+  }
+  .nav-label {
+    display: none;
+  }
+  /* Give icon-only pills a square tap target with enough spacing */
+  .actions .pill {
+    padding: 0.55rem 0.7rem;
+    min-width: 2.4rem;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+  }
+  .actions {
+    gap: 0.4rem;
   }
 }
