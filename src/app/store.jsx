@@ -165,8 +165,10 @@ export function StoreProvider({ children }) {
 
   // Load live catalogue from Supabase on mount; falls back to mockData if unavailable.
   useEffect(() => {
+    console.log('[store] CATALOGUE_LOADED effect running')
     Promise.all([fetchProducts(), fetchCategories(), fetchSubcategories()]).then(
       ([products, categories, subcategories]) => {
+        console.log(`[store] CATALOGUE_LOADED dispatched with ${products.length} products`)
         dispatch({ type: 'CATALOGUE_LOADED', payload: { products, categories, subcategories } })
       },
     )

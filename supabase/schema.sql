@@ -26,6 +26,21 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 -- ────────────────────────────────────────────
+-- products RLS
+-- Public read so unauthenticated users can browse the catalogue.
+-- Write (insert / update / delete) restricted to admin users only.
+-- ────────────────────────────────────────────
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "products_select_public"
+  ON products FOR SELECT USING (true);
+
+CREATE POLICY "products_write_admin"
+  ON products FOR ALL
+  USING     (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+
+-- ────────────────────────────────────────────
 -- categories  (primary audience nav: men / women / children)
 -- ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS categories (

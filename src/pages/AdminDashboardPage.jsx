@@ -4,6 +4,7 @@ import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
 import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
+import { upsertProduct, deleteProduct, fetchProducts } from '../services/productsService'
 
 const defaultProduct = {
   id: '',
@@ -26,21 +27,35 @@ export function AdminDashboardPage() {
   const [productForm, setProductForm] = useState(defaultProduct)
   const [uploadLoading, setUploadLoading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [saveLoading, setSaveLoading] = useState(false)
   const fileInputRef = useRef(null)
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
 
-  const saveProduct = () => {
+  // Reload the full product list from Supabase and update the store.
+  const reloadProducts = async () => {
+    const products = await fetchProducts()
+    dispatch({ type: 'CATALOGUE_LOADED', payload: { products, categories: state.categories, subcategories: state.subcategories } })
+  }
+
+  const saveProduct = async () => {
     if (!productForm.name.trim() || Number(productForm.price) <= 0) return
-    dispatch({
-      type: 'ADMIN_PRODUCT_UPSERT',
-      payload: {
+    setSaveLoading(true)
+    try {
+      const { error } = await upsertProduct({
         ...productForm,
         price: Number(productForm.price),
         stock: Number(productForm.stock),
-      },
-    })
-    setProductForm(defaultProduct)
-    setUploadError('')
+      })
+      if (error) {
+        console.error('[AdminDashboard] upsertProduct error:', error.message)
+      } else {
+        setProductForm(defaultProduct)
+        setUploadError('')
+        await reloadProducts()
+      }
+    } finally {
+      setSaveLoading(false)
+    }
   }
 
   // Upload a selected image file to the Supabase Storage 'products' bucket.
@@ -250,8 +265,8 @@ export function AdminDashboardPage() {
             )}
           </div>
 
-          <button className="btn btn-primary" onClick={saveProduct}>
-            {t('admin.saveProduct')}
+          <button className="btn btn-primary" onClick={saveProduct} disabled={saveLoading}>
+            {saveLoading ? '...' : t('admin.saveProduct')}
           </button>
         </article>
 
@@ -310,7 +325,14 @@ export function AdminDashboardPage() {
               </button>
               <button
                 className="btn btn-danger"
-                onClick={() => dispatch({ type: 'ADMIN_PRODUCT_DELETE', payload: { id: product.id } })}
+                onClick={async () => {
+                  const { error } = await deleteProduct(product.id)
+                  if (error) {
+                    console.error('[AdminDashboard] deleteProduct error:', error.message)
+                  } else {
+                    await reloadProducts()
+                  }
+                }}
               >
                 {t('admin.delete')}
               </button>
