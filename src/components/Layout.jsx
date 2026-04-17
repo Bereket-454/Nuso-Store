@@ -62,23 +62,58 @@ export function Layout() {
   }, [cartItemsCount])
 
   // Hide header on scroll down, show on scroll up — mobile only (CSS gates the visual effect).
+  //
+  // Three guards keep this from feeling jerky:
+  //   1. Movements under 10px are ignored entirely (jitter when the user pauses).
+  //   2. The header only hides after 80px of *continuous* downward scroll from the
+  //      point where the last upward movement ended — prevents hiding on a short dip.
+  //   3. requestAnimationFrame throttles the handler to one read per paint frame so
+  //      rapid scroll events can't queue up redundant state updates.
   useEffect(() => {
+    let rafId = null
+    let scrollDownStartY = null  // Y where the current downward run began
+
     const onScroll = () => {
-      const currentY = window.scrollY
-      if (currentY <= 60) {
-        // Always visible at the very top of the page.
-        setHeaderHidden(false)
-      } else if (currentY > lastScrollY.current) {
-        // Scrolling down — slide header out.
-        setHeaderHidden(true)
-      } else {
-        // Scrolling up — slide header back in immediately.
-        setHeaderHidden(false)
-      }
-      lastScrollY.current = currentY
+      // If a frame is already scheduled, skip — we'll read the latest Y when it fires.
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        const currentY = window.scrollY
+        const delta = currentY - lastScrollY.current
+
+        // Guard 1: ignore sub-10px movements to absorb micro-jitter.
+        if (Math.abs(delta) < 10) return
+
+        if (currentY <= 60) {
+          // Always visible at the very top — reset downward tracking.
+          scrollDownStartY = null
+          setHeaderHidden(false)
+        } else if (delta > 0) {
+          // Scrolling down — begin tracking distance if this is a new downward run.
+          if (scrollDownStartY === null) {
+            scrollDownStartY = lastScrollY.current
+          }
+          // Guard 2: only hide after 80px of continuous downward travel.
+          if (currentY - scrollDownStartY >= 80) {
+            setHeaderHidden(true)
+          }
+        } else {
+          // Scrolling up — show immediately and reset the downward run.
+          scrollDownStartY = null
+          setHeaderHidden(false)
+        }
+
+        // Update reference only after a meaningful movement so tiny drifts
+        // accumulate into the next delta rather than resetting the baseline.
+        lastScrollY.current = currentY
+      })
     }
+
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
   }, [])
 
   return (
