@@ -35,6 +35,7 @@ const initialState = {
   categories: CATEGORIES,
   subcategories: SUBCATEGORIES,
   cart: [],
+  cartPurged: false,   // true when CATALOGUE_LOADED silently removed stale cart items
   user: null,
   addresses: [],
   orders: [],
@@ -50,8 +51,9 @@ function loadState() {
     merged.products = (merged.products || []).map(normalizeProduct)
     merged.categories = CATEGORIES
     merged.subcategories = SUBCATEGORIES
-    merged.user = null // session is managed by Supabase, not localStorage
-    merged.cart = []   // cart is managed per-user; loaded after auth resolves
+    merged.user = null        // session is managed by Supabase, not localStorage
+    merged.cart = []          // cart is managed per-user; loaded after auth resolves
+    merged.cartPurged = false // reset on every page load
     return merged
   } catch {
     return initialState
@@ -128,13 +130,22 @@ function reducer(state, action) {
     }
     case 'ADMIN_PRODUCT_DELETE':
       return { ...state, products: state.products.filter((item) => item.id !== action.payload.id) }
-    case 'CATALOGUE_LOADED':
+    case 'CATALOGUE_LOADED': {
+      const loadedProducts = action.payload.products.map(normalizeProduct)
+      const validIds = new Set(loadedProducts.map((p) => p.id))
+      const cleanCart = state.cart.filter((item) => validIds.has(item.productId))
+      const cartPurged = cleanCart.length < state.cart.length
       return {
         ...state,
-        products: action.payload.products.map(normalizeProduct),
+        products: loadedProducts,
         categories: action.payload.categories,
         subcategories: action.payload.subcategories,
+        cart: cleanCart,
+        cartPurged,
       }
+    }
+    case 'CART_PURGE_DISMISS':
+      return { ...state, cartPurged: false }
     case 'AUTH_CHANGED':
       if (!action.payload) {
         // Sign-out: clear user and cart.

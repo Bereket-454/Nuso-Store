@@ -107,9 +107,13 @@ export function ProductDetailsPage() {
           <h1>{product.name}</h1>
           <p className="price">{birr(product.price)}</p>
           <p>{product.description}</p>
-          <p className="muted">
-            {product.stock > 0 ? t('productDetail.inStock') : t('productDetail.outOfStock')}
-          </p>
+          {product.stock > 0 ? (
+            <p className="muted">{t('productDetail.inStock')}</p>
+          ) : (
+            <p style={{ color: 'var(--danger)', fontWeight: 600, margin: '0.4rem 0' }}>
+              {t('productDetail.outOfStockMessage')}
+            </p>
+          )}
           <div className="form-group">
             <label htmlFor="size">{t('productDetail.size')}</label>
             <select id="size" value={size} onChange={(event) => setSize(event.target.value)}>
@@ -133,6 +137,7 @@ export function ProductDetailsPage() {
           <button
             className="btn btn-primary"
             disabled={product.stock <= 0}
+            style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
             onClick={() => {
               dispatch({
                 type: 'CART_ADD',
@@ -141,7 +146,7 @@ export function ProductDetailsPage() {
               setFeedback(t('productDetail.addedFeedback'))
             }}
           >
-            {t('productDetail.addToCart')}
+            {product.stock <= 0 ? t('productDetail.outOfStock') : t('productDetail.addToCart')}
           </button>
           {feedback ? <p className="success-text">{feedback}</p> : null}
         </article>

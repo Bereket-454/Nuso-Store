@@ -27,11 +27,13 @@ export function CheckoutPage() {
   })
   const paymentInfo = getPaymentIntegrationStatus()
 
-  const cartItems = state.cart.map((item) => {
-    const product = state.products.find((value) => value.id === item.productId)
-    return { ...item, product }
-  })
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0)
+  const cartItems = state.cart
+    .map((item) => {
+      const product = state.products.find((value) => value.id === item.productId)
+      return { ...item, product }
+    })
+    .filter((item) => item.product && item.product.price > 0)
+  const subtotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   const deliveryFee = subtotal > 12000 ? 0 : state.deliveryFee
   const total = subtotal + deliveryFee
 

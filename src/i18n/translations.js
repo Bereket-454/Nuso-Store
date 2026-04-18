@@ -122,7 +122,8 @@ export const translations = {
       backToProducts: 'Back to products',
       photo: 'Photo {{n}}',
       inStock: 'In stock',
-      outOfStock: 'Out of stock',
+      outOfStock: 'Out of Stock',
+      outOfStockMessage: 'This item is currently out of stock.',
       size: 'Size',
       color: 'Color',
       addToCart: 'Add to cart',
@@ -142,6 +143,7 @@ export const translations = {
       deliveryOnly: 'All orders are delivery-only. No pickup is available.',
       checkout: 'Continue to checkout',
       remove: 'Remove',
+      stalePurged: 'Some items in your cart are no longer available and have been removed.',
     },
     checkout: {
       emptyCart: 'Cart is empty',
@@ -492,6 +494,7 @@ export const translations = {
       photo: 'ፎቶ {{n}}',
       inStock: 'በመጋዘን ውስጥ አለ',
       outOfStock: 'አልቋል',
+      outOfStockMessage: 'ይህ ምርት አሁን አይገኝም።',
       size: 'መጠን',
       color: 'ቀለም',
       addToCart: 'ወደ ጋሪ ያክሉ',
@@ -511,6 +514,7 @@ export const translations = {
       deliveryOnly: 'ሁሉም ትዕዛዞች የማድረሻ ብቻ። መሰብሰቢያ የለም።',
       checkout: 'ወደ ክፍያ ይሂዱ',
       remove: 'አስወግድ',
+      stalePurged: 'አንዳንድ ምርቶች ከጋሪዎ ተወግደዋል ምክንያቱም አሁን አይገኙም።',
     },
     checkout: {
       emptyCart: 'ጋሪ ባዶ ነው',
