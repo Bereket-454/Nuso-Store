@@ -76,7 +76,9 @@ export async function upsertProduct(product) {
     is_best_seller: product.isBestSeller ?? false,
     is_new_arrival: product.isNewArrival ?? false,
   }
+  console.log('[upsertProduct] saving row — categories:', row.categories, 'category:', row.category)
   const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' })
+  if (error) console.error('[upsertProduct] error:', error.message, error)
   return { id, error }
 }
 

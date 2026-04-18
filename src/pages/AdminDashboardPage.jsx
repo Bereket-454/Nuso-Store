@@ -199,14 +199,16 @@ export function AdminDashboardPage() {
                       type="checkbox"
                       checked={checked}
                       style={{ width: 'auto' }}
-                      onChange={(e) => {
-                        const isChecked = e.target.checked
+                      onChange={() => {
+                        // Derive toggle from current state — never read e.target.checked
+                        // inside a functional updater (synthetic event may be nullified).
                         setProductForm((prev) => {
                           const current = prev.categories ?? []
-                          const next = isChecked
-                            ? [...current, item.slug]
-                            : current.filter((c) => c !== item.slug)
-                          // Require at least one category to be selected
+                          const alreadySelected = current.includes(item.slug)
+                          const next = alreadySelected
+                            ? current.filter((c) => c !== item.slug)
+                            : [...current, item.slug]
+                          // Require at least one category to remain selected.
                           return { ...prev, categories: next.length > 0 ? next : current }
                         })
                       }}
