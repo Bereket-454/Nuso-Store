@@ -60,8 +60,9 @@ function loadState() {
   }
 }
 
-function persist({ user: _user, cart: _cart, ...rest }) {
-  // Exclude `user` (Supabase manages session) and `cart` (managed per-user below).
+function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, ...rest }) {
+  // Exclude `user` (Supabase manages session), `cart` (managed per-user), and
+  // `cartPurged` (transient UI flag — must not survive a page reload).
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
 }
 
