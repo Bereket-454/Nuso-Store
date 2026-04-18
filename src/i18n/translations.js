@@ -285,7 +285,8 @@ export const translations = {
     },
     admin: {
       title: 'Admin Dashboard',
-      addEditProduct: 'Add / Edit Product',
+      addEditProduct: 'Add Product',
+      editing: 'Editing',
       productId: 'Product ID (optional for update)',
       name: 'Name',
       shopFor: 'Shop for',
@@ -653,7 +654,8 @@ export const translations = {
     },
     admin: {
       title: 'የአስተዳዳር ዳሽቦርድ',
-      addEditProduct: 'ምርት ጨምር / አርም',
+      addEditProduct: 'ምርት ጨምር',
+      editing: 'በማርም ላይ',
       productId: 'የምርት መለያ (ለዝማኔ አማራጭ)',
       name: 'ስም',
       shopFor: 'ለማን',

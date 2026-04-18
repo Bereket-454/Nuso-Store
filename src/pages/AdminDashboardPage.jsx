@@ -34,9 +34,13 @@ export function AdminDashboardPage() {
   const [uploadError, setUploadError] = useState('')
   const [saveLoading, setSaveLoading] = useState(false)
   const [priceError, setPriceError] = useState('')
-  const [toast, setToast] = useState('')        // green success message
+  const [toast, setToast] = useState('')        // fixed bottom-center toast
+  const [toastVisible, setToastVisible] = useState(false)
   const toastTimer = useRef(null)
+  const toastFadeTimer = useRef(null)
   const fileInputRef = useRef(null)
+  const formRef = useRef(null)
+  const [editingName, setEditingName] = useState('')  // non-empty = edit mode
   const [requests, setRequests] = useState([])
   // Map of product_id -> business info row; keyed for O(1) lookup in inventory list.
   const [businessInfo, setBusinessInfo] = useState({})
@@ -76,11 +80,15 @@ export function AdminDashboardPage() {
     }
   }
 
-  // Show a green toast for 3 seconds then clear it.
+  // Show a fixed bottom-center toast for 3 seconds, then fade it out.
   const showToast = useCallback((message) => {
     if (toastTimer.current) clearTimeout(toastTimer.current)
+    if (toastFadeTimer.current) clearTimeout(toastFadeTimer.current)
     setToast(message)
-    toastTimer.current = setTimeout(() => setToast(''), 3000)
+    setToastVisible(true)
+    // Start fade-out 400ms before removal so the CSS transition completes cleanly.
+    toastTimer.current = setTimeout(() => setToastVisible(false), 2600)
+    toastFadeTimer.current = setTimeout(() => setToast(''), 3000)
   }, [])
 
   // Reload the full product list from Supabase and update the store.
@@ -124,6 +132,7 @@ export function AdminDashboardPage() {
         }
 
         setProductForm(defaultProduct)
+        setEditingName('')
         setUploadError('')
         await reloadProducts()
         showToast('Product saved successfully')
@@ -169,9 +178,43 @@ export function AdminDashboardPage() {
   return (
     <div>
       <h1>{t('admin.title')}</h1>
+      {/* Fixed bottom-center toast */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            bottom: '2rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#1a1a1a',
+            color: '#fff',
+            padding: '0.75rem 1.4rem',
+            borderRadius: '999px',
+            fontSize: '0.92rem',
+            fontWeight: 600,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+            zIndex: 1000,
+            whiteSpace: 'nowrap',
+            opacity: toastVisible ? 1 : 0,
+            transition: 'opacity 0.4s ease',
+            pointerEvents: 'none',
+          }}
+        >
+          {toast}
+        </div>
+      )}
+
       <section className="grid cols-2">
-        <article className="card card-body">
-          <h3>{t('admin.addEditProduct')}</h3>
+        <article
+          ref={formRef}
+          className="card card-body"
+          style={editingName ? { outline: '2px solid var(--accent)', outlineOffset: '2px' } : undefined}
+        >
+          <h3 style={editingName ? { color: 'var(--accent)' } : undefined}>
+            {editingName ? `${t('admin.editing')}: ${editingName}` : t('admin.addEditProduct')}
+          </h3>
           <div className="form-group">
             <label htmlFor="admin-id">{t('admin.productId')}</label>
             <input
@@ -430,7 +473,6 @@ export function AdminDashboardPage() {
           <button className="btn btn-primary" onClick={saveProduct} disabled={saveLoading}>
             {saveLoading ? '...' : t('admin.saveProduct')}
           </button>
-          {toast && <p className="success-text" style={{ marginTop: '0.5rem' }}>{toast}</p>}
         </article>
 
         <article className="card card-body">
@@ -569,6 +611,8 @@ export function AdminDashboardPage() {
                       supplierContact: b.supplier_contact ?? '',
                       restockThreshold: b.restock_threshold ?? '',
                     })
+                    setEditingName(product.name)
+                    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                   }}
                 >
                   {t('admin.edit')}
