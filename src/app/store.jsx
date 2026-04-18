@@ -135,26 +135,56 @@ function reducer(state, action) {
       const loadedProducts = action.payload.products.map(normalizeProduct)
       const validIds = new Set(loadedProducts.map((p) => p.id))
       const cleanCart = state.cart.filter((item) => validIds.has(item.productId))
-      const cartPurged = cleanCart.length < state.cart.length
+      const itemsRemoved = cleanCart.length < state.cart.length
+      console.log(
+        '[CATALOGUE_LOADED] products loaded:', loadedProducts.length,
+        '| cart before purge:', state.cart.map((i) => i.productId),
+        '| cart after purge:', cleanCart.map((i) => i.productId),
+        '| items removed:', itemsRemoved,
+      )
       return {
         ...state,
         products: loadedProducts,
         categories: action.payload.categories,
         subcategories: action.payload.subcategories,
         cart: cleanCart,
-        cartPurged,
+        // Preserve an existing true flag — AUTH_CHANGED may have already set it.
+        cartPurged: state.cartPurged || itemsRemoved,
       }
     }
     case 'CART_PURGE_DISMISS':
       return { ...state, cartPurged: false }
-    case 'AUTH_CHANGED':
+    case 'AUTH_CHANGED': {
       if (!action.payload) {
         // Sign-out: clear user and cart.
         return { ...state, user: null, cart: [] }
       }
-      // Sign-in: set user and restore their saved cart in one atomic update
-      // so there is no intermediate render with the wrong (empty or stale) cart.
-      return { ...state, user: action.payload.user, cart: action.payload.cart }
+      // Sign-in: restore the user's saved cart, but validate it immediately if
+      // products are already loaded. This handles the race where CATALOGUE_LOADED
+      // fires before AUTH_CHANGED (Supabase cache hit) — it sees an empty cart so
+      // cartPurged stays false, then AUTH_CHANGED lands the stale cart with no
+      // further check. Validating here ensures that race path also purges correctly.
+      const restoredCart = action.payload.cart
+      if (state.products.length > 0) {
+        const validIds = new Set(state.products.map((p) => p.id))
+        const cleanCart = restoredCart.filter((item) => validIds.has(item.productId))
+        const itemsRemoved = cleanCart.length < restoredCart.length
+        console.log(
+          '[AUTH_CHANGED] products already loaded — validating restored cart.',
+          'before:', restoredCart.map((i) => i.productId),
+          '| after:', cleanCart.map((i) => i.productId),
+          '| items removed:', itemsRemoved,
+        )
+        return { ...state, user: action.payload.user, cart: cleanCart, cartPurged: itemsRemoved }
+      }
+      // Products not loaded yet — restore the cart as-is. CATALOGUE_LOADED will
+      // purge any stale items when it fires.
+      console.log(
+        '[AUTH_CHANGED] products not yet loaded — deferring purge to CATALOGUE_LOADED.',
+        'cart items:', restoredCart.length,
+      )
+      return { ...state, user: action.payload.user, cart: restoredCart }
+    }
     default:
       return state
   }
