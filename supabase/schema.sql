@@ -26,6 +26,30 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 -- ────────────────────────────────────────────
+-- product_business_info
+-- Private business data for each product — never exposed to customers.
+-- Kept in a separate table so the public products read policy can never leak it.
+-- ────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS product_business_info (
+  product_id         TEXT        PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,
+  cost_price         INTEGER,
+  supplier_name      TEXT,
+  supplier_contact   TEXT,
+  restock_threshold  INTEGER     DEFAULT 5,
+  updated_at         TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE product_business_info ENABLE ROW LEVEL SECURITY;
+
+-- Authenticated users get the raw privilege; the policy below restricts to admins only.
+GRANT SELECT, INSERT, UPDATE, DELETE ON product_business_info TO authenticated;
+
+CREATE POLICY "business_info_admin_only"
+  ON product_business_info FOR ALL
+  USING     (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
+  WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+
+-- ────────────────────────────────────────────
 -- products RLS
 -- Public read so unauthenticated users can browse the catalogue.
 -- Write (insert / update / delete) restricted to admin users only.

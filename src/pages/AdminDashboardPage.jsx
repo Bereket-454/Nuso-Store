@@ -19,6 +19,11 @@ const defaultProduct = {
   images: ['https://picsum.photos/seed/dire-admin/640/640'],
   isBestSeller: false,
   isNewArrival: true,
+  // Private business fields — stored in product_business_info, never shown to customers.
+  costPrice: '',
+  supplierName: '',
+  supplierContact: '',
+  restockThreshold: '',
 }
 
 export function AdminDashboardPage() {
@@ -33,9 +38,11 @@ export function AdminDashboardPage() {
   const toastTimer = useRef(null)
   const fileInputRef = useRef(null)
   const [requests, setRequests] = useState([])
+  // Map of product_id -> business info row; keyed for O(1) lookup in inventory list.
+  const [businessInfo, setBusinessInfo] = useState({})
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
 
-  // Load all product requests on mount.
+  // Load product requests and business info on mount.
   useEffect(() => {
     supabase
       .from('product_requests')
@@ -43,6 +50,17 @@ export function AdminDashboardPage() {
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (!error && data) setRequests(data)
+      })
+
+    supabase
+      .from('product_business_info')
+      .select('*')
+      .then(({ data }) => {
+        if (data) {
+          const map = {}
+          data.forEach((row) => { map[row.product_id] = row })
+          setBusinessInfo(map)
+        }
       })
   }, [])
 
@@ -80,7 +98,7 @@ export function AdminDashboardPage() {
     setPriceError('')
     setSaveLoading(true)
     try {
-      const { error } = await upsertProduct({
+      const { id: savedId, error } = await upsertProduct({
         ...productForm,
         price: Number(productForm.price),
         stock: Number(productForm.stock),
@@ -88,6 +106,23 @@ export function AdminDashboardPage() {
       if (error) {
         console.error('[AdminDashboard] upsertProduct error:', error.message)
       } else {
+        // Save private business info linked to the product id.
+        const bizRow = {
+          product_id: savedId,
+          cost_price: Number(productForm.costPrice) || null,
+          supplier_name: productForm.supplierName.trim() || null,
+          supplier_contact: productForm.supplierContact.trim() || null,
+          restock_threshold: Number(productForm.restockThreshold) || null,
+        }
+        const { error: bizError } = await supabase
+          .from('product_business_info')
+          .upsert(bizRow, { onConflict: 'product_id' })
+        if (bizError) {
+          console.error('[AdminDashboard] business info save error:', bizError.message)
+        } else {
+          setBusinessInfo((prev) => ({ ...prev, [savedId]: bizRow }))
+        }
+
         setProductForm(defaultProduct)
         setUploadError('')
         await reloadProducts()
@@ -309,6 +344,74 @@ export function AdminDashboardPage() {
             )}
           </div>
 
+          {/* ── Private business fields ─────────────────────────────────────── */}
+          <div style={{
+            borderTop: '1px dashed var(--border)',
+            marginTop: '1rem',
+            paddingTop: '0.9rem',
+          }}>
+            <p style={{ margin: '0 0 0.75rem', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)' }}>
+              {t('admin.businessInfoTitle')}
+            </p>
+
+            <div className="form-group">
+              <label htmlFor="admin-cost-price">{t('admin.costPrice')}</label>
+              <input
+                id="admin-cost-price"
+                type="number"
+                min="0"
+                value={productForm.costPrice}
+                onChange={(e) => setProductForm((v) => ({ ...v, costPrice: e.target.value }))}
+                placeholder="0"
+              />
+              {/* Live profit margin — only shown when both prices are valid */}
+              {Number(productForm.price) > 0 && Number(productForm.costPrice) > 0 && (() => {
+                const sell = Number(productForm.price)
+                const cost = Number(productForm.costPrice)
+                const profit = sell - cost
+                const pct = ((profit / sell) * 100).toFixed(1)
+                const color = profit >= 0 ? 'var(--success)' : 'var(--danger)'
+                return (
+                  <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color }}>
+                    {t('admin.profitMargin')}: {birr(profit)} ({pct}%)
+                  </p>
+                )
+              })()}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="admin-supplier-name">{t('admin.supplierName')}</label>
+              <input
+                id="admin-supplier-name"
+                value={productForm.supplierName}
+                onChange={(e) => setProductForm((v) => ({ ...v, supplierName: e.target.value }))}
+                placeholder={t('admin.supplierNamePlaceholder')}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="admin-supplier-contact">{t('admin.supplierContact')}</label>
+              <input
+                id="admin-supplier-contact"
+                value={productForm.supplierContact}
+                onChange={(e) => setProductForm((v) => ({ ...v, supplierContact: e.target.value }))}
+                placeholder={t('admin.supplierContactPlaceholder')}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="admin-restock">{t('admin.restockThreshold')}</label>
+              <input
+                id="admin-restock"
+                type="number"
+                min="0"
+                value={productForm.restockThreshold}
+                onChange={(e) => setProductForm((v) => ({ ...v, restockThreshold: e.target.value }))}
+                placeholder="5"
+              />
+            </div>
+          </div>
+
           <button className="btn btn-primary" onClick={saveProduct} disabled={saveLoading}>
             {saveLoading ? '...' : t('admin.saveProduct')}
           </button>
@@ -400,36 +503,78 @@ export function AdminDashboardPage() {
 
       <section className="card card-body" style={{ marginTop: '1rem' }}>
         <h3>{t('admin.inventory')}</h3>
-        {state.products.map((product) => (
-          <article key={product.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.7rem 0' }}>
-            <p>
-              <strong>{product.name}</strong> ({t(`category.${product.category}`)} ·{' '}
-              {t(`subcategory.${product.subcategory || 'apparel'}`)})
-            </p>
-            <p className="muted">
-              {t('admin.stock')}: {product.stock} | {t('common.price')}: {birr(product.price)}
-            </p>
-            <div className="actions">
-              <button className="btn btn-secondary" onClick={() => setProductForm(product)}>
-                {t('admin.edit')}
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={async () => {
-                  const { error } = await deleteProduct(product.id)
-                  if (error) {
-                    console.error('[AdminDashboard] deleteProduct error:', error.message)
-                  } else {
-                    await reloadProducts()
-                    showToast('Product deleted')
-                  }
-                }}
-              >
-                {t('admin.delete')}
-              </button>
-            </div>
-          </article>
-        ))}
+        {state.products.map((product) => {
+          const biz = businessInfo[product.id]
+          const hasCost = biz?.cost_price > 0
+          const profit = hasCost ? product.price - biz.cost_price : null
+          const profitPct = profit !== null && product.price > 0
+            ? ((profit / product.price) * 100).toFixed(1)
+            : null
+          const restockAlert = biz?.restock_threshold != null && product.stock <= biz.restock_threshold
+
+          return (
+            <article key={product.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.7rem 0' }}>
+              <p>
+                <strong>{product.name}</strong> ({t(`category.${product.category}`)} ·{' '}
+                {t(`subcategory.${product.subcategory || 'apparel'}`)})
+              </p>
+              <p className="muted" style={{ margin: '0.15rem 0' }}>
+                {t('admin.stock')}: {product.stock}
+                {restockAlert && (
+                  <span style={{ marginLeft: '0.5rem', color: 'var(--danger)', fontWeight: 600 }}>
+                    ⚠ {t('admin.restockAlert')}
+                  </span>
+                )}
+                {' | '}{t('common.price')}: {birr(product.price)}
+                {hasCost && (
+                  <>
+                    {' | '}{t('admin.costPrice')}: {birr(biz.cost_price)}
+                    {' | '}<span style={{ color: profit >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 500 }}>
+                      {t('admin.profitMargin')}: {birr(profit)} ({profitPct}%)
+                    </span>
+                  </>
+                )}
+              </p>
+              {biz?.supplier_name && (
+                <p className="muted" style={{ margin: '0.1rem 0', fontSize: '0.82rem' }}>
+                  {t('admin.supplierName')}: {biz.supplier_name}
+                  {biz.supplier_contact ? ` · ${biz.supplier_contact}` : ''}
+                </p>
+              )}
+              <div className="actions">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    const b = businessInfo[product.id] || {}
+                    setProductForm({
+                      ...product,
+                      costPrice: b.cost_price ?? '',
+                      supplierName: b.supplier_name ?? '',
+                      supplierContact: b.supplier_contact ?? '',
+                      restockThreshold: b.restock_threshold ?? '',
+                    })
+                  }}
+                >
+                  {t('admin.edit')}
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={async () => {
+                    const { error } = await deleteProduct(product.id)
+                    if (error) {
+                      console.error('[AdminDashboard] deleteProduct error:', error.message)
+                    } else {
+                      await reloadProducts()
+                      showToast('Product deleted')
+                    }
+                  }}
+                >
+                  {t('admin.delete')}
+                </button>
+              </div>
+            </article>
+          )
+        })}
       </section>
     </div>
   )
