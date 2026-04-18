@@ -9,7 +9,9 @@ const image = (seed) => `https://picsum.photos/seed/dire-${seed}/640/640`
 
 export const DELIVERY_FEE = 150
 
-export const SAMPLE_PRODUCTS = [
+export const SAMPLE_PRODUCTS = []
+
+const _unusedProducts = [
   {
     id: 'p-001',
     name: 'Classic Cotton Shirt',

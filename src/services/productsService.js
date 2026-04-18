@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { SAMPLE_PRODUCTS, CATEGORIES, SUBCATEGORIES } from '../data/mockData'
+import { CATEGORIES, SUBCATEGORIES } from '../data/mockData'
 
 /**
  * Map a Supabase row (snake_case) back to the product shape the app expects (camelCase).
@@ -25,7 +25,7 @@ function rowToProduct(row) {
 
 /**
  * Fetch all products from Supabase.
- * Falls back to SAMPLE_PRODUCTS from mockData if the query fails or returns nothing.
+ * Returns an empty array on error or when no products exist — never falls back to mockData.
  */
 export async function fetchProducts() {
   try {
@@ -35,18 +35,14 @@ export async function fetchProducts() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.log('[fetchProducts] Supabase error — falling back to mockData:', error.message)
-      throw error
-    }
-    if (!data || data.length === 0) {
-      console.log('[fetchProducts] Supabase returned 0 rows — falling back to mockData')
-      return SAMPLE_PRODUCTS
+      console.error('[fetchProducts] Supabase error:', error.message)
+      return []
     }
     console.log(`[fetchProducts] Loaded ${data.length} products from Supabase`)
     return data.map(rowToProduct)
-  } catch {
-    console.log('[fetchProducts] Caught exception — falling back to mockData')
-    return SAMPLE_PRODUCTS
+  } catch (err) {
+    console.error('[fetchProducts] Unexpected error:', err)
+    return []
   }
 }
 
