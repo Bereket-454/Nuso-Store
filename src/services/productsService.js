@@ -9,6 +9,8 @@ function rowToProduct(row) {
     id: row.id,
     name: row.name,
     category: row.category,
+    // Normalize to array: prefer the stored categories array, fall back to wrapping category string.
+    categories: row.categories && row.categories.length > 0 ? row.categories : [row.category],
     subcategory: row.subcategory,
     price: row.price,
     stock: row.stock,
@@ -55,10 +57,15 @@ export async function fetchProducts() {
  */
 export async function upsertProduct(product) {
   const id = product.id && product.id.trim() ? product.id.trim() : `p-${Date.now()}`
+  // Normalize categories: prefer the array, otherwise wrap the single category string.
+  const categories = Array.isArray(product.categories) && product.categories.length > 0
+    ? product.categories
+    : [product.category || 'men']
   const row = {
     id,
     name: product.name,
-    category: product.category,
+    category: categories[0],   // keep primary category for backward compat
+    categories,
     subcategory: product.subcategory,
     price: product.price,
     stock: product.stock,

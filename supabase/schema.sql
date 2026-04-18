@@ -22,8 +22,12 @@ CREATE TABLE IF NOT EXISTS products (
   images          TEXT[]  NOT NULL DEFAULT '{}',
   is_best_seller  BOOLEAN NOT NULL DEFAULT false,
   is_new_arrival  BOOLEAN NOT NULL DEFAULT false,
+  categories      TEXT[]  NOT NULL DEFAULT '{}',
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add categories column if upgrading an existing schema that predates this migration.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS categories TEXT[] NOT NULL DEFAULT '{}';
 
 -- ────────────────────────────────────────────
 -- product_business_info

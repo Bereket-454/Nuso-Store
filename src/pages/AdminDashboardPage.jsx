@@ -9,7 +9,7 @@ import { upsertProduct, deleteProduct, fetchProducts } from '../services/product
 const defaultProduct = {
   id: '',
   name: '',
-  category: 'men',
+  categories: ['men'],
   subcategory: 'apparel',
   price: 0,
   stock: 0,
@@ -189,20 +189,33 @@ export function AdminDashboardPage() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="admin-category">{t('admin.shopFor')}</label>
-            <select
-              id="admin-category"
-              value={productForm.category}
-              onChange={(event) =>
-                setProductForm((value) => ({ ...value, category: event.target.value }))
-              }
-            >
-              {state.categories.map((item) => (
-                <option key={item.slug} value={item.slug}>
-                  {t(`category.${item.slug}`)}
-                </option>
-              ))}
-            </select>
+            <label>{t('admin.categories')}</label>
+            <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', paddingTop: '0.2rem' }}>
+              {state.categories.map((item) => {
+                const checked = (productForm.categories ?? []).includes(item.slug)
+                return (
+                  <label key={item.slug} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.95rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      style={{ width: 'auto' }}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked
+                        setProductForm((prev) => {
+                          const current = prev.categories ?? []
+                          const next = isChecked
+                            ? [...current, item.slug]
+                            : current.filter((c) => c !== item.slug)
+                          // Require at least one category to be selected
+                          return { ...prev, categories: next.length > 0 ? next : current }
+                        })
+                      }}
+                    />
+                    {t(`category.${item.slug}`)}
+                  </label>
+                )
+              })}
+            </div>
           </div>
           <div className="form-group">
             <label htmlFor="admin-subcategory">{t('admin.type')}</label>
@@ -515,7 +528,7 @@ export function AdminDashboardPage() {
           return (
             <article key={product.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.7rem 0' }}>
               <p>
-                <strong>{product.name}</strong> ({t(`category.${product.category}`)} ·{' '}
+                <strong>{product.name}</strong> ({(product.categories ?? [product.category]).map((c) => t(`category.${c}`)).join(', ')} ·{' '}
                 {t(`subcategory.${product.subcategory || 'apparel'}`)})
               </p>
               <p className="muted" style={{ margin: '0.15rem 0' }}>
@@ -548,6 +561,7 @@ export function AdminDashboardPage() {
                     const b = businessInfo[product.id] || {}
                     setProductForm({
                       ...product,
+                      categories: product.categories ?? [product.category],
                       costPrice: b.cost_price ?? '',
                       supplierName: b.supplier_name ?? '',
                       supplierContact: b.supplier_contact ?? '',

@@ -30,23 +30,29 @@ export function subcategoryLabel(slug) {
 /** Normalize persisted products from older schema (category was sometimes shoes/perfumes/appliances). */
 export function normalizeProduct(product) {
   const cat = product.category
+  let normalized
   if (cat === 'shoes' || cat === 'perfumes' || cat === 'appliances') {
     const defaults = { shoes: 'men', perfumes: 'women', appliances: 'women' }
-    return {
+    normalized = {
       ...product,
       category: defaults[cat] ?? 'men',
       subcategory: cat,
     }
-  }
-  if (isPrimaryCategorySlug(cat)) {
-    return {
+  } else if (isPrimaryCategorySlug(cat)) {
+    normalized = {
       ...product,
       subcategory: product.subcategory || 'apparel',
     }
+  } else {
+    normalized = {
+      ...product,
+      category: 'men',
+      subcategory: product.subcategory || 'apparel',
+    }
   }
-  return {
-    ...product,
-    category: 'men',
-    subcategory: product.subcategory || 'apparel',
+  // Ensure categories array is always present for multi-category support.
+  if (!normalized.categories || normalized.categories.length === 0) {
+    normalized.categories = [normalized.category]
   }
+  return normalized
 }

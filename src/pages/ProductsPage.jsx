@@ -20,7 +20,8 @@ export function ProductsPage() {
   const filtered = useMemo(() => {
     const text = search.trim().toLowerCase()
     let list = state.products.filter((item) => {
-      const byCategory = category === 'all' || item.category === category
+      const byCategory = category === 'all' ||
+        (Array.isArray(item.categories) ? item.categories.includes(category) : item.category === category)
       const bySubcategory = subcategory === 'all' || item.subcategory === subcategory
       const bySearch =
         text.length === 0 ||

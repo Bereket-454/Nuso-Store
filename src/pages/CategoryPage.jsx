@@ -15,16 +15,19 @@ export function CategoryPage() {
   const subcategoryFilter = searchParams.get('subcategory') || 'all'
   const isPrimary = isPrimaryCategorySlug(slug)
 
+  const matchesCategory = (item, catSlug) =>
+    Array.isArray(item.categories) ? item.categories.includes(catSlug) : item.category === catSlug
+
   const products = useMemo(() => {
     if (isPrimary) {
-      let list = state.products.filter((item) => item.category === slug)
+      let list = state.products.filter((item) => matchesCategory(item, slug))
       if (subcategoryFilter !== 'all') {
         list = list.filter((item) => item.subcategory === subcategoryFilter)
       }
       return list
     }
     return state.products.filter(
-      (item) => item.subcategory === slug || item.category === slug,
+      (item) => item.subcategory === slug || matchesCategory(item, slug),
     )
   }, [state.products, slug, isPrimary, subcategoryFilter])
 
