@@ -3,11 +3,17 @@ import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { useTranslation } from '../i18n'
 
-export function ProductCard({ product }) {
+export function ProductCard({ product, activeCategory }) {
   const { t } = useTranslation()
   const { state, dispatch } = useStore()
   const isInCart = state.cart.some((item) => item.productId === product.id)
-  const line = `${t(`category.${product.category}`)} · ${t(`subcategory.${product.subcategory || 'apparel'}`)}`
+  // If viewing a specific category page, show that category label.
+  // Otherwise join all categories so multi-category products show e.g. 'Men, Women · Shoes'.
+  const categories = product.categories ?? [product.category]
+  const categoryLabel = activeCategory
+    ? t(`category.${activeCategory}`)
+    : categories.map((c) => t(`category.${c}`)).join(', ')
+  const line = `${categoryLabel} · ${t(`subcategory.${product.subcategory || 'apparel'}`)}`
   const defaultSize = product.sizes[0] ?? ''
   const defaultColor = product.colors[0] ?? ''
   const priceStr = birr(product.price)

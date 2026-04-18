@@ -93,7 +93,7 @@ export function CategoryPage() {
       ) : (
         <div className="grid cols-3" style={{ marginTop: '1rem' }}>
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} activeCategory={isPrimary ? slug : undefined} />
           ))}
         </div>
       )}
