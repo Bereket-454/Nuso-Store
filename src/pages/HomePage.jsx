@@ -40,7 +40,6 @@ export function HomePage() {
           <div>
             <div className="hero-v2__badge">{t('home.heroLocationBadge')}</div>
             <h1 className="hero-v2__title-am">{t('home.heroTitleAm')}</h1>
-            <p className="hero-v2__title-en">{t('home.heroTitleEn')}</p>
             <p className="hero-v2__sub">{t('home.heroSubtitle')}</p>
             <div className="hero-v2__actions">
               <Link to="/products" className="hero-v2__btn-primary">
