@@ -333,21 +333,11 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Stagger even cells downward for a dynamic collage feel */
-.hero-v2__img-cell:nth-child(even) {
-  transform: translateY(14px);
-}
-
 .hero-v2__img-cell img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.35s ease;
-}
-
-.hero-v2__img-cell:hover img {
-  transform: scale(1.06);
 }
 
 /* Placeholder shown when image slot is empty */
@@ -377,9 +367,6 @@ button {
   .hero-v2__images {
     grid-template-columns: 1fr 1fr;
     max-width: 320px;
-  }
-  .hero-v2__img-cell:nth-child(even) {
-    transform: none;
   }
 }
 

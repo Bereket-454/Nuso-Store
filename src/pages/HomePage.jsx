@@ -17,12 +17,18 @@ export function HomePage() {
   const bestSellers = state.products.filter((item) => item.isBestSeller).slice(0, 4)
   const newArrivals = state.products.filter((item) => item.isNewArrival).slice(0, 4)
 
-  // Pick up to 4 products with images for the hero collage, preferring best sellers.
-  const heroImages = [
-    ...state.products.filter((p) => p.isBestSeller && p.images?.[0]),
-    ...state.products.filter((p) => !p.isBestSeller && p.images?.[0]),
-  ]
-    .slice(0, 4)
+  // Fill 4 hero image slots: best sellers first, then newest arrivals, then any remaining.
+  const withImage = (p) => p.images?.[0]
+  const bestSellerImages = state.products.filter((p) => p.isBestSeller && withImage(p))
+  const neededAfterBestSellers = 4 - bestSellerImages.length
+  const bestSellerIds = new Set(bestSellerImages.map((p) => p.id))
+  const fillImages = neededAfterBestSellers > 0
+    ? state.products
+        .filter((p) => !bestSellerIds.has(p.id) && withImage(p))
+        .sort((a, b) => Number(b.isNewArrival) - Number(a.isNewArrival))
+        .slice(0, neededAfterBestSellers)
+    : []
+  const heroImages = [...bestSellerImages, ...fillImages]
     .map((p) => ({ src: p.images[0], name: p.name }))
 
   return (
