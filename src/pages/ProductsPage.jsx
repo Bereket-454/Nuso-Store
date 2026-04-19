@@ -105,8 +105,6 @@ export function ProductsPage() {
         </div>
       </section>
 
-      <RequestBanner compact />
-
       {filtered.length === 0 ? (
         <article className="card card-body" style={{ marginTop: '1rem' }}>
           <h3>{t('products.noResults')}</h3>
@@ -117,6 +115,7 @@ export function ProductsPage() {
         </article>
       ) : (
         <>
+          <RequestBanner compact />
           <div className="grid cols-3" style={{ marginTop: '1rem' }}>
             {visible.map((product) => (
               <ProductCard key={product.id} product={product} />
