@@ -115,7 +115,6 @@ export function ProductsPage() {
         </article>
       ) : (
         <>
-          <RequestBanner compact />
           <div className="grid cols-3" style={{ marginTop: '1rem' }}>
             {visible.map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -128,6 +127,7 @@ export function ProductsPage() {
               </button>
             </div>
           )}
+          <RequestBanner compact />
         </>
       )}
     </div>

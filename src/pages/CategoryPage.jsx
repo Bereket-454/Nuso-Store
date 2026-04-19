@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
+import { RequestBanner } from '../components/RequestBanner'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { isPrimaryCategorySlug } from '../data/categoryModel'
 import { useTranslation } from '../i18n'
@@ -94,11 +95,14 @@ export function CategoryPage() {
           </Link>
         </article>
       ) : (
-        <div className="grid cols-3" style={{ marginTop: '1rem' }}>
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} activeCategory={isPrimary ? slug : undefined} />
-          ))}
-        </div>
+        <>
+          <div className="grid cols-3" style={{ marginTop: '1rem' }}>
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} activeCategory={isPrimary ? slug : undefined} />
+            ))}
+          </div>
+          <RequestBanner compact />
+        </>
       )}
     </div>
   )
