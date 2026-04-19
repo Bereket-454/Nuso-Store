@@ -4,6 +4,7 @@ import { useStore } from '../app/store'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
 import { getPaymentIntegrationStatus, initiateTelebirrPayment } from '../services/payment'
+import { recalculateBestSellers } from '../services/productsService'
 import { useTranslation } from '../i18n'
 
 export function CheckoutPage() {
@@ -85,25 +86,27 @@ export function CheckoutPage() {
 
       const orderId = `ORD-${String(state.orders.length + 1).padStart(6, '0')}`
       dispatch({ type: 'SAVE_ADDRESS', payload: shipping })
-      dispatch({
-        type: 'ORDER_CREATE',
-        payload: {
-          id: orderId,
-          items: cartItems,
-          subtotal,
-          deliveryFee,
-          total,
-          shipping,
-          payment: paymentResult,
-          paymentStatus: 'paid',
-          status: 'confirmed',
-          // Use real Supabase user if signed in, otherwise fall back to shipping details.
-          customer: state.user
-            ? { id: state.user.id, phone: state.user.phone, name: state.user.name || shipping.fullName }
-            : { name: shipping.fullName, phone: shipping.phone },
-          createdAt: new Date().toISOString(),
-        },
-      })
+      const newOrder = {
+        id: orderId,
+        items: cartItems,
+        subtotal,
+        deliveryFee,
+        total,
+        shipping,
+        payment: paymentResult,
+        paymentStatus: 'paid',
+        status: 'confirmed',
+        // Use real Supabase user if signed in, otherwise fall back to shipping details.
+        customer: state.user
+          ? { id: state.user.id, phone: state.user.phone, name: state.user.name || shipping.fullName }
+          : { name: shipping.fullName, phone: shipping.phone },
+        createdAt: new Date().toISOString(),
+      }
+      dispatch({ type: 'ORDER_CREATE', payload: newOrder })
+
+      // Recalculate best sellers in the background — fire-and-forget, never blocks checkout.
+      recalculateBestSellers([newOrder, ...state.orders])
+
       navigate(`/order-confirmation/${orderId}`)
     } catch {
       setStatus({ loading: false, msgKey: 'checkout.msg.paymentUnavailable', variant: 'error' })

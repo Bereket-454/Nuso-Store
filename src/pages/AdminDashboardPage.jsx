@@ -402,6 +402,31 @@ export function AdminDashboardPage() {
             )}
           </div>
 
+          {/* ── Product tags ──────────────────────────────────────────────── */}
+          <div className="form-group">
+            <label>{t('admin.productTags')}</label>
+            <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '0.2rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.95rem' }}>
+                <input
+                  type="checkbox"
+                  checked={!!productForm.isBestSeller}
+                  style={{ width: 'auto' }}
+                  onChange={() => setProductForm((prev) => ({ ...prev, isBestSeller: !prev.isBestSeller }))}
+                />
+                {t('admin.tagBestSeller')}
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.95rem' }}>
+                <input
+                  type="checkbox"
+                  checked={!!productForm.isNewArrival}
+                  style={{ width: 'auto' }}
+                  onChange={() => setProductForm((prev) => ({ ...prev, isNewArrival: !prev.isNewArrival }))}
+                />
+                {t('admin.tagNewArrival')}
+              </label>
+            </div>
+          </div>
+
           {/* ── Private business fields ─────────────────────────────────────── */}
           <div style={{
             borderTop: '1px dashed var(--border)',
@@ -571,9 +596,22 @@ export function AdminDashboardPage() {
 
           return (
             <article key={product.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.7rem 0' }}>
-              <p>
-                <strong>{product.name}</strong> ({(product.categories ?? [product.category]).map((c) => t(`category.${c}`)).join(', ')} ·{' '}
-                {t(`subcategory.${product.subcategory || 'apparel'}`)})
+              <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <strong>{product.name}</strong>
+                {product.isBestSeller && (
+                  <span style={{ background: '#fff3cd', color: '#92600a', fontSize: '0.68rem', fontWeight: 700, padding: '0.1rem 0.5rem', borderRadius: '999px', border: '1px solid #f0c040' }}>
+                    ★ {t('admin.tagBestSeller')}
+                  </span>
+                )}
+                {product.isNewArrival && (
+                  <span style={{ background: '#e6f4ff', color: '#0055b3', fontSize: '0.68rem', fontWeight: 700, padding: '0.1rem 0.5rem', borderRadius: '999px', border: '1px solid #99ccff' }}>
+                    ✦ {t('admin.tagNewArrival')}
+                  </span>
+                )}
+                <span style={{ color: 'var(--muted)', fontWeight: 400 }}>
+                  ({(product.categories ?? [product.category]).map((c) => t(`category.${c}`)).join(', ')} ·{' '}
+                  {t(`subcategory.${product.subcategory || 'apparel'}`)})
+                </span>
               </p>
               <p className="muted" style={{ margin: '0.15rem 0' }}>
                 {t('admin.stock')}: {product.stock}

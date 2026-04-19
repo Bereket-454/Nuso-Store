@@ -88,6 +88,72 @@ export async function deleteProduct(id) {
 }
 
 /**
+ * Recalculate which products are "best sellers" based on order history.
+ * Counts total quantity ordered per product across all orders, marks the
+ * top 5 as isBestSeller=true and clears the flag on all others.
+ *
+ * If there are no orders yet the function is a no-op — manual admin tagging
+ * (set via the product form) is left untouched.
+ *
+ * Call this after every new order is placed.
+ */
+export async function recalculateBestSellers(orders) {
+  if (!orders || orders.length === 0) {
+    console.log('[recalculateBestSellers] No orders yet — manual tagging preserved.')
+    return
+  }
+
+  // Tally total quantity ordered per product across all orders.
+  const counts = {}
+  for (const order of orders) {
+    for (const item of order.items || []) {
+      if (item.productId) {
+        counts[item.productId] = (counts[item.productId] || 0) + (item.quantity || 1)
+      }
+    }
+  }
+
+  if (Object.keys(counts).length === 0) return
+
+  const top5 = new Set(
+    Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([id]) => id),
+  )
+
+  console.log('[recalculateBestSellers] Top 5 by order volume:', [...top5])
+
+  // Fetch current flags so we only write rows that actually need to change.
+  const { data: products, error: fetchErr } = await supabase
+    .from('products')
+    .select('id, is_best_seller')
+
+  if (fetchErr) {
+    console.error('[recalculateBestSellers] fetch error:', fetchErr.message)
+    return
+  }
+
+  const toTrue  = products.filter((p) => top5.has(p.id)  && !p.is_best_seller).map((p) => p.id)
+  const toFalse = products.filter((p) => !top5.has(p.id) &&  p.is_best_seller).map((p) => p.id)
+
+  const ops = []
+  if (toTrue.length)  ops.push(supabase.from('products').update({ is_best_seller: true  }).in('id', toTrue))
+  if (toFalse.length) ops.push(supabase.from('products').update({ is_best_seller: false }).in('id', toFalse))
+
+  if (ops.length === 0) {
+    console.log('[recalculateBestSellers] No changes needed.')
+    return
+  }
+
+  const results = await Promise.all(ops)
+  results.forEach(({ error }) => {
+    if (error) console.error('[recalculateBestSellers] update error:', error.message)
+  })
+  console.log(`[recalculateBestSellers] Done. Set true: [${toTrue}] | Set false: [${toFalse}]`)
+}
+
+/**
  * Fetch primary audience categories (men / women / children) from Supabase.
  * Falls back to the static CATEGORIES list from mockData if unavailable.
  */
