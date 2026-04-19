@@ -43,7 +43,7 @@ export const translations = {
       topNote:
         'Delivery-only store. No pickup option. Delivery fee is shown before payment.',
       footer:
-        'Dire is a delivery-first marketplace for men, women, and children — clothing, shoes, perfumes, and home appliances.',
+        'Dire — fast delivery in Wolaita Sodo. Clothes, shoes, perfumes and more delivered to your door.',
     },
     category: {
       men: 'Men',
@@ -106,8 +106,9 @@ export const translations = {
       sortPriceAsc: 'Price: Low to high',
       sortPriceDesc: 'Price: High to low',
       sortNewest: 'New arrivals first',
-      noResults: 'No products found',
-      noResultsHint: 'Try another search term or filter.',
+      noResults: 'Nothing matched your search',
+      noResultsHint: 'Try different keywords, adjust your filters, or request the product and we\'ll source it for you!',
+      noResultsRequest: 'Request a Product',
       loadMore: 'Load more',
     },
     categoryPage: {
@@ -118,8 +119,9 @@ export const translations = {
       or: 'or',
       filterGroup: 'Product type',
       allTypes: 'All types',
-      emptyTitle: 'No products in this category yet',
-      emptyHint: 'Please check again later.',
+      emptyTitle: 'No products here yet',
+      emptyHint: 'Check back soon or browse other categories!',
+      browseAll: 'Browse All Products',
     },
     productDetail: {
       notFound: 'Product not found',
@@ -422,7 +424,7 @@ export const translations = {
       topNote:
         'የማድረሻ ብቻ። መሰብሰቢያ የለም። የማድረሻ ክፍያ ከክፍያ በፊት ይታያል።',
       footer:
-        'ድሬ ለወንዶች፣ ሴቶች እና ህጻናት — ልብስ፣ ጫማ፣ ሽቶ እና የቤት መሣሪያዎች የማድረሻ ገበያ።',
+        'ድሬ — በወላይታ ሶዶ ፈጣን ዲሊቨሪ። ልብስ፣ ጫማ፣ ሽቶ እና ሌሎችም ወደ በሩዎ ይደርሳሉ።',
     },
     category: {
       men: 'ወንዶች',
@@ -486,7 +488,8 @@ export const translations = {
       sortPriceDesc: 'ዋጋ፦ ከከፍ ወደ ዝቅ',
       sortNewest: 'አዲስ መጀመሪያ',
       noResults: 'ምንም ምርት አልተገኘም',
-      noResultsHint: 'ሌላ ፍለጋ ወይም ማጣሪያ ይሞክሩ።',
+      noResultsHint: 'ሌሎች ቃላት ይሞክሩ፣ ማጣሪያዎን ያስተካክሉ፣ ወይም ምርቱን ይጠይቁ — እናገኝልዎታለን!',
+      noResultsRequest: 'ምርት ይጠይቁ',
       loadMore: 'ተጨማሪ ጫን',
     },
     categoryPage: {
@@ -496,8 +499,9 @@ export const translations = {
       or: 'ወይም',
       filterGroup: 'የምርት አይነት',
       allTypes: 'ሁሉም አይነቶች',
-      emptyTitle: 'በዚህ ምድብ ምንም ምርት የለም',
-      emptyHint: 'እባክዎ ቆይተው ይሞክሩ።',
+      emptyTitle: 'እስካሁን ምርቶች የሉም',
+      emptyHint: 'ብዙም ሳይቆይ ይጎብኙ ወይም ሌሎች ምድቦችን ይመልከቱ!',
+      browseAll: 'ሁሉም ምርቶችን ተመልከት',
     },
     productDetail: {
       notFound: 'ምርቱ አልተገኘም',

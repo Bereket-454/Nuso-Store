@@ -89,6 +89,9 @@ export function CategoryPage() {
         <article className="card card-body">
           <h3>{t('categoryPage.emptyTitle')}</h3>
           <p className="muted">{t('categoryPage.emptyHint')}</p>
+          <Link to="/products" className="btn btn-secondary" style={{ marginTop: '0.75rem', display: 'inline-block' }}>
+            {t('categoryPage.browseAll')}
+          </Link>
         </article>
       ) : (
         <div className="grid cols-3" style={{ marginTop: '1rem' }}>

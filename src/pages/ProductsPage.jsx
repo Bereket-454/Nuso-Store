@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
 import { RequestBanner } from '../components/RequestBanner'
@@ -110,6 +111,9 @@ export function ProductsPage() {
         <article className="card card-body" style={{ marginTop: '1rem' }}>
           <h3>{t('products.noResults')}</h3>
           <p className="muted">{t('products.noResultsHint')}</p>
+          <Link to="/request" className="btn btn-primary" style={{ marginTop: '0.75rem', display: 'inline-block' }}>
+            {t('products.noResultsRequest')}
+          </Link>
         </article>
       ) : (
         <>
