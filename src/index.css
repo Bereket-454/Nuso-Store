@@ -249,9 +249,9 @@ button {
 }
 
 .hero-v2__sub {
-  font-size: 0.9rem;
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.58);
+  color: rgba(255, 255, 255, 0.75);
   margin: 0 0 1.9rem;
   max-width: 420px;
   animation: heroFadeUp 0.55s ease both;
