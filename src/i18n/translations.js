@@ -379,9 +379,13 @@ export const translations = {
       delivered: 'delivered',
     },
     notFound: {
-      title: 'Page not found',
-      hint: 'The page you requested does not exist.',
-      goHome: 'Go home',
+      code: '404',
+      title: 'Oops! Page not found',
+      hint: 'The page you were looking for doesn\'t exist or has been moved.',
+      searchPlaceholder: 'Search for products…',
+      goHome: 'Go Home',
+      browseProducts: 'Browse Products',
+      requestProduct: 'Request a Product',
     },
   },
   am: {
