@@ -43,6 +43,9 @@ export function AdminDashboardPage() {
   const requestsRef = useRef(null)
   const [editingName, setEditingName] = useState('')  // non-empty = edit mode
   const [requests, setRequests] = useState([])
+  const [archivedRequests, setArchivedRequests] = useState([])
+  const [showArchived, setShowArchived] = useState(false)
+  const [archivedLoading, setArchivedLoading] = useState(false)
   // Map of product_id -> business info row; keyed for O(1) lookup in inventory list.
   const [businessInfo, setBusinessInfo] = useState({})
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
@@ -52,7 +55,7 @@ export function AdminDashboardPage() {
     supabase
       .from('product_requests')
       .select('*')
-      .neq('status', 'archived')
+      .eq('archived', false)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (!error && data) setRequests(data)
@@ -85,11 +88,34 @@ export function AdminDashboardPage() {
   const deleteRequest = async (id) => {
     const { error } = await supabase
       .from('product_requests')
-      .update({ status: 'archived' })
+      .update({
+        archived: true,
+        archived_by: state.user?.email || 'admin',
+        archived_at: new Date().toISOString(),
+      })
       .eq('id', id)
     if (!error) {
       setRequests((prev) => prev.filter((r) => r.id !== id))
+      // Invalidate the cached archived list so it reloads fresh next time.
+      setArchivedRequests([])
     }
+  }
+
+  const loadArchivedRequests = async () => {
+    setArchivedLoading(true)
+    const { data, error } = await supabase
+      .from('product_requests')
+      .select('*')
+      .eq('archived', true)
+      .order('archived_at', { ascending: false })
+    if (!error && data) setArchivedRequests(data)
+    setArchivedLoading(false)
+  }
+
+  const toggleArchived = () => {
+    const next = !showArchived
+    setShowArchived(next)
+    if (next && archivedRequests.length === 0) loadArchivedRequests()
   }
 
   const formatRequestDate = (iso) => {
@@ -686,6 +712,60 @@ export function AdminDashboardPage() {
             )
           })
         )}
+
+        {/* Archived requests toggle */}
+        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+          <button
+            className="btn btn-secondary"
+            style={{ fontSize: '0.85rem' }}
+            onClick={toggleArchived}
+          >
+            {showArchived ? '▲ Hide archived requests' : '▼ Show archived requests'}
+          </button>
+
+          {showArchived && (
+            <div style={{ marginTop: '0.9rem' }}>
+              {archivedLoading ? (
+                <p className="muted" style={{ fontSize: '0.85rem' }}>Loading…</p>
+              ) : archivedRequests.length === 0 ? (
+                <p className="muted" style={{ fontSize: '0.85rem' }}>No archived requests.</p>
+              ) : (
+                archivedRequests.map((req) => {
+                  const badgeStyle = REQUEST_STATUS_BADGE[req.status] || REQUEST_STATUS_BADGE.pending
+                  return (
+                    <article key={req.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.75rem 0', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start', opacity: 0.7 }}>
+                      {req.photo_url && (
+                        <img
+                          src={req.photo_url}
+                          alt={req.product_name}
+                          style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0, border: '1px solid var(--border)', filter: 'grayscale(40%)' }}
+                        />
+                      )}
+                      <div style={{ flex: 1, minWidth: '180px' }}>
+                        <p style={{ margin: '0 0 0.2rem', fontSize: '0.9rem' }}><strong>{req.product_name}</strong></p>
+                        <p style={{ margin: '0 0 0.15rem', fontSize: '0.82rem' }}>
+                          <strong>{t('admin.requestCustomer')}:</strong> {req.customer_name}
+                          {req.telegram_phone && (
+                            <> · <a href={formatTelegramHref(req.telegram_phone)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>{req.telegram_phone}</a></>
+                          )}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.12rem 0.5rem', borderRadius: '999px', ...badgeStyle }}>
+                            {t(`requestStatus.${req.status}`)}
+                          </span>
+                          <span className="muted" style={{ fontSize: '0.78rem' }}>status when archived</span>
+                        </div>
+                        <p className="muted" style={{ margin: 0, fontSize: '0.78rem' }}>
+                          Archived by <strong>{req.archived_by || 'admin'}</strong> on {formatRequestDate(req.archived_at)}
+                        </p>
+                      </div>
+                    </article>
+                  )
+                })
+              )}
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="card card-body" style={{ marginTop: '1rem' }}>
