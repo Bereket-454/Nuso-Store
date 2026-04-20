@@ -387,6 +387,13 @@ export const translations = {
       browseProducts: 'Browse Products',
       requestProduct: 'Request a Product',
     },
+    notif: {
+      title: 'Notifications',
+      empty: 'No notifications yet',
+      markAllRead: 'Mark all as read',
+      bellLabel: '{{count}} unread notifications',
+      bellLabelEmpty: 'Notifications',
+    },
   },
   am: {
     meta: {
@@ -770,6 +777,13 @@ export const translations = {
       goHome: 'መነሻ',
       browseProducts: 'ምርቶችን ይመልከቱ',
       requestProduct: 'ምርት ይጠይቁ',
+    },
+    notif: {
+      title: 'ማሳወቂያዎች',
+      empty: 'እስካሁን ምንም ማሳወቂያ የለም',
+      markAllRead: 'ሁሉንም እንደተነበበ ምልክት አድርግ',
+      bellLabel: '{{count}}ያልተነበቡ ማሳወቂያዎች',
+      bellLabelEmpty: 'ማሳወቂያዎች',
     },
   },
 }

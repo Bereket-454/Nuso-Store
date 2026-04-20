@@ -4,6 +4,7 @@ import { useStore } from '../app/store'
 import { isAdminUser } from '../utils/auth'
 import { useTranslation } from '../i18n'
 import { getFirstName } from '../pages/AccountPage'
+import { NotificationBell } from './NotificationBell'
 
 const IconPerson = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -188,6 +189,7 @@ export function Layout() {
               <span className="nav-icon"><IconPin /></span>
               <span className="nav-label">{t('nav.track')}</span>
             </NavLink>
+            <NotificationBell userId={state.user?.id} />
             <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/cart">
               <span
                 key={cartAnimKey}

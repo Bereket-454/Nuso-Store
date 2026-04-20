@@ -5,6 +5,7 @@ import { birr } from '../utils/format'
 import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
 import { upsertProduct, deleteProduct, fetchProducts } from '../services/productsService'
+import { insertNotification, sendOrderEmail } from '../services/notificationsService'
 
 const defaultProduct = {
   id: '',
@@ -79,9 +80,20 @@ export function AdminDashboardPage() {
       .update({ status })
       .eq('id', id)
     if (!error) {
-      setRequests((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status } : r))
-      )
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
+
+      if (status === 'fulfilled') {
+        const req = requests.find((r) => r.id === id)
+        if (req?.user_id) {
+          insertNotification({
+            userId: req.user_id,
+            type: 'request_fulfilled',
+            message: `🛍️ We found your requested product! Check it out.`,
+            messageAm: `🛍️ የጠየቁትን ምርት አግኝተናል! ይመልከቱ።`,
+            link: `/products`,
+          })
+        }
+      }
     }
   }
 
@@ -621,12 +633,38 @@ export function AdminDashboardPage() {
                     <button
                       className="btn btn-secondary"
                       key={statusValue}
-                      onClick={() =>
-                        dispatch({
-                          type: 'ORDER_UPDATE_STATUS',
-                          payload: { id: order.id, status: statusValue },
-                        })
-                      }
+                      onClick={async () => {
+                        dispatch({ type: 'ORDER_UPDATE_STATUS', payload: { id: order.id, status: statusValue } })
+
+                        const userId = order.customer?.id
+                        const orderId = order.id
+                        const msgMap = {
+                          confirmed:        { en: `✅ Your order ${orderId} has been confirmed`,       am: `✅ ትዕዛዝዎ ${orderId} ተረጋግጧል` },
+                          packed:           { en: `📦 Your order ${orderId} is being packed`,          am: `📦 ትዕዛዝዎ ${orderId} እየታሸገ ነው` },
+                          'out-for-delivery': { en: `🚚 Your order ${orderId} is out for delivery`,   am: `🚚 ትዕዛዝዎ ${orderId} ለማድረሻ ሄዷል` },
+                          delivered:        { en: `🎉 Your order ${orderId} has been delivered!`,      am: `🎉 ትዕዛዝዎ ${orderId} ደርሷል!` },
+                        }
+                        const msg = msgMap[statusValue]
+                        if (msg) {
+                          insertNotification({
+                            userId,
+                            type: `order_${statusValue}`,
+                            message: msg.en,
+                            messageAm: msg.am,
+                            link: `/account`,
+                          })
+                          // Email for confirmed and delivered only
+                          if (statusValue === 'confirmed' || statusValue === 'delivered') {
+                            const email = order.customer?.email || order.shipping?.email
+                            sendOrderEmail({
+                              toEmail: email,
+                              toName: order.customer?.name || order.shipping?.fullName,
+                              message: msg.en,
+                              orderId,
+                            })
+                          }
+                        }
+                      }}
                     >
                       {t(`orderStatus.${statusValue}`)}
                     </button>
