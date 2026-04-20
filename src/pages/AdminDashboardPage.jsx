@@ -52,6 +52,7 @@ export function AdminDashboardPage() {
     supabase
       .from('product_requests')
       .select('*')
+      .neq('status', 'archived')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (!error && data) setRequests(data)
@@ -84,7 +85,7 @@ export function AdminDashboardPage() {
   const deleteRequest = async (id) => {
     const { error } = await supabase
       .from('product_requests')
-      .delete()
+      .update({ status: 'archived' })
       .eq('id', id)
     if (!error) {
       setRequests((prev) => prev.filter((r) => r.id !== id))
