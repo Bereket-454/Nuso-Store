@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
+import { ProductCardSkeleton } from '../components/ProductCardSkeleton'
 import { RequestBanner } from '../components/RequestBanner'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { isPrimaryCategorySlug } from '../data/categoryModel'
@@ -86,7 +87,11 @@ export function CategoryPage() {
         </div>
       ) : null}
 
-      {products.length === 0 ? (
+      {state.productsLoading ? (
+        <div className="grid cols-3" style={{ marginTop: '1rem' }}>
+          {Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
+        </div>
+      ) : products.length === 0 ? (
         <article className="card card-body">
           <h3>{t('categoryPage.emptyTitle')}</h3>
           <p className="muted">{t('categoryPage.emptyHint')}</p>

@@ -34,6 +34,7 @@ const initialState = {
   products: SAMPLE_PRODUCTS,
   categories: CATEGORIES,
   subcategories: SUBCATEGORIES,
+  productsLoading: true,  // true until CATALOGUE_LOADED fires for the first time
   cart: [],
   cartPurged: false,   // true when CATALOGUE_LOADED silently removed stale cart items
   user: null,
@@ -53,6 +54,7 @@ function loadState() {
     merged.subcategories = SUBCATEGORIES
     merged.user = null        // session is managed by Supabase, not localStorage
     merged.cart = []          // cart is managed per-user; loaded after auth resolves
+    merged.productsLoading = true // always fetch fresh on load
     merged.cartPurged = false // reset on every page load
     return merged
   } catch {
@@ -60,7 +62,7 @@ function loadState() {
   }
 }
 
-function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, ...rest }) {
+function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, productsLoading: _productsLoading, ...rest }) {
   // Exclude `user` (Supabase manages session), `cart` (managed per-user), and
   // `cartPurged` (transient UI flag — must not survive a page reload).
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
@@ -147,6 +149,7 @@ function reducer(state, action) {
         products: loadedProducts,
         categories: action.payload.categories,
         subcategories: action.payload.subcategories,
+        productsLoading: false,
         cart: cleanCart,
         // Preserve an existing true flag — AUTH_CHANGED may have already set it.
         cartPurged: state.cartPurged || itemsRemoved,

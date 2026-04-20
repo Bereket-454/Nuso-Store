@@ -3,6 +3,7 @@ import { useStore } from '../app/store'
 import { PROMOTIONS } from '../data/mockData'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { ProductCard } from '../components/ProductCard'
+import { ProductCardSkeleton } from '../components/ProductCardSkeleton'
 import { RequestBanner } from '../components/RequestBanner'
 import { useTranslation } from '../i18n'
 
@@ -85,18 +86,18 @@ export function HomePage() {
       <section>
         <h2 className="section-title">{t('home.bestSellers')}</h2>
         <div className="grid cols-4">
-          {bestSellers.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+          {state.productsLoading
+            ? Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)
+            : bestSellers.map((product) => <ProductCard key={product.id} product={product} />)}
         </div>
       </section>
 
       <section>
         <h2 className="section-title">{t('home.newArrivals')}</h2>
         <div className="grid cols-4">
-          {newArrivals.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+          {state.productsLoading
+            ? Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)
+            : newArrivals.map((product) => <ProductCard key={product.id} product={product} />)}
         </div>
       </section>
 

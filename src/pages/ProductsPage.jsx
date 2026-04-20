@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
+import { ProductCardSkeleton } from '../components/ProductCardSkeleton'
 import { RequestBanner } from '../components/RequestBanner'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
@@ -105,7 +106,11 @@ export function ProductsPage() {
         </div>
       </section>
 
-      {filtered.length === 0 ? (
+      {state.productsLoading ? (
+        <div className="grid cols-3" style={{ marginTop: '1rem' }}>
+          {Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
+        </div>
+      ) : filtered.length === 0 ? (
         <article className="card card-body" style={{ marginTop: '1rem' }}>
           <h3>{t('products.noResults')}</h3>
           <p className="muted">{t('products.noResultsHint')}</p>
