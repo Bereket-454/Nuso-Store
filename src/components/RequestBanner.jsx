@@ -11,8 +11,11 @@ export function RequestBanner({ compact = false }) {
   if (compact) {
     return (
       <div className="request-banner request-banner--compact">
-        <span>{t('request.banner')}</span>
-        <Link to="/request" className="btn btn-secondary">
+        <div>
+          <h3 style={{ margin: '0 0 0.25rem', fontSize: '1rem' }}>{t('request.banner')}</h3>
+          <p className="muted" style={{ margin: 0, fontSize: '0.85rem' }}>{t('request.bannerHint')}</p>
+        </div>
+        <Link to="/request" className="btn btn-primary" style={{ flexShrink: 0 }}>
           {t('request.bannerButton')}
         </Link>
       </div>
