@@ -40,6 +40,7 @@ export function AdminDashboardPage() {
   const toastFadeTimer = useRef(null)
   const fileInputRef = useRef(null)
   const formRef = useRef(null)
+  const requestsRef = useRef(null)
   const [editingName, setEditingName] = useState('')  // non-empty = edit mode
   const [requests, setRequests] = useState([])
   // Map of product_id -> business info row; keyed for O(1) lookup in inventory list.
@@ -78,6 +79,39 @@ export function AdminDashboardPage() {
         prev.map((r) => (r.id === id ? { ...r, status } : r))
       )
     }
+  }
+
+  const deleteRequest = async (id) => {
+    const { error } = await supabase
+      .from('product_requests')
+      .delete()
+      .eq('id', id)
+    if (!error) {
+      setRequests((prev) => prev.filter((r) => r.id !== id))
+    }
+  }
+
+  const formatRequestDate = (iso) => {
+    if (!iso) return ''
+    return new Date(iso).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+  }
+
+  const REQUEST_STATUS_BADGE = {
+    pending:   { background: '#fff8e1', color: '#92600a', border: '1px solid #f0c040' },
+    contacted: { background: '#e6f4ff', color: '#0055b3', border: '1px solid #99ccff' },
+    fulfilled: { background: '#e6f9ed', color: '#1a7a3c', border: '1px solid #6fcf97' },
+    rejected:  { background: '#fdecea', color: '#b91c1c', border: '1px solid #f5a9a9' },
+  }
+
+  const formatTelegramHref = (phone) => {
+    const stripped = (phone || '').trim().replace(/^\+/, '')
+    return `https://t.me/+${stripped}`
   }
 
   // Show a fixed bottom-center toast for 3 seconds, then fade it out.
@@ -175,9 +209,48 @@ export function AdminDashboardPage() {
     }
   }
 
+  const overdueCount = requests.filter((r) => {
+    if (r.status !== 'pending') return false
+    const ageMs = Date.now() - new Date(r.created_at).getTime()
+    return ageMs > 30 * 60 * 1000
+  }).length
+
   return (
     <div>
       <h1>{t('admin.title')}</h1>
+
+      {/* Overdue requests alert */}
+      {overdueCount > 0 && (
+        <div
+          role="alert"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            flexWrap: 'wrap',
+            background: '#fff3e0',
+            border: '1px solid #e65100',
+            borderLeft: '4px solid #e65100',
+            borderRadius: 'var(--radius)',
+            padding: '0.85rem 1.2rem',
+            marginBottom: '1.25rem',
+            color: '#7f3000',
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.95rem' }}>
+            ⚠️ {overdueCount} product request{overdueCount !== 1 ? 's' : ''} waiting — please contact customer{overdueCount !== 1 ? 's' : ''} within 30 minutes!
+          </p>
+          <button
+            className="btn btn-secondary"
+            style={{ fontSize: '0.85rem', flexShrink: 0, borderColor: '#e65100', color: '#7f3000' }}
+            onClick={() => requestsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          >
+            View Requests ↓
+          </button>
+        </div>
+      )}
+
       {/* Fixed bottom-center toast */}
       {toast && (
         <div
@@ -538,48 +611,79 @@ export function AdminDashboardPage() {
         </article>
       </section>
 
-      <section className="card card-body" style={{ marginTop: '1rem' }}>
+      <section ref={requestsRef} className="card card-body" style={{ marginTop: '1rem' }}>
         <h3>{t('admin.requestsTitle')}</h3>
         {requests.length === 0 ? (
           <p className="muted">{t('admin.requestsEmpty')}</p>
         ) : (
-          requests.map((req) => (
-            <article key={req.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.9rem 0', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              {req.photo_url && (
-                <img
-                  src={req.photo_url}
-                  alt={req.product_name}
-                  style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0, border: '1px solid var(--border)' }}
-                />
-              )}
-              <div style={{ flex: 1, minWidth: '180px' }}>
-                <p style={{ margin: '0 0 0.25rem' }}><strong>{req.product_name}</strong></p>
-                <p className="muted" style={{ margin: '0 0 0.2rem', fontSize: '0.85rem' }}>{req.description}</p>
-                <p style={{ margin: '0 0 0.2rem', fontSize: '0.85rem' }}>
-                  <strong>{t('admin.requestCustomer')}:</strong> {req.customer_name}
-                </p>
-                <p style={{ margin: '0 0 0.4rem', fontSize: '0.85rem' }}>
-                  <strong>{t('admin.requestTelegram')}:</strong> {req.telegram_phone}
-                </p>
-                {req.extra_details && (
-                  <p className="muted" style={{ margin: '0 0 0.4rem', fontSize: '0.82rem' }}>{req.extra_details}</p>
+          requests.map((req) => {
+            const badgeStyle = REQUEST_STATUS_BADGE[req.status] || REQUEST_STATUS_BADGE.pending
+            return (
+              <article key={req.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.9rem 0', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                {req.photo_url && (
+                  <img
+                    src={req.photo_url}
+                    alt={req.product_name}
+                    style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0, border: '1px solid var(--border)' }}
+                  />
                 )}
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label htmlFor={`req-status-${req.id}`} style={{ fontSize: '0.8rem' }}>{t('admin.requestStatus')}</label>
-                  <select
-                    id={`req-status-${req.id}`}
-                    value={req.status}
-                    onChange={(e) => updateRequestStatus(req.id, e.target.value)}
-                    style={{ width: 'auto', fontSize: '0.85rem' }}
-                  >
-                    {['pending', 'contacted', 'fulfilled', 'rejected'].map((s) => (
-                      <option key={s} value={s}>{t(`requestStatus.${s}`)}</option>
-                    ))}
-                  </select>
+                <div style={{ flex: 1, minWidth: '180px' }}>
+                  <p style={{ margin: '0 0 0.25rem' }}><strong>{req.product_name}</strong></p>
+                  <p className="muted" style={{ margin: '0 0 0.2rem', fontSize: '0.85rem' }}>{req.description}</p>
+                  <p style={{ margin: '0 0 0.1rem', fontSize: '0.85rem' }}>
+                    <strong>{t('admin.requestCustomer')}:</strong> {req.customer_name}
+                  </p>
+                  {req.created_at && (
+                    <p className="muted" style={{ margin: '0 0 0.2rem', fontSize: '0.78rem' }}>
+                      {formatRequestDate(req.created_at)}
+                    </p>
+                  )}
+                  <p style={{ margin: '0 0 0.4rem', fontSize: '0.85rem' }}>
+                    <strong>{t('admin.requestTelegram')}:</strong>{' '}
+                    <a
+                      href={formatTelegramHref(req.telegram_phone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      {req.telegram_phone}
+                    </a>
+                  </p>
+                  {req.extra_details && (
+                    <p className="muted" style={{ margin: '0 0 0.4rem', fontSize: '0.82rem' }}>{req.extra_details}</p>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      padding: '0.15rem 0.55rem',
+                      borderRadius: '999px',
+                      ...badgeStyle,
+                    }}>
+                      {t(`requestStatus.${req.status}`)}
+                    </span>
+                    <select
+                      id={`req-status-${req.id}`}
+                      value={req.status}
+                      onChange={(e) => updateRequestStatus(req.id, e.target.value)}
+                      style={{ width: 'auto', maxWidth: '180px', fontSize: '0.85rem' }}
+                    >
+                      {['pending', 'contacted', 'fulfilled', 'rejected'].map((s) => (
+                        <option key={s} value={s}>{t(`requestStatus.${s}`)}</option>
+                      ))}
+                    </select>
+                    <button
+                      className="btn btn-danger"
+                      style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }}
+                      onClick={() => deleteRequest(req.id)}
+                    >
+                      {t('admin.delete')}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))
+              </article>
+            )
+          })
         )}
       </section>
 
