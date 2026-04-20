@@ -6,6 +6,7 @@ import { birr } from '../utils/format'
 import { getPaymentIntegrationStatus, initiateTelebirrPayment } from '../services/payment'
 import { recalculateBestSellers } from '../services/productsService'
 import { useTranslation } from '../i18n'
+import { supabase } from '../lib/supabase'
 
 export function CheckoutPage() {
   const { t } = useTranslation()
@@ -84,7 +85,8 @@ export function CheckoutPage() {
         return
       }
 
-      const orderId = `ORD-${String(state.orders.length + 1).padStart(6, '0')}`
+      // Use timestamp-based ID — avoids depending on local state.orders.length which is unreliable.
+      const orderId = `ORD-${Date.now()}`
       dispatch({ type: 'SAVE_ADDRESS', payload: shipping })
       const newOrder = {
         id: orderId,
@@ -103,6 +105,25 @@ export function CheckoutPage() {
         createdAt: new Date().toISOString(),
       }
       dispatch({ type: 'ORDER_CREATE', payload: newOrder })
+
+      // Persist order to Supabase so admin dashboard can see it — fire-and-forget.
+      supabase.from('orders').insert({
+        id: orderId,
+        user_id: state.user?.id || null,
+        customer_name: newOrder.customer.name,
+        customer_phone: newOrder.customer.phone || null,
+        customer_email: state.user?.email || null,
+        items: cartItems,
+        shipping,
+        payment: paymentResult,
+        subtotal,
+        delivery_fee: deliveryFee,
+        total,
+        payment_status: 'paid',
+        status: 'confirmed',
+      }).then(({ error }) => {
+        if (error) console.error('[CheckoutPage] order save to Supabase error:', error.message)
+      })
 
       // Recalculate best sellers in the background — fire-and-forget, never blocks checkout.
       recalculateBestSellers([newOrder, ...state.orders])

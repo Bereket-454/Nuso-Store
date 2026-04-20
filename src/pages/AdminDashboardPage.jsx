@@ -43,6 +43,7 @@ export function AdminDashboardPage() {
   const formRef = useRef(null)
   const requestsRef = useRef(null)
   const [editingName, setEditingName] = useState('')  // non-empty = edit mode
+  const [adminOrders, setAdminOrders] = useState([])
   const [requests, setRequests] = useState([])
   const [archivedRequests, setArchivedRequests] = useState([])
   const [showArchived, setShowArchived] = useState(false)
@@ -51,8 +52,17 @@ export function AdminDashboardPage() {
   const [businessInfo, setBusinessInfo] = useState({})
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
 
-  // Load product requests and business info on mount.
+  // Load orders, product requests, and business info on mount.
   useEffect(() => {
+    supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) console.error('[AdminDashboard] orders fetch error:', error.message)
+        if (data) setAdminOrders(data)
+      })
+
     supabase
       .from('product_requests')
       .select('*')
@@ -614,35 +624,56 @@ export function AdminDashboardPage() {
 
         <article className="card card-body">
           <h3>{t('admin.ordersTitle')}</h3>
-          {state.orders.length === 0 ? (
+          {adminOrders.length === 0 ? (
             <p className="muted">{t('admin.noOrders')}</p>
           ) : (
-            state.orders.map((order) => (
+            adminOrders.map((order) => (
               <div key={order.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.7rem 0' }}>
-                <p>
-                  <strong>{order.id}</strong> - {t(`orderStatus.${order.status}`)}
+                <p style={{ margin: '0 0 0.2rem' }}>
+                  <strong>{order.id}</strong>
+                  <span className="muted" style={{ marginLeft: '0.5rem', fontWeight: 400 }}>
+                    {order.customer_name}
+                  </span>
                 </p>
-                <p className="muted">
-                  {t('admin.payment')}: {order.paymentStatus}
+                <p className="muted" style={{ margin: '0 0 0.1rem', fontSize: '0.85rem' }}>
+                  {t('admin.payment')}: <strong>{order.payment_status}</strong>
+                  {' · '}{t('admin.total')}: <strong>{birr(order.total)}</strong>
                 </p>
-                <p>
-                  {t('admin.total')}: {birr(order.total)}
+                <p className="muted" style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
+                  {t('admin.orderStatus') || 'Status'}: <strong>{t(`orderStatus.${order.status}`)}</strong>
+                  {order.created_at && (
+                    <span style={{ marginLeft: '0.5rem' }}>
+                      · {formatRequestDate(order.created_at)}
+                    </span>
+                  )}
                 </p>
                 <div className="actions">
                   {['confirmed', 'packed', 'out-for-delivery', 'delivered'].map((statusValue) => (
                     <button
-                      className="btn btn-secondary"
+                      className={`btn ${order.status === statusValue ? 'btn-primary' : 'btn-secondary'}`}
                       key={statusValue}
                       onClick={async () => {
-                        dispatch({ type: 'ORDER_UPDATE_STATUS', payload: { id: order.id, status: statusValue } })
+                        // Update Supabase
+                        const { error } = await supabase
+                          .from('orders')
+                          .update({ status: statusValue })
+                          .eq('id', order.id)
+                        if (error) {
+                          console.error('[AdminDashboard] order status update error:', error.message)
+                          return
+                        }
+                        // Update local list
+                        setAdminOrders((prev) =>
+                          prev.map((o) => (o.id === order.id ? { ...o, status: statusValue } : o))
+                        )
 
-                        const userId = order.customer?.id
+                        const userId = order.user_id
                         const orderId = order.id
                         const msgMap = {
-                          confirmed:        { en: `✅ Your order ${orderId} has been confirmed`,       am: `✅ ትዕዛዝዎ ${orderId} ተረጋግጧል` },
-                          packed:           { en: `📦 Your order ${orderId} is being packed`,          am: `📦 ትዕዛዝዎ ${orderId} እየታሸገ ነው` },
+                          confirmed:          { en: `✅ Your order ${orderId} has been confirmed`,     am: `✅ ትዕዛዝዎ ${orderId} ተረጋግጧል` },
+                          packed:             { en: `📦 Your order ${orderId} is being packed`,        am: `📦 ትዕዛዝዎ ${orderId} እየታሸገ ነው` },
                           'out-for-delivery': { en: `🚚 Your order ${orderId} is out for delivery`,   am: `🚚 ትዕዛዝዎ ${orderId} ለማድረሻ ሄዷል` },
-                          delivered:        { en: `🎉 Your order ${orderId} has been delivered!`,      am: `🎉 ትዕዛዝዎ ${orderId} ደርሷል!` },
+                          delivered:          { en: `🎉 Your order ${orderId} has been delivered!`,    am: `🎉 ትዕዛዝዎ ${orderId} ደርሷል!` },
                         }
                         const msg = msgMap[statusValue]
                         if (msg) {
@@ -653,12 +684,10 @@ export function AdminDashboardPage() {
                             messageAm: msg.am,
                             link: `/account`,
                           })
-                          // Email for confirmed and delivered only
                           if (statusValue === 'confirmed' || statusValue === 'delivered') {
-                            const email = order.customer?.email || order.shipping?.email
                             sendOrderEmail({
-                              toEmail: email,
-                              toName: order.customer?.name || order.shipping?.fullName,
+                              toEmail: order.customer_email,
+                              toName: order.customer_name,
                               message: msg.en,
                               orderId,
                             })
