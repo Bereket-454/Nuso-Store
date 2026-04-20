@@ -763,9 +763,13 @@ export const translations = {
       delivered: 'ተላከ',
     },
     notFound: {
-      title: 'ገጽ አልተገኘም',
-      hint: 'የጠየቁት ገጽ የለም።',
-      goHome: 'ወደ መነሻ',
+      code: '404',
+      title: 'ይቅርታ! ገጽ አልተገኘም',
+      hint: 'የፈለጉት ገጽ የለም ወይም ተቀይሯል።',
+      searchPlaceholder: 'ምርቶችን ይፈልጉ…',
+      goHome: 'መነሻ',
+      browseProducts: 'ምርቶችን ይመልከቱ',
+      requestProduct: 'ምርት ይጠይቁ',
     },
   },
 }
