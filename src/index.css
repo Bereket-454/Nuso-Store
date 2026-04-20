@@ -652,6 +652,13 @@ textarea {
   padding: 1.4rem 1.6rem;
   margin: 1.75rem 0;
   flex-wrap: wrap;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.request-banner:hover {
+  transform: translateY(-2px);
+  border-color: rgba(10, 132, 255, 0.48);
+  box-shadow: 0 6px 24px rgba(10, 132, 255, 0.08);
 }
 
 .request-banner--compact {
@@ -659,6 +666,25 @@ textarea {
   margin: 1rem 0;
   align-items: center;
   gap: 0.75rem;
+}
+
+.request-banner .btn-primary {
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Button hover: glow + own lift. translateY is relative to its position,
+   which already shifts with the banner — no double-shift issue. */
+.request-banner .btn-primary:hover {
+  background: #0070d8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(10, 132, 255, 0.48);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .request-banner,
+  .request-banner .btn-primary {
+    transition: none;
+  }
 }
 
 
