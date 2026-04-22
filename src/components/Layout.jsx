@@ -142,7 +142,7 @@ export function Layout() {
       <header className={`header${headerHidden ? ' header--hidden' : ''}`}>
         <div className="container header-inner">
           <NavLink to="/" className="brand" aria-label="Nuso Store — home">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" height="44" style={{ height: '44px', width: 'auto', display: 'block' }} aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" aria-hidden="true">
               <path d="M6 24 L6 56 Q6 60 10 60 L46 60 Q50 60 50 56 L50 24 Z" fill="#1a2340"/>
               <path d="M28 24 L50 24 L50 46 Z" fill="#FF6B00"/>
               <path d="M16 24 Q16 10 28 10 Q40 10 40 24" fill="none" stroke="#FF6B00" strokeWidth="4" strokeLinecap="round"/>

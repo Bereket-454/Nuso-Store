@@ -77,9 +77,16 @@ a {
 }
 
 .brand {
-  font-size: 1.45rem;
-  font-weight: 800;
-  letter-spacing: 0.04rem;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 0; /* prevents extra space below inline SVG */
+}
+
+.brand svg {
+  height: 42px;
+  width: auto;
+  display: block;
 }
 
 .accent {
@@ -856,6 +863,12 @@ textarea {
   .header-inner {
     align-items: flex-start;
     flex-direction: column;
+    padding: 0.6rem 0;
+    gap: 0.6rem;
+  }
+
+  .brand svg {
+    height: 34px;
   }
 
   /* On mobile the header stacks into a column. Both .nav and .actions must

@@ -7,7 +7,7 @@ export const translations = {
     meta: {
       home: {
         title: 'Home',
-        desc: 'Dire online store for fashion, perfume, shoes, and appliances.',
+        desc: 'Nuso Store — online store for fashion, perfume, shoes, and appliances.',
       },
       cart: { title: 'Cart', desc: 'Review your cart and proceed to checkout.' },
       checkout: { title: 'Checkout', desc: 'Secure checkout with delivery details and Telebirr payment.' },
@@ -17,7 +17,7 @@ export const translations = {
       admin: { title: 'Admin Dashboard', desc: 'Manage products, stock, categories, and orders.' },
       products: { title: 'Products', desc: 'Browse all products with filters and sorting.' },
       product: { title: 'Product', desc: 'Product details page.' },
-      request: { title: 'Request a Product - Dire', desc: 'Request a product you cannot find in our store and we will source it for you.' },
+      request: { title: 'Request a Product - Nuso', desc: 'Request a product you cannot find in our store and we will source it for you.' },
     },
     common: {
       price: 'Price',
@@ -43,7 +43,7 @@ export const translations = {
       topNote:
         'Delivery-only store. No pickup option. Delivery fee is shown before payment.',
       footer:
-        'Dire — fast delivery in Wolaita Sodo. Clothes, shoes, perfumes and more delivered to your door.',
+        'Nuso Store — fast delivery in Wolaita Sodo. Clothes, shoes, perfumes and more delivered to your door.',
     },
     category: {
       men: 'Men',
@@ -244,7 +244,7 @@ export const translations = {
       signInButton: 'Sign in',
       signUpButton: 'Create account',
       createAccount: 'Create account',
-      newToDire: 'New to Dire?',
+      newToDire: 'New to Nuso?',
       alreadyHaveAccount: 'Already have an account?',
       helloUser: 'Hello, {{name}}',
       verifyEmailNotice: 'Account created! Please check your email to verify your account before signing in.',
@@ -635,7 +635,7 @@ export const translations = {
       signInButton: 'ግባ',
       signUpButton: 'መለያ ፍጠር',
       createAccount: 'መለያ ፍጠር',
-      newToDire: 'ለDire አዲስ ነዎት?',
+      newToDire: 'ለNuso አዲስ ነዎት?',
       alreadyHaveAccount: 'መለያ አለዎት?',
       helloUser: 'ሰላም፣ {{name}}',
       verifyEmailNotice: 'መለያ ተፈጥሯል! ከመግባትዎ በፊት ኢሜይልዎን ለማረጋገጥ ኢሜይልዎን ይፈትሹ።',

@@ -34,7 +34,7 @@ export function CategoryPage() {
   }, [state.products, slug, isPrimary, subcategoryFilter])
 
   const pageTitle = isPrimary ? t(`category.${slug}`) : t(`subcategory.${slug}`)
-  usePageMeta(pageTitle, `${pageTitle} — Dire`)
+  usePageMeta(pageTitle, `${pageTitle} — Nuso Store`)
 
   const setSubcategory = (value) => {
     if (!isPrimary) return
