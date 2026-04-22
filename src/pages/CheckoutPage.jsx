@@ -85,8 +85,57 @@ export function CheckoutPage() {
         return
       }
 
-      // Use timestamp-based ID — avoids depending on local state.orders.length which is unreliable.
+      // ── Step 1: generate ID and resolve auth identity ────────────
       const orderId = `ORD-${Date.now()}`
+
+      // Resolve user identity from the best available source.
+      const { data: { session: activeSession } } = await supabase.auth.getSession()
+      let userId, userEmail, idSource
+      if (activeSession?.user?.id) {
+        userId    = activeSession.user.id
+        userEmail = activeSession.user.email || state.user?.email || null
+        idSource  = 'supabase.auth.getSession()'
+      } else if (state.user?.id) {
+        userId    = state.user.id
+        userEmail = state.user.email || null
+        idSource  = 'state.user'
+      } else {
+        userId    = null
+        userEmail = null
+        idSource  = 'none (guest)'
+      }
+      console.log('[CheckoutPage] identity source:', idSource, '| userId:', userId, '| email:', userEmail)
+
+      const customer = userId
+        ? { id: userId, phone: state.user?.phone, name: state.user?.name || shipping.fullName }
+        : { name: shipping.fullName, phone: shipping.phone }
+
+      // ── Step 2: Supabase insert — FIRST, before any local state or navigation ──
+      console.log('[CheckoutPage] attempting supabase insert, orderId:', orderId)
+      const supabasePayload = {
+        id: orderId,
+        user_id: userId,
+        customer_name: customer.name,
+        customer_phone: customer.phone || null,
+        customer_email: userEmail,
+        items: cartItems,
+        shipping,
+        payment: paymentResult,
+        subtotal,
+        delivery_fee: deliveryFee,
+        total,
+        payment_status: 'paid',
+        status: 'confirmed',
+      }
+      console.log('[CheckoutPage] supabase payload:', supabasePayload)
+      const { error: insertError } = await supabase.from('orders').insert(supabasePayload)
+      if (insertError) {
+        console.error('[CheckoutPage] Supabase insert FAILED:', insertError.message, '| code:', insertError.code, '| hint:', insertError.hint, '| details:', insertError.details)
+      } else {
+        console.log('[CheckoutPage] Supabase insert SUCCESS, orderId:', orderId)
+      }
+
+      // ── Step 3: update local store ────────────────────────────────
       dispatch({ type: 'SAVE_ADDRESS', payload: shipping })
       const newOrder = {
         id: orderId,
@@ -98,38 +147,18 @@ export function CheckoutPage() {
         payment: paymentResult,
         paymentStatus: 'paid',
         status: 'confirmed',
-        // Use real Supabase user if signed in, otherwise fall back to shipping details.
-        customer: state.user
-          ? { id: state.user.id, phone: state.user.phone, name: state.user.name || shipping.fullName }
-          : { name: shipping.fullName, phone: shipping.phone },
+        customer,
         createdAt: new Date().toISOString(),
       }
       dispatch({ type: 'ORDER_CREATE', payload: newOrder })
 
-      // Persist order to Supabase so admin dashboard can see it — fire-and-forget.
-      supabase.from('orders').insert({
-        id: orderId,
-        user_id: state.user?.id || null,
-        customer_name: newOrder.customer.name,
-        customer_phone: newOrder.customer.phone || null,
-        customer_email: state.user?.email || null,
-        items: cartItems,
-        shipping,
-        payment: paymentResult,
-        subtotal,
-        delivery_fee: deliveryFee,
-        total,
-        payment_status: 'paid',
-        status: 'confirmed',
-      }).then(({ error }) => {
-        if (error) console.error('[CheckoutPage] order save to Supabase error:', error.message)
-      })
-
-      // Recalculate best sellers in the background — fire-and-forget, never blocks checkout.
+      // ── Step 4: background tasks ──────────────────────────────────
       recalculateBestSellers([newOrder, ...state.orders])
 
+      // ── Step 5: navigate ──────────────────────────────────────────
       navigate(`/order-confirmation/${orderId}`)
-    } catch {
+    } catch (err) {
+      console.error('[CheckoutPage] handlePay caught error:', err)
       setStatus({ loading: false, msgKey: 'checkout.msg.paymentUnavailable', variant: 'error' })
     }
   }

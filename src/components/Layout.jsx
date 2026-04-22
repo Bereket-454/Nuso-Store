@@ -142,7 +142,7 @@ export function Layout() {
       <header className={`header${headerHidden ? ' header--hidden' : ''}`}>
         <div className="container header-inner">
           <NavLink to="/" className="brand">
-            DI<span className="accent">RE</span>
+            <img src="/nuso-logo.svg" alt="Dire" height="44" style={{ height: '44px', width: 'auto', display: 'block' }} />
           </NavLink>
           <nav className="nav">
             {navRoutes.map((item) => (
