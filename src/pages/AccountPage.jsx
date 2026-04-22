@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
@@ -11,7 +11,34 @@ export function getFirstName(fullName) {
   return fullName.trim().split(/\s+/)[0]
 }
 
-// ─── Eye icons ────────────────────────────────────────────────────────────────
+function getInitials(fullName) {
+  if (!fullName || !fullName.trim()) return 'U'
+  return fullName.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+}
+
+function daysAgo(isoString, t) {
+  if (!isoString) return null
+  const days = Math.floor((Date.now() - new Date(isoString)) / 86400000)
+  if (days === 0) return t('account.today')
+  if (days === 1) return t('account.yesterday')
+  return t('account.daysAgo', { n: days })
+}
+
+function orderStatusClass(status) {
+  const map = {
+    'Confirmed': 'dash-status--confirmed',
+    'Packed': 'dash-status--packed',
+    'Out for Delivery': 'dash-status--on-the-way',
+    'Delivered': 'dash-status--delivered',
+    'confirmed': 'dash-status--confirmed',
+    'packed': 'dash-status--packed',
+    'out-for-delivery': 'dash-status--on-the-way',
+    'delivered': 'dash-status--delivered',
+  }
+  return map[status] || 'dash-status--confirmed'
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
 
 function EyeIcon() {
   return (
@@ -36,6 +63,51 @@ function PencilIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  )
+}
+
+function IconPackage() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+      <line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+  )
+}
+
+function IconPin() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/>
+      <circle cx="12" cy="9" r="2.5"/>
+    </svg>
+  )
+}
+
+function IconHome() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  )
+}
+
+function IconSpark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/>
+    </svg>
+  )
+}
+
+function IconSettings() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
   )
 }
@@ -99,13 +171,11 @@ function EditProfileForm({ user, t, dispatch, onClose }) {
     if (!name.trim()) { setError(t('auth.fullNameRequired')); return }
     if (phone.trim() && !isValidEthiopianPhone(phone)) { setError(t('auth.invalidPhone')); return }
 
-    // Validate password change fields if any are filled
     if (newPassword || confirmPassword || currentPassword) {
       if (!currentPassword) { setError(t('account.currentPasswordRequired')); return }
       if (newPassword.length < 6) { setError(t('auth.passwordTooShort')); return }
       if (newPassword !== confirmPassword) { setError(t('account.passwordMismatch')); return }
 
-      // Re-authenticate to verify the current password before changing it
       const { error: reAuthErr } = await signIn(user.email, currentPassword)
       if (reAuthErr) { setError(t('account.wrongCurrentPassword')); return }
     }
@@ -147,27 +217,12 @@ function EditProfileForm({ user, t, dispatch, onClose }) {
 
       <div className="form-group">
         <label htmlFor="edit-name">{t('auth.fullNameLabel')}</label>
-        <input
-          id="edit-name"
-          type="text"
-          autoComplete="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={loading}
-        />
+        <input id="edit-name" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
       </div>
 
       <div className="form-group">
         <label htmlFor="edit-phone">{t('auth.phoneLabel')}</label>
-        <input
-          id="edit-phone"
-          type="tel"
-          autoComplete="tel"
-          placeholder="+2519XXXXXXXX"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          disabled={loading}
-        />
+        <input id="edit-phone" type="tel" autoComplete="tel" placeholder="+2519XXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={loading} />
       </div>
 
       <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 600 }}>
@@ -176,33 +231,15 @@ function EditProfileForm({ user, t, dispatch, onClose }) {
 
       <div className="form-group">
         <label htmlFor="edit-current-pw">{t('account.currentPassword')}</label>
-        <PasswordInput
-          id="edit-current-pw"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          disabled={loading}
-        />
+        <PasswordInput id="edit-current-pw" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} disabled={loading} />
       </div>
       <div className="form-group">
         <label htmlFor="edit-new-pw">{t('account.newPassword')}</label>
-        <PasswordInput
-          id="edit-new-pw"
-          autoComplete="new-password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          disabled={loading}
-        />
+        <PasswordInput id="edit-new-pw" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={loading} />
       </div>
       <div className="form-group">
         <label htmlFor="edit-confirm-pw">{t('account.confirmPassword')}</label>
-        <PasswordInput
-          id="edit-confirm-pw"
-          autoComplete="new-password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          disabled={loading}
-        />
+        <PasswordInput id="edit-confirm-pw" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} />
       </div>
 
       {error ? <p className="error-text">{error}</p> : null}
@@ -219,26 +256,21 @@ function EditProfileForm({ user, t, dispatch, onClose }) {
   )
 }
 
-// ─── Sign-in form — centered, logo, bordered box ──────────────────────────────
+// ─── Sign-in form ─────────────────────────────────────────────────────────────
 
 function SignInForm({ t, onSwitchToSignUp }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  // null | 'emailRequired' | 'wrongPassword' | 'notFound' | 'notConfirmed' | 'generic'
   const [errorType, setErrorType] = useState(null)
 
   async function handleSignIn() {
-    console.log('handleSignIn called')
     if (!email.trim()) { setErrorType('emailRequired'); return }
     setLoading(true)
     setErrorType(null)
     try {
-      console.log('calling signIn')
       const { data, error: err } = await signIn(email.trim(), password)
-      console.log('signIn result:', err, data)
       if (err) {
-        console.log('signIn error message:', err.message)
         const msg = (err.message || '').toLowerCase()
         if (msg.includes('email not confirmed')) {
           setErrorType('notConfirmed')
@@ -248,100 +280,49 @@ function SignInForm({ t, onSwitchToSignUp }) {
           msg.includes('user not found') ||
           msg.includes('no user found')
         ) {
-          // Supabase returns the same error for wrong password and no account.
-          // Do a profile lookup to tell them apart.
           const { exists } = await checkEmailExists(email.trim())
           setErrorType(exists ? 'wrongPassword' : 'notFound')
         } else {
           setErrorType('generic')
         }
       }
-      // Success — onAuthStateChange listener updates state.user automatically.
-    } catch (e) {
-      console.log('signIn threw:', e)
+    } catch {
       setErrorType('generic')
     } finally {
-      console.log('finally running')
       setLoading(false)
     }
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '65vh',
-      }}
-    >
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '65vh' }}>
       <div style={{ width: '100%', maxWidth: '400px' }}>
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '0.04rem' }}>
-            DI<span style={{ color: 'var(--accent)' }}>RE</span>
+          <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1a2340', letterSpacing: '0.05em' }}>
+            NUSO <span style={{ color: '#FF6B00' }}>STORE</span>
           </span>
         </div>
 
-        {/* Form box */}
         <div className="card card-body" style={{ padding: '2rem' }}>
           <h2 style={{ margin: '0 0 1.25rem', fontSize: '1.15rem', fontWeight: 700 }}>
             {t('auth.signInTitle')}
           </h2>
           <div className="form-group">
             <label htmlFor="signin-email">{t('auth.emailLabel')}</label>
-            <input
-              id="signin-email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-            />
+            <input id="signin-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
           </div>
           <div className="form-group">
             <label htmlFor="signin-password">{t('auth.passwordLabel')}</label>
-            <PasswordInput
-              id="signin-password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-            />
+            <PasswordInput id="signin-password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
           </div>
           {errorType === 'emailRequired' && (
             <p className="error-text">{t('auth.emailRequired')}</p>
           )}
           {(errorType === 'wrongPassword' || errorType === 'notFound' || errorType === 'notConfirmed' || errorType === 'generic') && (
-            <div
-              style={{
-                background: '#fef2f2',
-                border: '1px solid #fca5a5',
-                borderRadius: '8px',
-                padding: '0.75rem 1rem',
-                marginBottom: '0.5rem',
-                fontSize: '0.9rem',
-                color: 'var(--danger)',
-              }}
-            >
+            <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--danger)' }}>
               {errorType === 'wrongPassword' && t('auth.signInErrorWrongPassword')}
               {errorType === 'notFound' && (
-                <>
-                  {t('auth.signInErrorNotFound')}{' '}
-                  <button
-                    type="button"
-                    onClick={onSwitchToSignUp}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      color: 'var(--danger)',
-                      cursor: 'pointer',
-                      fontSize: 'inherit',
-                      fontWeight: 700,
-                      textDecoration: 'underline',
-                    }}
-                  >
+                <>{t('auth.signInErrorNotFound')}{' '}
+                  <button type="button" onClick={onSwitchToSignUp} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--danger)', cursor: 'pointer', fontSize: 'inherit', fontWeight: 700, textDecoration: 'underline' }}>
                     {t('auth.createAccount')}
                   </button>
                 </>
@@ -350,39 +331,14 @@ function SignInForm({ t, onSwitchToSignUp }) {
               {errorType === 'generic' && t('auth.signInError')}
             </div>
           )}
-          <button
-            className="btn btn-primary"
-            onClick={handleSignIn}
-            disabled={loading}
-            style={{ width: '100%', marginTop: '0.25rem' }}
-          >
+          <button className="btn btn-primary" onClick={handleSignIn} disabled={loading} style={{ width: '100%', marginTop: '0.25rem' }}>
             {loading ? '...' : t('auth.signInButton')}
           </button>
         </div>
 
-        {/* Switch to sign-up */}
-        <p
-          style={{
-            textAlign: 'center',
-            marginTop: '1rem',
-            color: 'var(--muted)',
-            fontSize: '0.9rem',
-          }}
-        >
+        <p style={{ textAlign: 'center', marginTop: '1rem', color: 'var(--muted)', fontSize: '0.9rem' }}>
           {t('auth.newToDire')}{' '}
-          <button
-            type="button"
-            onClick={onSwitchToSignUp}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              color: 'var(--accent)',
-              cursor: 'pointer',
-              fontSize: 'inherit',
-              fontWeight: 600,
-            }}
-          >
+          <button type="button" onClick={onSwitchToSignUp} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', cursor: 'pointer', fontSize: 'inherit', fontWeight: 600 }}>
             {t('auth.createAccount')}
           </button>
         </p>
@@ -401,9 +357,7 @@ function SignUpForm({ t, onVerificationSent, onSwitchToSignIn }) {
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  // null | 'duplicateEmail' | 'duplicatePhone'
   const [dupType, setDupType] = useState(null)
-  // Touched flags — inline errors show after blur or first submit attempt
   const [passwordTouched, setPasswordTouched] = useState(false)
   const [confirmTouched, setConfirmTouched] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -411,8 +365,6 @@ function SignUpForm({ t, onVerificationSent, onSwitchToSignIn }) {
   const emailRef = useRef(null)
   const phoneRef = useRef(null)
 
-  // Focus the offending field after the render where loading becomes false and
-  // the inputs are re-enabled. Doing it mid-handler would target a disabled element.
   useEffect(() => {
     if (dupType === 'duplicateEmail') emailRef.current?.focus()
     else if (dupType === 'duplicatePhone') phoneRef.current?.focus()
@@ -430,8 +382,8 @@ function SignUpForm({ t, onVerificationSent, onSwitchToSignIn }) {
     if (!email.trim()) { setFieldError(t('auth.emailRequired')); return }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setFieldError(t('auth.invalidEmail')); return }
     if (!password) { setFieldError(t('auth.passwordRequired')); return }
-    if (password.length < 8) return  // inline error shown below password field
-    if (confirmPassword !== password) return  // inline error shown below confirm field
+    if (password.length < 8) return
+    if (confirmPassword !== password) return
     if (!isValidEthiopianPhone(phone)) { setFieldError(t('auth.invalidPhone')); return }
 
     setLoading(true)
@@ -439,7 +391,6 @@ function SignUpForm({ t, onVerificationSent, onSwitchToSignIn }) {
     setDupType(null)
 
     try {
-      // Check for duplicate phone before hitting the auth API
       const { exists: phoneExists, error: phoneCheckErr } = await checkPhoneExists(phone)
       if (!phoneCheckErr && phoneExists) {
         setDuplicateError('duplicatePhone')
@@ -454,153 +405,63 @@ function SignUpForm({ t, onVerificationSent, onSwitchToSignIn }) {
             setFieldError(t('auth.signUpError'))
           }
         } else if (data.user && data.user.identities?.length === 0) {
-          // When email confirmation is required and the email already exists, Supabase
-          // returns success but with an empty identities array instead of an error.
           setDuplicateError('duplicateEmail')
         } else if (!data.session) {
           onVerificationSent()
         }
-        // If session exists, onAuthStateChange handles state update automatically.
       }
     } catch {
       setFieldError(t('auth.signUpError'))
     } finally {
       setLoading(false)
-      console.log('loading reset')
     }
   }
 
-  const dupBoxStyle = {
-    background: '#c0392b',
-    color: '#ffffff',
-    borderRadius: '8px',
-    padding: '0.85rem 1rem',
-    marginBottom: '0.75rem',
-    fontSize: '0.92rem',
-    fontWeight: 500,
-    lineHeight: 1.45,
-  }
+  const dupBoxStyle = { background: '#c0392b', color: '#ffffff', borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '0.75rem', fontSize: '0.92rem', fontWeight: 500, lineHeight: 1.45 }
 
   return (
     <article className="card card-body">
       <h2>{t('auth.signUpTab')}</h2>
       <div className="form-group">
         <label htmlFor="signup-name">{t('auth.fullNameLabel')}</label>
-        <input
-          id="signup-name"
-          type="text"
-          autoComplete="name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          disabled={loading}
-        />
+        <input id="signup-name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading} />
       </div>
       <div className="form-group">
         <label htmlFor="signup-email">{t('auth.emailLabel')}</label>
-        <input
-          id="signup-email"
-          ref={emailRef}
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={loading}
-        />
+        <input id="signup-email" ref={emailRef} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
       </div>
       <div className="form-group">
         <label htmlFor="signup-password">{t('auth.passwordLabel')}</label>
-        <PasswordInput
-          id="signup-password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onBlur={() => setPasswordTouched(true)}
-          disabled={loading}
-        />
-        {showPasswordLengthErr && (
-          <p className="error-text" style={{ margin: '0.25rem 0 0' }}>
-            {t('auth.passwordMinLength')}
-          </p>
-        )}
+        <PasswordInput id="signup-password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} onBlur={() => setPasswordTouched(true)} disabled={loading} />
+        {showPasswordLengthErr && <p className="error-text" style={{ margin: '0.25rem 0 0' }}>{t('auth.passwordMinLength')}</p>}
       </div>
       <div className="form-group">
         <label htmlFor="signup-confirm-password">{t('auth.confirmPasswordLabel')}</label>
-        <PasswordInput
-          id="signup-confirm-password"
-          autoComplete="new-password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          onBlur={() => setConfirmTouched(true)}
-          disabled={loading}
-        />
-        {showConfirmErr && (
-          <p className="error-text" style={{ margin: '0.25rem 0 0' }}>
-            {t('auth.passwordsMismatch')}
-          </p>
-        )}
+        <PasswordInput id="signup-confirm-password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} onBlur={() => setConfirmTouched(true)} disabled={loading} />
+        {showConfirmErr && <p className="error-text" style={{ margin: '0.25rem 0 0' }}>{t('auth.passwordsMismatch')}</p>}
       </div>
       <div className="form-group">
         <label htmlFor="signup-phone">{t('auth.phoneLabel')}</label>
-        <input
-          id="signup-phone"
-          ref={phoneRef}
-          type="tel"
-          autoComplete="tel"
-          placeholder="+2519XXXXXXXX"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          disabled={loading}
-        />
+        <input id="signup-phone" ref={phoneRef} type="tel" autoComplete="tel" placeholder="+2519XXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={loading} />
       </div>
 
       {error ? <p className="error-text">{error}</p> : null}
-
       {dupType === 'duplicateEmail' && (
         <div style={dupBoxStyle}>
           {t('auth.duplicateEmail')}{' '}
-          <button
-            type="button"
-            onClick={onSwitchToSignIn}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              color: '#ffffff',
-              cursor: 'pointer',
-              fontSize: 'inherit',
-              fontWeight: 700,
-              textDecoration: 'underline',
-            }}
-          >
+          <button type="button" onClick={onSwitchToSignIn} style={{ background: 'none', border: 'none', padding: 0, color: '#ffffff', cursor: 'pointer', fontSize: 'inherit', fontWeight: 700, textDecoration: 'underline' }}>
             {t('auth.signInButton')}
           </button>
         </div>
       )}
-
-      {dupType === 'duplicatePhone' && (
-        <div style={dupBoxStyle}>
-          {t('auth.duplicatePhone')}
-        </div>
-      )}
+      {dupType === 'duplicatePhone' && <div style={dupBoxStyle}>{t('auth.duplicatePhone')}</div>}
 
       <button className="btn btn-primary" onClick={handleSignUp} disabled={loading}>
         {loading ? '...' : t('auth.signUpButton')}
       </button>
       <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: 'var(--muted)' }}>
         {t('auth.alreadyHaveAccount')}{' '}
-        <button
-          type="button"
-          onClick={onSwitchToSignIn}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            color: 'var(--accent)',
-            cursor: 'pointer',
-            fontSize: 'inherit',
-            fontWeight: 600,
-          }}
-        >
+        <button type="button" onClick={onSwitchToSignIn} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', cursor: 'pointer', fontSize: 'inherit', fontWeight: 600 }}>
           {t('auth.signInButton')}
         </button>
       </p>
@@ -639,172 +500,214 @@ function AuthCard({ t }) {
   )
 }
 
-// ─── Collapsible dashboard section ───────────────────────────────────────────
-
-function DashboardSection({ title, children }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="card" style={{ marginBottom: '0.75rem' }}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1rem',
-          background: 'none',
-          border: 'none',
-          borderRadius: 'var(--radius)',
-          cursor: 'pointer',
-          font: 'inherit',
-          fontSize: '1rem',
-          fontWeight: 600,
-          textAlign: 'left',
-        }}
-      >
-        <span>{title}</span>
-        <span style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>{open ? '▲' : '▼'}</span>
-      </button>
-      {open ? (
-        <div
-          className="card-body"
-          style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}
-        >
-          {children}
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-// ─── Logged-in profile + dashboard ───────────────────────────────────────────
+// ─── Logged-in dashboard ──────────────────────────────────────────────────────
 
 function ProfileCard({ user, t, state, dispatch }) {
   const firstName = getFirstName(user.name)
+  const initials = getInitials(user.name)
   const [editing, setEditing] = useState(false)
   const navigate = useNavigate()
 
   function handleSignOut() {
-    // Clear state and navigate immediately — don't wait for the Supabase network
-    // round-trip. The onAuthStateChange SIGNED_OUT event will fire shortly after
-    // and dispatch AUTH_CHANGED again (a no-op since user is already null).
     dispatch({ type: 'AUTH_CHANGED', payload: null })
     navigate('/')
-    signOut() // fire-and-forget — cleans up the Supabase session in the background
+    signOut()
   }
 
+  const orderCount = state.orders.length
+  const addressCount = state.addresses.length
+  const lastOrderAgo = state.orders[0]?.createdAt ? daysAgo(state.orders[0].createdAt, t) : null
+
+  const scrollTo = (id) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
   return (
-    <>
-      <article className="card card-body" style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <div>
-            <h2 style={{ margin: '0 0 0.2rem' }}>
-              {t('auth.helloUser', { name: firstName })}
-            </h2>
-            {user.name ? (
-              <p style={{ margin: '0 0 0.1rem', fontWeight: 500 }}>{user.name}</p>
-            ) : null}
-            <p className="muted" style={{ margin: '0 0 0.9rem', fontSize: '0.9rem' }}>
-              {user.email || user.id}
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label={t('account.editProfile')}
-            onClick={() => setEditing((e) => !e)}
-            style={{
-              background: editing ? 'var(--surface)' : 'none',
-              border: '1px solid var(--border)',
-              padding: '0.4rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              color: 'var(--muted)',
-              display: 'flex',
-              alignItems: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <PencilIcon />
-          </button>
+    <div className="dash-page">
+
+      {/* ── Welcome card ────────────────────────────────────────────── */}
+      <div className="dash-welcome">
+        <div className="dash-avatar" aria-hidden="true">{initials}</div>
+        <div className="dash-welcome__body">
+          <h1 className="dash-welcome__name">
+            {t('account.welcomeBack', { name: firstName })}
+          </h1>
+          <p className="dash-welcome__sub">{t('account.dashSubtitle')}</p>
+          <p className="dash-welcome__email">{user.email || user.id}</p>
+          {user.role === 'admin' ? (
+            <span className="dash-welcome__role">{t('nav.admin')}</span>
+          ) : null}
+
+          {/* Stats row — only rendered when there's data */}
+          {(orderCount > 0 || addressCount > 0) ? (
+            <div className="dash-stats">
+              <div className="dash-stat">
+                <span className="dash-stat__num">{orderCount}</span>
+                <span className="dash-stat__label">{t('account.yourOrders')}</span>
+              </div>
+              <div className="dash-stat">
+                <span className="dash-stat__num">{addressCount}</span>
+                <span className="dash-stat__label">{t('account.yourAddresses')}</span>
+              </div>
+              {lastOrderAgo ? (
+                <div className="dash-stat">
+                  <span className="dash-stat__num dash-stat__num--sm">{lastOrderAgo}</span>
+                  <span className="dash-stat__label">{t('account.lastOrder')}</span>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
-        {user.role === 'admin' ? (
-          <span className="badge" style={{ display: 'inline-block', marginBottom: '0.75rem' }}>
-            {t('nav.admin')}
-          </span>
-        ) : null}
+        {/* Sign-out — visually quiet, top-right */}
+        <button type="button" className="dash-sign-out-btn" onClick={handleSignOut}>
+          {t('auth.signOut')}
+        </button>
+      </div>
 
-        {editing ? (
-          <EditProfileForm
-            user={user}
-            t={t}
-            dispatch={dispatch}
-            onClose={() => setEditing(false)}
-          />
-        ) : (
-          <div className="actions">
-            <button type="button" className="btn btn-secondary" onClick={handleSignOut}>
-              {t('auth.signOut')}
-            </button>
+      {/* ── Quick actions ────────────────────────────────────────────── */}
+      <div className="dash-quick">
+        <button type="button" className="dash-action" onClick={() => scrollTo('dash-orders')}>
+          <div className="dash-action__icon-wrap"><IconPackage /></div>
+          <span className="dash-action__label">{t('account.viewOrders')}</span>
+        </button>
+        <Link to="/tracking" className="dash-action">
+          <div className="dash-action__icon-wrap"><IconPin /></div>
+          <span className="dash-action__label">{t('account.trackOrder')}</span>
+        </Link>
+        <button type="button" className="dash-action" onClick={() => scrollTo('dash-addresses')}>
+          <div className="dash-action__icon-wrap"><IconHome /></div>
+          <span className="dash-action__label">{t('account.manageAddress')}</span>
+        </button>
+        <Link to="/request" className="dash-action">
+          <div className="dash-action__icon-wrap"><IconSpark /></div>
+          <span className="dash-action__label">{t('account.requestProduct')}</span>
+        </Link>
+      </div>
+
+      {/* ── My Orders ───────────────────────────────────────────────── */}
+      <div className="dash-section" id="dash-orders">
+        <div className="dash-section__head">
+          <div className="dash-section__icon-wrap"><IconPackage /></div>
+          <div>
+            <h2 className="dash-section__title">{t('account.yourOrders')}</h2>
+            <p className="dash-section__desc">{t('account.ordersDesc')}</p>
           </div>
-        )}
-      </article>
+          {orderCount > 0 ? (
+            <span className="dash-section__badge">{orderCount}</span>
+          ) : null}
+        </div>
+        <div className="dash-section__body">
+          {state.orders.length === 0 ? (
+            <div className="dash-empty">
+              <span className="dash-empty__icon" aria-hidden="true">🛍️</span>
+              <p className="dash-empty__msg">{t('account.noOrders')}</p>
+              <Link to="/products" className="btn btn-primary dash-empty__cta">
+                {t('account.startShopping')}
+              </Link>
+            </div>
+          ) : (
+            <div className="dash-orders">
+              {state.orders.map((order) => (
+                <div key={order.id} className="dash-order">
+                  <div className="dash-order__left">
+                    <p className="dash-order__id">{order.id}</p>
+                    <p className="dash-order__total">{birr(order.total)}</p>
+                    <p className="dash-order__payment">
+                      {t('account.paymentLabel')}: {order.paymentStatus}
+                    </p>
+                  </div>
+                  <div className="dash-order__right">
+                    <span className={`dash-status ${orderStatusClass(order.status)}`}>
+                      {t(`orderStatus.${order.status}`)}
+                    </span>
+                    {order.createdAt ? (
+                      <span className="dash-order__date">
+                        {daysAgo(order.createdAt, t)}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-      <DashboardSection title={t('account.yourOrders')}>
-        {state.orders.length === 0 ? (
-          <p className="muted">{t('account.noOrders')}</p>
-        ) : (
-          state.orders.map((order) => (
-            <article
-              key={order.id}
-              style={{ borderBottom: '1px solid var(--border)', padding: '0.8rem 0' }}
-            >
-              <p>
-                <strong>{order.id}</strong> — {t(`orderStatus.${order.status}`)}
-              </p>
-              <p className="muted">
-                {t('account.paymentLabel')}: {order.paymentStatus}
-              </p>
-              <p>
-                {t('admin.total')}: {birr(order.total)}
-              </p>
-            </article>
-          ))
-        )}
-      </DashboardSection>
+      {/* ── My Addresses ────────────────────────────────────────────── */}
+      <div className="dash-section" id="dash-addresses">
+        <div className="dash-section__head">
+          <div className="dash-section__icon-wrap"><IconHome /></div>
+          <div>
+            <h2 className="dash-section__title">{t('account.yourAddresses')}</h2>
+            <p className="dash-section__desc">{t('account.addressesDesc')}</p>
+          </div>
+          {addressCount > 0 ? (
+            <span className="dash-section__badge">{addressCount}</span>
+          ) : null}
+        </div>
+        <div className="dash-section__body">
+          {state.addresses.length === 0 ? (
+            <div className="dash-empty">
+              <span className="dash-empty__icon" aria-hidden="true">📍</span>
+              <p className="dash-empty__msg">{t('account.noAddresses')}</p>
+              <p className="dash-empty__hint">{t('account.noAddressesHint')}</p>
+            </div>
+          ) : (
+            state.addresses.map((address, idx) => (
+              <div key={address.id ?? idx} className="dash-addr">
+                <p className="dash-addr__name">{address.fullName}</p>
+                <p className="dash-addr__detail">
+                  {address.city}, {address.area}
+                  {address.landmark ? ` — ${address.landmark}` : ''}
+                </p>
+                <p className="dash-addr__detail">{address.phone}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
-      <DashboardSection title={t('account.yourAddresses')}>
-        {state.addresses.length === 0 ? (
-          <p className="muted">{t('account.noAddresses')}</p>
-        ) : (
-          state.addresses.map((address) => (
-            <article key={address.id} style={{ marginBottom: '0.6rem' }}>
-              <p style={{ margin: 0 }}>{address.fullName}</p>
-              <p className="muted" style={{ margin: '0.15rem 0 0' }}>
-                {address.city}, {address.area}
-                {address.landmark ? ` — ${address.landmark}` : ''}
+      {/* ── Account Settings ────────────────────────────────────────── */}
+      <div className="dash-section" id="dash-settings">
+        <div className="dash-section__head">
+          <div className="dash-section__icon-wrap"><IconSettings /></div>
+          <div>
+            <h2 className="dash-section__title">{t('account.accountSettings')}</h2>
+            <p className="dash-section__desc">{t('account.settingsDesc')}</p>
+          </div>
+        </div>
+        <div className="dash-section__body">
+          {!editing ? (
+            <>
+              <p style={{ margin: '0 0 0.3rem' }}>
+                <span className="muted">{t('auth.fullNameLabel')}: </span>
+                <strong>{user.name || '—'}</strong>
               </p>
-              <p className="muted" style={{ margin: '0.1rem 0 0' }}>
-                {address.phone}
+              <p style={{ margin: '0 0 1.1rem' }}>
+                <span className="muted">{t('auth.emailLabel')}: </span>
+                <strong>{user.email || '—'}</strong>
               </p>
-            </article>
-          ))
-        )}
-      </DashboardSection>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setEditing(true)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                <PencilIcon /> {t('account.editProfile')}
+              </button>
+            </>
+          ) : (
+            <EditProfileForm
+              user={user}
+              t={t}
+              dispatch={dispatch}
+              onClose={() => setEditing(false)}
+            />
+          )}
+        </div>
+      </div>
 
-      <DashboardSection title={t('account.accountSettings')}>
-        <p style={{ margin: '0 0 0.3rem' }}>
-          <span className="muted">{t('auth.fullNameLabel')}: </span>
-          {user.name || '—'}
-        </p>
-        <p style={{ margin: 0 }}>
-          <span className="muted">{t('auth.emailLabel')}: </span>
-          {user.email || '—'}
-        </p>
-      </DashboardSection>
-    </>
+    </div>
   )
 }
 
@@ -816,7 +719,7 @@ export function AccountPage() {
   usePageMeta(t('meta.account.title'), t('meta.account.desc'))
 
   return (
-    <div style={{ maxWidth: '640px', margin: '2rem auto' }}>
+    <div style={{ maxWidth: '660px', margin: '1.5rem auto' }}>
       {state.user ? (
         <ProfileCard user={state.user} t={t} state={state} dispatch={dispatch} />
       ) : (
