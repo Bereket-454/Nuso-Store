@@ -65,6 +65,8 @@ export function RequestProductPage() {
   const [submitted, setSubmitted] = useState(false)
   const fileInputRef = useRef(null)
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   // When the auth state resolves (on mount or after sign-in) pre-fill known fields.
   // customerName is locked to the account name; telegramPhone is pre-filled but editable
   // in case the user has a different Telegram number than their account phone.
