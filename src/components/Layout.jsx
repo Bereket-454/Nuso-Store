@@ -141,8 +141,17 @@ export function Layout() {
       <div className="top-note">{t('layout.topNote')}</div>
       <header className={`header${headerHidden ? ' header--hidden' : ''}`}>
         <div className="container header-inner">
-          <NavLink to="/" className="brand">
-            <img src="/nuso-logo.svg" alt="Dire" height="44" style={{ height: '44px', width: 'auto', display: 'block' }} />
+          <NavLink to="/" className="brand" aria-label="Nuso Store — home">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" height="44" style={{ height: '44px', width: 'auto', display: 'block' }} aria-hidden="true">
+              <path d="M6 24 L6 56 Q6 60 10 60 L46 60 Q50 60 50 56 L50 24 Z" fill="#1a2340"/>
+              <path d="M28 24 L50 24 L50 46 Z" fill="#FF6B00"/>
+              <path d="M16 24 Q16 10 28 10 Q40 10 40 24" fill="none" stroke="#FF6B00" strokeWidth="4" strokeLinecap="round"/>
+              <rect x="11" y="30" width="6" height="22" rx="1.5" fill="white"/>
+              <rect x="35" y="30" width="6" height="22" rx="1.5" fill="white"/>
+              <line x1="17" y1="30" x2="35" y2="52" stroke="#FF6B00" strokeWidth="6" strokeLinecap="round"/>
+              <text x="62" y="36" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="26" fill="#1a2340">NUSO</text>
+              <text x="78" y="55" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="16" fill="#FF6B00" letterSpacing="4">STORE</text>
+            </svg>
           </NavLink>
           <nav className="nav">
             {navRoutes.map((item) => (
