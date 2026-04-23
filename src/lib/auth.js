@@ -28,18 +28,21 @@ export function isValidEthiopianPhone(raw) {
 /**
  * Create a new account with email + password.
  * Phone is passed via options.data so the handle_new_user trigger can store it.
+ * referralCode (optional) is stored in metadata so the trigger can link the referral.
  * Returns { data, error }. When data.session is null, email confirmation is required.
  */
-export async function signUp(email, password, phone, name) {
+export async function signUp(email, password, phone, name, referralCode) {
+  const meta = {
+    phone: formatPhone(phone),
+    name:  (name || '').trim(),
+  }
+  if (referralCode && referralCode.trim()) {
+    meta.referral_code_used = referralCode.trim().toUpperCase()
+  }
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: {
-        phone: formatPhone(phone),
-        name: (name || '').trim(),
-      },
-    },
+    options: { data: meta },
   })
   return { data, error }
 }
@@ -62,7 +65,7 @@ export async function signIn(email, password) {
 export async function fetchProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, phone, name, role')
+    .select('id, email, phone, name, role, referral_code, referred_by')
     .eq('id', userId)
     .single()
 

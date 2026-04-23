@@ -12,6 +12,7 @@ import { AccountPage } from '../pages/AccountPage'
 import { TrackingPage } from '../pages/TrackingPage'
 import { AdminDashboardPage } from '../pages/AdminDashboardPage'
 import { RequestProductPage } from '../pages/RequestProductPage'
+import { ReferralPage } from '../pages/ReferralPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
 export function AppRouter() {
@@ -28,6 +29,7 @@ export function AppRouter() {
         <Route path="account" element={<AccountPage />} />
         <Route path="tracking" element={<TrackingPage />} />
         <Route path="request" element={<RequestProductPage />} />
+        <Route path="referral" element={<ReferralPage />} />
         <Route element={<AdminRoute />}>
           <Route path="admin" element={<AdminDashboardPage />} />
         </Route>

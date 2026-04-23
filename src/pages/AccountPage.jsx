@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
@@ -108,6 +108,18 @@ function IconSettings() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  )
+}
+
+function IconGift() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="20 12 20 22 4 22 4 12"/>
+      <rect x="2" y="7" width="20" height="5"/>
+      <line x1="12" y1="22" x2="12" y2="7"/>
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
     </svg>
   )
 }
@@ -349,12 +361,13 @@ function SignInForm({ t, onSwitchToSignUp }) {
 
 // ─── Sign-up form ─────────────────────────────────────────────────────────────
 
-function SignUpForm({ t, onVerificationSent, onSwitchToSignIn }) {
+function SignUpForm({ t, onVerificationSent, onSwitchToSignIn, prefillReferralCode }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [phone, setPhone] = useState('')
+  const [referralCode, setReferralCode] = useState(prefillReferralCode || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [dupType, setDupType] = useState(null)
@@ -395,7 +408,7 @@ function SignUpForm({ t, onVerificationSent, onSwitchToSignIn }) {
       if (!phoneCheckErr && phoneExists) {
         setDuplicateError('duplicatePhone')
       } else {
-        const { data, error: err } = await signUp(email.trim(), password, phone, fullName.trim())
+        const { data, error: err } = await signUp(email.trim(), password, phone, fullName.trim(), referralCode.trim() || null)
 
         if (err) {
           const msg = (err.message || '').toLowerCase()
@@ -444,6 +457,22 @@ function SignUpForm({ t, onVerificationSent, onSwitchToSignIn }) {
         <label htmlFor="signup-phone">{t('auth.phoneLabel')}</label>
         <input id="signup-phone" ref={phoneRef} type="tel" autoComplete="tel" placeholder="+2519XXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={loading} />
       </div>
+      <div className="form-group">
+        <label htmlFor="signup-ref-code">
+          {t('auth.referralCodeLabel')}{' '}
+          <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: '0.85em' }}>({t('account.optional')})</span>
+        </label>
+        <input
+          id="signup-ref-code"
+          type="text"
+          autoComplete="off"
+          placeholder={t('auth.referralCodePlaceholder')}
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+          disabled={loading}
+          style={{ fontFamily: 'monospace', letterSpacing: '0.08em', textTransform: 'uppercase' }}
+        />
+      </div>
 
       {error ? <p className="error-text">{error}</p> : null}
       {dupType === 'duplicateEmail' && (
@@ -483,7 +512,10 @@ function VerifyEmailNotice({ t }) {
 // ─── Auth card — manages tab / verification state ─────────────────────────────
 
 function AuthCard({ t }) {
-  const [tab, setTab] = useState('signin')
+  const [searchParams] = useSearchParams()
+  const prefillRef = searchParams.get('ref') || ''
+  // If a referral code is in the URL, open the sign-up tab directly.
+  const [tab, setTab] = useState(prefillRef ? 'signup' : 'signin')
   const [verificationSent, setVerificationSent] = useState(false)
 
   if (verificationSent) return <VerifyEmailNotice t={t} />
@@ -496,6 +528,7 @@ function AuthCard({ t }) {
       t={t}
       onVerificationSent={() => setVerificationSent(true)}
       onSwitchToSignIn={() => setTab('signin')}
+      prefillReferralCode={prefillRef}
     />
   )
 }
@@ -514,9 +547,10 @@ function ProfileCard({ user, t, state, dispatch }) {
     signOut()
   }
 
-  const orderCount = state.orders.length
+  const orderCount   = state.orders.length
   const addressCount = state.addresses.length
   const lastOrderAgo = state.orders[0]?.createdAt ? daysAgo(state.orders[0].createdAt, t) : null
+  const walletBal    = state.wallet?.balance ?? 0
 
   const scrollTo = (id) =>
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -537,17 +571,19 @@ function ProfileCard({ user, t, state, dispatch }) {
             <span className="dash-welcome__role">{t('nav.admin')}</span>
           ) : null}
 
-          {/* Stats row — only rendered when there's data */}
-          {(orderCount > 0 || addressCount > 0) ? (
+          {/* Stats row */}
+          {(orderCount > 0 || addressCount > 0 || walletBal > 0) ? (
             <div className="dash-stats">
               <div className="dash-stat">
                 <span className="dash-stat__num">{orderCount}</span>
                 <span className="dash-stat__label">{t('account.yourOrders')}</span>
               </div>
-              <div className="dash-stat">
-                <span className="dash-stat__num">{addressCount}</span>
-                <span className="dash-stat__label">{t('account.yourAddresses')}</span>
-              </div>
+              {walletBal > 0 && (
+                <div className="dash-stat">
+                  <span className="dash-stat__num dash-stat__num--sm">{birr(walletBal)}</span>
+                  <span className="dash-stat__label">{t('account.walletBalance')}</span>
+                </div>
+              )}
               {lastOrderAgo ? (
                 <div className="dash-stat">
                   <span className="dash-stat__num dash-stat__num--sm">{lastOrderAgo}</span>
@@ -578,9 +614,9 @@ function ProfileCard({ user, t, state, dispatch }) {
           <div className="dash-action__icon-wrap"><IconHome /></div>
           <span className="dash-action__label">{t('account.manageAddress')}</span>
         </button>
-        <Link to="/request" className="dash-action">
-          <div className="dash-action__icon-wrap"><IconSpark /></div>
-          <span className="dash-action__label">{t('account.requestProduct')}</span>
+        <Link to="/referral" className="dash-action">
+          <div className="dash-action__icon-wrap"><IconGift /></div>
+          <span className="dash-action__label">{t('account.referralRewards')}</span>
         </Link>
       </div>
 

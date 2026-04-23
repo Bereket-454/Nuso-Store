@@ -5,6 +5,7 @@ import { CATEGORIES, DELIVERY_FEE, SAMPLE_PRODUCTS, SUBCATEGORIES } from '../dat
 import { fetchCategories, fetchProducts, fetchSubcategories } from '../services/productsService'
 import { supabase } from '../lib/supabase'
 import { fetchProfile } from '../lib/auth'
+import { getWalletBalance } from '../services/wallet'
 
 const STORAGE_KEY = 'dire-store-v1'
 const CART_KEY_PREFIX = 'dire-cart-'
@@ -41,6 +42,7 @@ const initialState = {
   addresses: [],
   orders: [],
   deliveryFee: DELIVERY_FEE,
+  wallet: null,         // { balance: number } or null when signed out
 }
 
 function loadState() {
@@ -56,15 +58,15 @@ function loadState() {
     merged.cart = []          // cart is managed per-user; loaded after auth resolves
     merged.productsLoading = true // always fetch fresh on load
     merged.cartPurged = false // reset on every page load
+    merged.wallet = null      // fetched from Supabase after auth resolves
     return merged
   } catch {
     return initialState
   }
 }
 
-function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, productsLoading: _productsLoading, ...rest }) {
-  // Exclude `user` (Supabase manages session), `cart` (managed per-user), and
-  // `cartPurged` (transient UI flag — must not survive a page reload).
+function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, productsLoading: _productsLoading, wallet: _wallet, ...rest }) {
+  // Exclude session-managed or transiently-fetched fields from localStorage.
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
 }
 
@@ -157,10 +159,13 @@ function reducer(state, action) {
     }
     case 'CART_PURGE_DISMISS':
       return { ...state, cartPurged: false }
+    case 'WALLET_LOADED':
+      return { ...state, wallet: action.payload }
+
     case 'AUTH_CHANGED': {
       if (!action.payload) {
-        // Sign-out: clear user and cart.
-        return { ...state, user: null, cart: [] }
+        // Sign-out: clear user, cart, and wallet.
+        return { ...state, user: null, cart: [], wallet: null }
       }
       // Sign-in: restore the user's saved cart, but validate it immediately if
       // products are already loaded. This handles the race where CATALOGUE_LOADED
@@ -239,18 +244,24 @@ export function StoreProvider({ children }) {
       ) {
         // Defer past the Supabase auth lock so fetchProfile can run freely.
         setTimeout(async () => {
-          const { profile } = await fetchProfile(session.user.id)
+          const [{ profile }, { balance }] = await Promise.all([
+            fetchProfile(session.user.id),
+            getWalletBalance(session.user.id),
+          ])
           const user = {
-            id: session.user.id,
-            email: session.user.email || profile?.email || '',
-            phone: session.user.phone || profile?.phone || '',
-            name: profile?.name || session.user.user_metadata?.name || '',
-            role: profile?.role || 'user',
+            id:            session.user.id,
+            email:         session.user.email || profile?.email || '',
+            phone:         session.user.phone || profile?.phone || '',
+            name:          profile?.name || session.user.user_metadata?.name || '',
+            role:          profile?.role || 'user',
+            referral_code: profile?.referral_code || null,
+            referred_by:   profile?.referred_by   || null,
           }
           // Restore this user's saved cart. loadUserCart returns [] if nothing saved yet.
           const cart = loadUserCart(session.user.id)
-          console.log('auth changed', user, 'cart items:', cart.length)
+          console.log('auth changed', user, 'cart items:', cart.length, 'wallet:', balance)
           dispatch({ type: 'AUTH_CHANGED', payload: { user, cart } })
+          dispatch({ type: 'WALLET_LOADED', payload: { balance } })
         }, 0)
       } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
         console.log('auth changed', null)

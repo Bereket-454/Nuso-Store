@@ -1,12 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
 import { getPaymentIntegrationStatus, initiateTelebirrPayment } from '../services/payment'
 import { recalculateBestSellers } from '../services/productsService'
+import { completeReferralReward } from '../services/referral'
+import { useWalletCredit } from '../services/wallet'
 import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
+
+// Referral discount constants
+const REFERRAL_DISCOUNT_PCT  = 0.10   // 10%
+const REFERRAL_DISCOUNT_CAP  = 150    // ETB
+const REFERRAL_MIN_ORDER     = 300    // ETB minimum subtotal
 
 export function CheckoutPage() {
   const { t } = useTranslation()
@@ -27,34 +34,88 @@ export function CheckoutPage() {
     msgKey: null,
     variant: 'muted',
   })
+
+  // ── Referral & wallet state ──────────────────────────────────────────────
+  const [isFirstOrder, setIsFirstOrder]   = useState(false)
+  const [walletBalance, setWalletBalance] = useState(state.wallet?.balance ?? 0)
+  const [useWallet, setUseWallet]         = useState(false)
+
   const paymentInfo = getPaymentIntegrationStatus()
 
+  // Pre-fill shipping name/phone when user is signed in.
+  useEffect(() => {
+    if (!state.user) return
+    setShipping((prev) => ({
+      ...prev,
+      fullName: prev.fullName || state.user.name || '',
+      phone:    prev.phone    || state.user.phone || '',
+    }))
+  }, [state.user?.id])
+
+  // Load referral eligibility and wallet balance when signed-in user loads the page.
+  useEffect(() => {
+    if (!state.user?.id) return
+
+    // Check if this is the user's first paid order (discount applies only once).
+    if (state.user.referred_by) {
+      supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', state.user.id)
+        .eq('payment_status', 'paid')
+        .then(({ count }) => {
+          setIsFirstOrder(count === 0)
+        })
+    }
+
+    // Wallet balance — prefer fresh Supabase value over cached store.
+    supabase
+      .from('wallets')
+      .select('balance_etb')
+      .eq('user_id', state.user.id)
+      .single()
+      .then(({ data }) => {
+        const bal = Number(data?.balance_etb ?? 0)
+        setWalletBalance(bal)
+        dispatch({ type: 'WALLET_LOADED', payload: { balance: bal } })
+      })
+  }, [state.user?.id])
+
+  // ── Cart ────────────────────────────────────────────────────────────────
   const cartItems = state.cart
     .map((item) => {
-      const product = state.products.find((value) => value.id === item.productId)
+      const product = state.products.find((p) => p.id === item.productId)
       return { ...item, product }
     })
     .filter((item) => item.product && item.product.price > 0)
-  const subtotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-  const deliveryFee = subtotal > 12000 ? 0 : state.deliveryFee
-  const total = subtotal + deliveryFee
 
-  const shippingValid = useMemo(() => {
-    return (
-      shipping.fullName.trim() &&
-      shipping.city.trim() &&
-      shipping.area.trim() &&
-      /^(\+251|0)\d{9}$/.test(shipping.phone.trim())
-    )
-  }, [shipping])
+  const subtotal    = cartItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
+  const deliveryFee = subtotal > 12000 ? 0 : state.deliveryFee
+
+  // ── Referral discount ────────────────────────────────────────────────────
+  const referralDiscount = useMemo(() => {
+    if (!isFirstOrder || subtotal < REFERRAL_MIN_ORDER) return 0
+    return Math.min(Math.floor(subtotal * REFERRAL_DISCOUNT_PCT), REFERRAL_DISCOUNT_CAP)
+  }, [isFirstOrder, subtotal])
+
+  // ── Wallet credit ────────────────────────────────────────────────────────
+  const afterDiscount       = subtotal - referralDiscount + deliveryFee
+  const maxWalletApplicable = Math.min(walletBalance, afterDiscount)
+  const walletCreditApplied = useWallet && maxWalletApplicable > 0 ? maxWalletApplicable : 0
+  const finalTotal          = afterDiscount - walletCreditApplied
+
+  const shippingValid = useMemo(() => (
+    shipping.fullName.trim() &&
+    shipping.city.trim() &&
+    shipping.area.trim() &&
+    /^(\+251|0)\d{9}$/.test(shipping.phone.trim())
+  ), [shipping])
 
   if (!state.cart.length) {
     return (
       <article className="card card-body">
         <h2>{t('checkout.emptyCart')}</h2>
-        <Link to="/products" className="btn btn-primary">
-          {t('checkout.shopNow')}
-        </Link>
+        <Link to="/products" className="btn btn-primary">{t('checkout.shopNow')}</Link>
       </article>
     )
   }
@@ -62,8 +123,8 @@ export function CheckoutPage() {
   const validateShipping = () => {
     const nextErrors = {}
     if (!shipping.fullName.trim()) nextErrors.fullName = 'checkout.validation.fullName'
-    if (!shipping.city.trim()) nextErrors.city = 'checkout.validation.city'
-    if (!shipping.area.trim()) nextErrors.area = 'checkout.validation.area'
+    if (!shipping.city.trim())     nextErrors.city     = 'checkout.validation.city'
+    if (!shipping.area.trim())     nextErrors.area     = 'checkout.validation.area'
     if (!/^(\+251|0)\d{9}$/.test(shipping.phone.trim())) {
       nextErrors.phone = 'checkout.validation.phone'
     }
@@ -79,16 +140,19 @@ export function CheckoutPage() {
 
     setStatus({ loading: true, msgKey: 'checkout.msg.processingPayment', variant: 'muted' })
     try {
-      const paymentResult = await initiateTelebirrPayment({ subtotal, deliveryFee, total })
+      // ── Step 1: Telebirr payment (charge the final amount after discounts) ──
+      const paymentResult = await initiateTelebirrPayment({
+        subtotal:    finalTotal,
+        deliveryFee: 0,
+        total:       finalTotal,
+      })
       if (!paymentResult.paid) {
         setStatus({ loading: false, msgKey: 'checkout.msg.paymentFailed', variant: 'error' })
         return
       }
 
-      // ── Step 1: generate ID and resolve auth identity ────────────
+      // ── Step 2: Resolve user identity ────────────────────────────────────
       const orderId = `ORD-${Date.now()}`
-
-      // Resolve user identity from the best available source.
       const { data: { session: activeSession } } = await supabase.auth.getSession()
       let userId, userEmail, idSource
       if (activeSession?.user?.id) {
@@ -104,74 +168,96 @@ export function CheckoutPage() {
         userEmail = null
         idSource  = 'none (guest)'
       }
-      console.log('[CheckoutPage] identity source:', idSource, '| userId:', userId, '| email:', userEmail)
+      console.log('[CheckoutPage] identity source:', idSource, '| userId:', userId)
 
       const customer = userId
         ? { id: userId, phone: state.user?.phone, name: state.user?.name || shipping.fullName }
         : { name: shipping.fullName, phone: shipping.phone }
 
-      // ── Step 2: Supabase insert — FIRST, before any local state or navigation ──
-      console.log('[CheckoutPage] attempting supabase insert, orderId:', orderId)
+      // ── Step 3: Insert order (Supabase) ──────────────────────────────────
       const supabasePayload = {
-        id: orderId,
-        user_id: userId,
-        customer_name: customer.name,
-        customer_phone: customer.phone || null,
-        customer_email: userEmail,
-        items: cartItems,
+        id:                  orderId,
+        user_id:             userId,
+        customer_name:       customer.name,
+        customer_phone:      customer.phone || null,
+        customer_email:      userEmail,
+        items:               cartItems,
         shipping,
-        payment: paymentResult,
+        payment:             paymentResult,
         subtotal,
-        delivery_fee: deliveryFee,
-        total,
-        payment_status: 'paid',
-        status: 'confirmed',
+        delivery_fee:        deliveryFee,
+        total:               finalTotal,
+        payment_status:      'paid',
+        status:              'confirmed',
+        referral_discount:   referralDiscount,
+        wallet_credit_used:  walletCreditApplied,
       }
-      console.log('[CheckoutPage] supabase payload:', supabasePayload)
+      console.log('[CheckoutPage] inserting order:', orderId)
       const { error: insertError } = await supabase.from('orders').insert(supabasePayload)
       if (insertError) {
-        console.error('[CheckoutPage] Supabase insert FAILED:', insertError.message, '| code:', insertError.code, '| hint:', insertError.hint, '| details:', insertError.details)
+        console.error('[CheckoutPage] Supabase insert FAILED:', insertError.message)
       } else {
-        console.log('[CheckoutPage] Supabase insert SUCCESS, orderId:', orderId)
+        console.log('[CheckoutPage] Supabase insert SUCCESS')
       }
 
-      // ── Step 3: update local store ────────────────────────────────
+      // ── Step 4: Post-payment rewards (fire-and-forget after DB write) ────
+      if (userId) {
+        // Award referral reward to referrer (idempotent — safe if already done).
+        if (isFirstOrder && state.user?.referred_by) {
+          completeReferralReward(orderId, userId).then(({ rewarded }) => {
+            console.log('[CheckoutPage] referral reward:', rewarded ? 'granted' : 'skipped')
+          })
+        }
+        // Deduct wallet credit.
+        if (walletCreditApplied > 0) {
+          useWalletCredit(userId, walletCreditApplied, orderId).then(({ success, newBalance }) => {
+            console.log('[CheckoutPage] wallet credit deducted:', success, 'new balance:', newBalance)
+            if (success) {
+              dispatch({ type: 'WALLET_LOADED', payload: { balance: newBalance } })
+            }
+          })
+        }
+      }
+
+      // ── Step 5: Update local store ────────────────────────────────────────
       dispatch({ type: 'SAVE_ADDRESS', payload: shipping })
       const newOrder = {
-        id: orderId,
-        items: cartItems,
+        id:              orderId,
+        items:           cartItems,
         subtotal,
         deliveryFee,
-        total,
+        total:           finalTotal,
+        referralDiscount,
+        walletCreditUsed: walletCreditApplied,
         shipping,
-        payment: paymentResult,
-        paymentStatus: 'paid',
-        status: 'confirmed',
+        payment:         paymentResult,
+        paymentStatus:   'paid',
+        status:          'confirmed',
         customer,
-        createdAt: new Date().toISOString(),
+        createdAt:       new Date().toISOString(),
       }
       dispatch({ type: 'ORDER_CREATE', payload: newOrder })
 
-      // ── Step 4: background tasks ──────────────────────────────────
+      // ── Step 6: Background tasks ──────────────────────────────────────────
       recalculateBestSellers([newOrder, ...state.orders])
 
-      // ── Step 5: navigate ──────────────────────────────────────────
       navigate(`/order-confirmation/${orderId}`)
     } catch (err) {
-      console.error('[CheckoutPage] handlePay caught error:', err)
+      console.error('[CheckoutPage] handlePay error:', err)
       setStatus({ loading: false, msgKey: 'checkout.msg.paymentUnavailable', variant: 'error' })
     }
   }
 
   const statusClass =
-    status.variant === 'success' ? 'success-text' : status.variant === 'error' ? 'error-text' : 'muted'
+    status.variant === 'success' ? 'success-text'
+    : status.variant === 'error' ? 'error-text'
+    : 'muted'
 
   return (
     <div className="layout-split">
+      {/* ── Shipping form ─────────────────────────────────────────────────── */}
       <section className="card card-body">
         <h1>{t('checkout.title')}</h1>
-
-        {/* Auth status — real Supabase session or guest note */}
         <p className="muted" style={{ marginBottom: '1rem' }}>
           {state.user
             ? t('auth.signedInAs', { email: state.user.email || state.user.id })
@@ -179,79 +265,125 @@ export function CheckoutPage() {
         </p>
 
         <h3>{t('checkout.stepShipping')}</h3>
-        {Object.keys(errors).length > 0 ? (
+        {Object.keys(errors).length > 0 && (
           <p className="error-text">{t('checkout.fillBeforePayment')}</p>
-        ) : null}
+        )}
+
+        {[
+          { id: 'fullName', label: t('checkout.fullName'),  autoComplete: 'name' },
+          { id: 'city',     label: t('checkout.city'),      autoComplete: 'address-level2' },
+          { id: 'area',     label: t('checkout.area'),      autoComplete: 'address-level3' },
+          { id: 'landmark', label: t('checkout.landmark'),  autoComplete: 'off', optional: true },
+        ].map(({ id, label, autoComplete, optional }) => (
+          <div className="form-group" key={id}>
+            <label htmlFor={`shipping-${id}`}>{label}</label>
+            <input
+              id={`shipping-${id}`}
+              autoComplete={autoComplete}
+              value={shipping[id]}
+              onChange={(e) => setShipping((v) => ({ ...v, [id]: e.target.value }))}
+            />
+            {!optional && errors[id] && (
+              <span className="error-text">{t(errors[id])}</span>
+            )}
+          </div>
+        ))}
 
         <div className="form-group">
-          <label htmlFor="fullName">{t('checkout.fullName')}</label>
+          <label htmlFor="shipping-phone">{t('checkout.phone')}</label>
           <input
-            id="fullName"
-            value={shipping.fullName}
-            onChange={(event) => setShipping((value) => ({ ...value, fullName: event.target.value }))}
-          />
-          {errors.fullName ? <span className="error-text">{t(errors.fullName)}</span> : null}
-        </div>
-        <div className="form-group">
-          <label htmlFor="city">{t('checkout.city')}</label>
-          <input
-            id="city"
-            value={shipping.city}
-            onChange={(event) => setShipping((value) => ({ ...value, city: event.target.value }))}
-          />
-          {errors.city ? <span className="error-text">{t(errors.city)}</span> : null}
-        </div>
-        <div className="form-group">
-          <label htmlFor="area">{t('checkout.area')}</label>
-          <input
-            id="area"
-            value={shipping.area}
-            onChange={(event) => setShipping((value) => ({ ...value, area: event.target.value }))}
-          />
-          {errors.area ? <span className="error-text">{t(errors.area)}</span> : null}
-        </div>
-        <div className="form-group">
-          <label htmlFor="landmark">{t('checkout.landmark')}</label>
-          <input
-            id="landmark"
-            value={shipping.landmark}
-            onChange={(event) => setShipping((value) => ({ ...value, landmark: event.target.value }))}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="phone">{t('checkout.phone')}</label>
-          <input
-            id="phone"
+            id="shipping-phone"
+            type="tel"
+            autoComplete="tel"
             placeholder={t('checkout.phonePlaceholder')}
             value={shipping.phone}
-            onChange={(event) => setShipping((value) => ({ ...value, phone: event.target.value }))}
+            onChange={(e) => setShipping((v) => ({ ...v, phone: e.target.value }))}
           />
-          {errors.phone ? <span className="error-text">{t(errors.phone)}</span> : null}
+          {errors.phone && <span className="error-text">{t(errors.phone)}</span>}
         </div>
       </section>
 
+      {/* ── Order summary ─────────────────────────────────────────────────── */}
       <aside className="card card-body">
         <h3>{t('checkout.orderSummary')}</h3>
+
         {cartItems.map((item) => (
-          <p key={item.key}>
-            {item.product?.name} x {item.quantity}
+          <p key={item.key} style={{ margin: '0 0 0.3rem', fontSize: '0.9rem' }}>
+            {item.product?.name} × {item.quantity}
           </p>
         ))}
-        <hr style={{ border: '1px solid var(--border)', width: '100%' }} />
-        <p>
-          {t('cart.subtotal')}: {birr(subtotal)}
+
+        <hr style={{ border: '1px solid var(--border)', width: '100%', margin: '0.75rem 0' }} />
+
+        {/* Subtotal */}
+        <div className="chk-line">
+          <span>{t('cart.subtotal')}</span>
+          <span>{birr(subtotal)}</span>
+        </div>
+
+        {/* Referral discount */}
+        {referralDiscount > 0 && (
+          <div className="chk-line chk-line--discount">
+            <span>🎁 {t('checkout.referralDiscount')}</span>
+            <span>−{birr(referralDiscount)}</span>
+          </div>
+        )}
+        {isFirstOrder && subtotal > 0 && subtotal < REFERRAL_MIN_ORDER && state.user?.referred_by && (
+          <p className="chk-note">{t('checkout.referralMinNote', { min: birr(REFERRAL_MIN_ORDER) })}</p>
+        )}
+
+        {/* Delivery fee */}
+        <div className="chk-line">
+          <span>{t('cart.deliveryFee')}</span>
+          <span>{deliveryFee === 0 ? t('cart.free') : birr(deliveryFee)}</span>
+        </div>
+
+        {/* Wallet credit toggle */}
+        {walletBalance > 0 && (
+          <div className="chk-wallet">
+            <label className="chk-wallet__label">
+              <input
+                type="checkbox"
+                checked={useWallet}
+                onChange={(e) => setUseWallet(e.target.checked)}
+                className="chk-wallet__checkbox"
+              />
+              <span>
+                {t('checkout.applyWallet', { amount: birr(walletBalance) })}
+              </span>
+            </label>
+            {useWallet && walletCreditApplied > 0 && (
+              <div className="chk-line chk-line--wallet">
+                <span>{t('checkout.walletCredit')}</span>
+                <span>−{birr(walletCreditApplied)}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <hr style={{ border: '1px solid var(--border)', width: '100%', margin: '0.75rem 0' }} />
+
+        {/* Total */}
+        <div className="chk-line chk-line--total">
+          <span>{t('cart.total')}</span>
+          <span>{birr(finalTotal)}</span>
+        </div>
+
+        {referralDiscount > 0 && (
+          <p className="chk-note chk-note--success">
+            ✓ {t('checkout.referralApplied', { amount: birr(referralDiscount) })}
+          </p>
+        )}
+
+        <p className="muted" style={{ fontSize: '0.82rem', margin: '0.5rem 0 1rem' }}>
+          {paymentInfo.isLive ? t('payment.live') : t('payment.mock')}
         </p>
-        <p>
-          {t('cart.deliveryFee')}: {deliveryFee === 0 ? t('cart.free') : birr(deliveryFee)}
-        </p>
-        <p>
-          <strong>
-            {t('cart.total')}: {birr(total)}
-          </strong>
-        </p>
-        <p className="muted">{paymentInfo.isLive ? t('payment.live') : t('payment.mock')}</p>
-        {status.msgKey ? <p className={statusClass}>{t(status.msgKey)}</p> : null}
-        <button className="btn btn-primary" disabled={status.loading} onClick={handlePay}>
+
+        {status.msgKey && (
+          <p className={statusClass} style={{ marginBottom: '0.75rem' }}>{t(status.msgKey)}</p>
+        )}
+
+        <button className="btn btn-primary" disabled={status.loading} onClick={handlePay} style={{ width: '100%' }}>
           {status.loading ? t('checkout.processing') : t('checkout.payTelebirr')}
         </button>
       </aside>

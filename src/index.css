@@ -1762,3 +1762,505 @@ textarea {
     transition: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Checkout summary lines — .chk-*
+   Used in CheckoutPage order summary sidebar.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.chk-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin: 0.3rem 0;
+  gap: 0.5rem;
+}
+
+.chk-line--discount {
+  color: #15803d;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.chk-line--wallet {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.chk-line--total {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0.1rem 0;
+}
+
+/* Wallet credit toggle */
+.chk-wallet {
+  background: #f0f7ff;
+  border: 1px solid #c5def8;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  margin: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chk-wallet__label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  user-select: none;
+}
+
+.chk-wallet__checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Contextual notes under summary lines */
+.chk-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0.2rem 0 0.4rem;
+  line-height: 1.4;
+}
+
+.chk-note--success {
+  color: #15803d;
+  font-weight: 600;
+  background: #dcfce7;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  display: inline-block;
+  margin-top: 0.4rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Referral page — .ref-*
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Page wrapper */
+.ref-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────────── */
+.ref-hero {
+  background: linear-gradient(135deg, #1a2340 0%, #263354 100%);
+  border-radius: var(--radius);
+  padding: 2rem 1.5rem 1.75rem;
+  text-align: center;
+  color: #fff;
+}
+
+.ref-hero__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(255, 107, 0, 0.18);
+  color: #FF6B00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  border: 1px solid rgba(255, 107, 0, 0.3);
+}
+
+.ref-hero__title {
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0 0 0.6rem;
+  color: #fff;
+}
+
+.ref-hero__subtitle {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 400px;
+  margin-inline: auto;
+}
+
+/* ── Stats grid ───────────────────────────────────────────────────────────── */
+.ref-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+
+.ref-stat {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.ref-stat__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fff5ee;
+  color: #FF6B00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.ref-stat--wallet .ref-stat__icon {
+  background: #e0edff;
+  color: var(--accent);
+}
+
+.ref-stat--pending .ref-stat__icon {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.ref-stat--success .ref-stat__icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.ref-stat__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+}
+
+.ref-stat__num {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.ref-stat__label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* ── Content cards ────────────────────────────────────────────────────────── */
+.ref-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.5rem;
+}
+
+.ref-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 1.1rem;
+  color: var(--text);
+}
+
+.ref-card__actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
+/* ── Referral code display ────────────────────────────────────────────────── */
+.ref-code-display {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(1.4rem, 5vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #1a2340;
+  background: #f0f4ff;
+  border: 2px dashed #c5cfe8;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  text-align: center;
+  user-select: all;
+  cursor: text;
+}
+
+.ref-code-skeleton {
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: ref-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes ref-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ref-link-preview {
+  font-size: 0.76rem;
+  color: var(--muted);
+  word-break: break-all;
+  margin: 0.6rem 0 0;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface);
+  border-radius: 6px;
+  line-height: 1.5;
+}
+
+/* ── Share message box ────────────────────────────────────────────────────── */
+.ref-share-msg {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.ref-share-msg__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.4rem;
+}
+
+.ref-share-msg__text {
+  font-size: 0.88rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 0.65rem;
+  user-select: all;
+}
+
+/* ── Copy buttons ─────────────────────────────────────────────────────────── */
+.ref-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 0.5rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.ref-copy-btn:hover {
+  border-color: #FF6B00;
+  color: #FF6B00;
+  transform: translateY(-1px);
+}
+
+.ref-copy-btn--primary {
+  background: #FF6B00;
+  border-color: #FF6B00;
+  color: #fff;
+}
+
+.ref-copy-btn--primary:hover {
+  background: #e05c00;
+  border-color: #e05c00;
+  color: #fff;
+}
+
+/* ── Wallet balance card ──────────────────────────────────────────────────── */
+.ref-wallet-card {
+  background: linear-gradient(135deg, #0a84ff 0%, #0064d4 100%);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: #fff;
+}
+
+.ref-wallet-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.ref-wallet-card__amount {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 0.15rem;
+  line-height: 1.1;
+}
+
+.ref-wallet-card__hint {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ref-wallet-card__cta {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  border-radius: 9px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.18s;
+  white-space: nowrap;
+}
+
+.ref-wallet-card__cta:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── How it works steps ───────────────────────────────────────────────────── */
+.ref-steps-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ref-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.ref-step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #FF6B00;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* ── Sign-in prompt (logged out state) ────────────────────────────────────── */
+.ref-signin-prompt {
+  text-align: center;
+}
+
+.ref-signin-prompt p {
+  color: var(--muted);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ── How-it-works wrapper (logged-out state) ──────────────────────────────── */
+.ref-how {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+/* ── Terms note ───────────────────────────────────────────────────────────── */
+.ref-terms {
+  font-size: 0.76rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0 0.5rem;
+}
+
+/* ── Mobile ───────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .ref-page {
+    padding: 1rem 0.75rem 3rem;
+  }
+
+  .ref-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ref-hero {
+    padding: 1.5rem 1rem 1.25rem;
+  }
+
+  .ref-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .ref-wallet-card {
+    flex-wrap: wrap;
+  }
+
+  .ref-wallet-card__cta {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .ref-card__actions {
+    flex-direction: column;
+  }
+
+  .ref-copy-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .chk-wallet__label {
+    font-size: 0.83rem;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ref-copy-btn,
+  .ref-wallet-card__cta,
+  .ref-code-skeleton {
+    transition: none;
+    animation: none;
+  }
+}
