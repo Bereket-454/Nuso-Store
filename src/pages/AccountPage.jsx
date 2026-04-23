@@ -552,8 +552,8 @@ function ProfileCard({ user, t, state, dispatch }) {
   const lastOrderAgo = state.orders[0]?.createdAt ? daysAgo(state.orders[0].createdAt, t) : null
   const walletBal    = state.wallet?.balance ?? 0
 
-  const scrollTo = (id) =>
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const [openTab, setOpenTab] = useState(null)
+  function toggleTab(tab) { setOpenTab(prev => prev === tab ? null : tab) }
 
   return (
     <div className="dash-page">
@@ -604,7 +604,7 @@ function ProfileCard({ user, t, state, dispatch }) {
 
       {/* ── Quick actions ────────────────────────────────────────────── */}
       <div className="dash-quick">
-        <button type="button" className="dash-action" onClick={() => scrollTo('dash-orders')}>
+        <button type="button" className={`dash-action${openTab === 'orders' ? ' dash-action--active' : ''}`} onClick={() => toggleTab('orders')}>
           <div className="dash-action__icon-wrap"><IconPackage /></div>
           <span className="dash-action__label">{t('account.viewOrders')}</span>
         </button>
@@ -612,7 +612,7 @@ function ProfileCard({ user, t, state, dispatch }) {
           <div className="dash-action__icon-wrap"><IconPin /></div>
           <span className="dash-action__label">{t('account.trackOrder')}</span>
         </Link>
-        <button type="button" className="dash-action" onClick={() => scrollTo('dash-addresses')}>
+        <button type="button" className={`dash-action${openTab === 'addresses' ? ' dash-action--active' : ''}`} onClick={() => toggleTab('addresses')}>
           <div className="dash-action__icon-wrap"><IconHome /></div>
           <span className="dash-action__label">{t('account.manageAddress')}</span>
         </button>
@@ -623,6 +623,7 @@ function ProfileCard({ user, t, state, dispatch }) {
       </div>
 
       {/* ── My Orders ───────────────────────────────────────────────── */}
+      <div className={`dash-tab-panel${openTab === 'orders' ? ' dash-tab-panel--open' : ''}`}>
       <div className="dash-section" id="dash-orders">
         <div className="dash-section__head">
           <div className="dash-section__icon-wrap"><IconPackage /></div>
@@ -681,8 +682,10 @@ function ProfileCard({ user, t, state, dispatch }) {
           )}
         </div>
       </div>
+      </div>
 
       {/* ── My Addresses ────────────────────────────────────────────── */}
+      <div className={`dash-tab-panel${openTab === 'addresses' ? ' dash-tab-panel--open' : ''}`}>
       <div className="dash-section" id="dash-addresses">
         <div className="dash-section__head">
           <div className="dash-section__icon-wrap"><IconHome /></div>
@@ -714,6 +717,7 @@ function ProfileCard({ user, t, state, dispatch }) {
             ))
           )}
         </div>
+      </div>
       </div>
 
       {/* ── Account Settings ────────────────────────────────────────── */}

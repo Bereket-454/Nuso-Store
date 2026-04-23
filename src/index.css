@@ -1757,11 +1757,36 @@ textarea {
   }
 }
 
+/* ── Tab panel (animated show/hide) ──────────────────────────────────────── */
+.dash-tab-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+}
+
+.dash-tab-panel--open {
+  max-height: 1600px;
+  opacity: 1;
+}
+
+/* ── Active quick-action card ────────────────────────────────────────────── */
+.dash-action--active {
+  border-color: #FF6B00;
+  background: #fff8f3;
+}
+
+.dash-action--active .dash-action__icon-wrap {
+  background: #FF6B00;
+  color: #fff;
+}
+
 /* ── Reduced motion ───────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .dash-action,
   .dash-empty__cta,
-  .dash-sign-out-btn {
+  .dash-sign-out-btn,
+  .dash-tab-panel {
     transition: none;
   }
 }
