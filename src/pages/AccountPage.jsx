@@ -635,7 +635,16 @@ function ProfileCard({ user, t, state, dispatch }) {
         <div className="dash-section__body">
           {state.orders.length === 0 ? (
             <div className="dash-empty">
-              <span className="dash-empty__icon" aria-hidden="true">🛍️</span>
+              <span className="dash-empty__icon" aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* bag body */}
+                  <rect x="6" y="18" width="36" height="26" rx="4" fill="#1a2340"/>
+                  {/* handle */}
+                  <path d="M16 18V14a8 8 0 0 1 16 0v4" stroke="#FF6B00" strokeWidth="3" strokeLinecap="round"/>
+                  {/* shine stripe */}
+                  <rect x="6" y="18" width="36" height="7" rx="4" fill="#263354"/>
+                </svg>
+              </span>
               <p className="dash-empty__msg">{t('account.noOrders')}</p>
               <Link to="/products" className="btn btn-primary dash-empty__cta">
                 {t('account.startShopping')}
