@@ -218,7 +218,18 @@ export function RequestProductPage() {
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="req-hero">
-        <div className="req-hero__icon" aria-hidden="true">🛍️</div>
+        <div className="req-hero__icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" height="64" style={{ width: 'auto' }}>
+            <path d="M6 24 L6 56 Q6 60 10 60 L46 60 Q50 60 50 56 L50 24 Z" fill="#1a2340"/>
+            <path d="M28 24 L50 24 L50 46 Z" fill="#FF6B00"/>
+            <path d="M16 24 Q16 10 28 10 Q40 10 40 24" fill="none" stroke="#FF6B00" strokeWidth="4" strokeLinecap="round"/>
+            <rect x="11" y="30" width="6" height="22" rx="1.5" fill="white"/>
+            <rect x="35" y="30" width="6" height="22" rx="1.5" fill="white"/>
+            <line x1="17" y1="30" x2="35" y2="52" stroke="#FF6B00" strokeWidth="6" strokeLinecap="round"/>
+            <text x="62" y="36" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="26" fill="#1a2340">NUSO</text>
+            <text x="78" y="55" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="16" fill="#FF6B00" letterSpacing="4">STORE</text>
+          </svg>
+        </div>
         <h1 className="req-hero__title">{t('request.heroTitle')}</h1>
         <p className="req-hero__subtitle">{t('request.heroSubtitle')}</p>
         <div className="req-trust-pills">
