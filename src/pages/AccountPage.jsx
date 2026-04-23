@@ -563,7 +563,9 @@ function ProfileCard({ user, t, state, dispatch }) {
         <div className="dash-avatar" aria-hidden="true">{initials}</div>
         <div className="dash-welcome__body">
           <h1 className="dash-welcome__name">
-            {t('account.welcomeBack', { name: firstName })}
+            {orderCount > 0
+              ? t('account.welcomeBack', { name: firstName })
+              : t('account.welcomeNew',  { name: firstName })}
           </h1>
           <p className="dash-welcome__sub">{t('account.dashSubtitle')}</p>
           <p className="dash-welcome__email">{user.email || user.id}</p>

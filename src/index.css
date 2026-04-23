@@ -1347,9 +1347,10 @@ textarea {
   font-weight: 700;
   line-height: 1.3;
   margin: 0 0 0.2rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  word-break: break-word;
 }
 
 .dash-welcome__sub {
@@ -1423,22 +1424,24 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: rgba(255, 255, 255, 0.65);
+  background: #fff;
+  border: 1.5px solid #e53e3e;
+  color: #e53e3e;
   border-radius: 8px;
   padding: 0.45rem 0.9rem;
   font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.18s, color 0.18s;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
   align-self: flex-end;
   margin-left: auto;
   flex-shrink: 0;
 }
 
 .dash-sign-out-btn:hover {
-  border-color: rgba(255, 255, 255, 0.45);
-  color: rgba(255, 255, 255, 0.9);
+  background: #e53e3e;
+  color: #fff;
+  border-color: #e53e3e;
 }
 
 /* ── Quick action cards ───────────────────────────────────────────────────── */
