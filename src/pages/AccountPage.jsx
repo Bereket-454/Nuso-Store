@@ -124,6 +124,14 @@ function IconGift() {
   )
 }
 
+function ChevronIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  )
+}
+
 // ─── Password input with show/hide toggle ────────────────────────────────────
 
 function PasswordInput({ id, value, onChange, onBlur, disabled, autoComplete }) {
@@ -555,6 +563,8 @@ function ProfileCard({ user, t, state, dispatch }) {
   const [openTab, setOpenTab] = useState(null)
   function toggleTab(tab) { setOpenTab(prev => prev === tab ? null : tab) }
 
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
   return (
     <div className="dash-page">
 
@@ -722,41 +732,60 @@ function ProfileCard({ user, t, state, dispatch }) {
 
       {/* ── Account Settings ────────────────────────────────────────── */}
       <div className="dash-section" id="dash-settings">
-        <div className="dash-section__head">
+        <button
+          type="button"
+          className={`dash-section__head dash-section__head--toggle${settingsOpen ? '' : ' dash-section__head--collapsed'}`}
+          onClick={() => setSettingsOpen(o => !o)}
+          aria-expanded={settingsOpen}
+        >
           <div className="dash-section__icon-wrap"><IconSettings /></div>
-          <div>
+          <div style={{ flex: 1, textAlign: 'left' }}>
             <h2 className="dash-section__title">{t('account.accountSettings')}</h2>
             <p className="dash-section__desc">{t('account.settingsDesc')}</p>
           </div>
-        </div>
-        <div className="dash-section__body">
-          {!editing ? (
-            <>
-              <p style={{ margin: '0 0 0.3rem' }}>
-                <span className="muted">{t('auth.fullNameLabel')}: </span>
-                <strong>{user.name || '—'}</strong>
-              </p>
-              <p style={{ margin: '0 0 1.1rem' }}>
-                <span className="muted">{t('auth.emailLabel')}: </span>
-                <strong>{user.email || '—'}</strong>
-              </p>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setEditing(true)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-              >
-                <PencilIcon /> {t('account.editProfile')}
-              </button>
-            </>
-          ) : (
-            <EditProfileForm
-              user={user}
-              t={t}
-              dispatch={dispatch}
-              onClose={() => setEditing(false)}
-            />
-          )}
+          <span style={{ transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s ease', color: 'var(--muted)', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+            <ChevronIcon />
+          </span>
+        </button>
+        <div className={`dash-tab-panel${settingsOpen ? ' dash-tab-panel--open' : ''}`}>
+          <div className="dash-section__body">
+            {!editing ? (
+              <>
+                <div className="dash-info-row">
+                  <span className="dash-info-row__label">{t('auth.fullNameLabel')}</span>
+                  <strong className="dash-info-row__value">{user.name || '—'}</strong>
+                  <button type="button" className="dash-info-row__edit" onClick={() => setEditing(true)} aria-label={t('account.editProfile')}><PencilIcon /></button>
+                </div>
+                <div className="dash-info-row">
+                  <span className="dash-info-row__label">{t('auth.emailLabel')}</span>
+                  <strong className="dash-info-row__value">{user.email || '—'}</strong>
+                  <button type="button" className="dash-info-row__edit" onClick={() => setEditing(true)} aria-label={t('account.editProfile')}><PencilIcon /></button>
+                </div>
+                {user.phone ? (
+                  <div className="dash-info-row">
+                    <span className="dash-info-row__label">{t('auth.phoneLabel')}</span>
+                    <strong className="dash-info-row__value">{user.phone}</strong>
+                    <button type="button" className="dash-info-row__edit" onClick={() => setEditing(true)} aria-label={t('account.editProfile')}><PencilIcon /></button>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setEditing(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', marginTop: '1rem' }}
+                >
+                  <PencilIcon /> {t('account.editProfile')}
+                </button>
+              </>
+            ) : (
+              <EditProfileForm
+                user={user}
+                t={t}
+                dispatch={dispatch}
+                onClose={() => setEditing(false)}
+              />
+            )}
+          </div>
         </div>
       </div>
 

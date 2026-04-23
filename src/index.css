@@ -1555,6 +1555,67 @@ textarea {
   padding: 1rem 1.25rem;
 }
 
+/* ── Collapsible settings header ─────────────────────────────────────────── */
+.dash-section__head--toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dash-section__head--toggle:hover {
+  background: #fafafa;
+}
+
+.dash-section__head--collapsed {
+  border-bottom: none;
+}
+
+/* ── Read-only info rows ─────────────────────────────────────────────────── */
+.dash-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.dash-info-row:last-of-type {
+  border-bottom: none;
+}
+
+.dash-info-row__label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  min-width: 4.5rem;
+  flex-shrink: 0;
+}
+
+.dash-info-row__value {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.dash-info-row__edit {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.dash-info-row__edit:hover {
+  color: var(--accent);
+}
+
 /* ── Order list ───────────────────────────────────────────────────────────── */
 .dash-orders {
   display: flex;
