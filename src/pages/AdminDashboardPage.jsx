@@ -751,7 +751,7 @@ export function AdminDashboardPage() {
           </div>
 
           {/* ── Private business fields — admin only ──────────────────────── */}
-          {!isStaff && <div style={{
+          <div style={{
             borderTop: '1px dashed var(--border)',
             marginTop: '1rem',
             paddingTop: '0.9rem',
@@ -760,63 +760,85 @@ export function AdminDashboardPage() {
               {t('admin.businessInfoTitle')}
             </p>
 
-            <div className="form-group">
-              <label htmlFor="admin-cost-price">{t('admin.costPrice')}</label>
-              <input
-                id="admin-cost-price"
-                type="number"
-                min="0"
-                value={productForm.costPrice}
-                onChange={(e) => setProductForm((v) => ({ ...v, costPrice: e.target.value }))}
-                placeholder="0"
-              />
-              {/* Live profit margin — only shown when both prices are valid */}
-              {Number(productForm.price) > 0 && Number(productForm.costPrice) > 0 && (() => {
-                const sell = Number(productForm.price)
-                const cost = Number(productForm.costPrice)
-                const profit = sell - cost
-                const pct = ((profit / sell) * 100).toFixed(1)
-                const color = profit >= 0 ? 'var(--success)' : 'var(--danger)'
-                return (
-                  <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color }}>
-                    {t('admin.profitMargin')}: {birr(profit)} ({pct}%)
-                  </p>
-                )
-              })()}
-            </div>
+            {isStaff ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                padding: '0.7rem 0.9rem',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                color: 'var(--muted)',
+                fontSize: '0.85rem',
+              }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                This information is private — admin only
+              </div>
+            ) : (
+              <>
+                <div className="form-group">
+                  <label htmlFor="admin-cost-price">{t('admin.costPrice')}</label>
+                  <input
+                    id="admin-cost-price"
+                    type="number"
+                    min="0"
+                    value={productForm.costPrice}
+                    onChange={(e) => setProductForm((v) => ({ ...v, costPrice: e.target.value }))}
+                    placeholder="0"
+                  />
+                  {/* Live profit margin — only shown when both prices are valid */}
+                  {Number(productForm.price) > 0 && Number(productForm.costPrice) > 0 && (() => {
+                    const sell = Number(productForm.price)
+                    const cost = Number(productForm.costPrice)
+                    const profit = sell - cost
+                    const pct = ((profit / sell) * 100).toFixed(1)
+                    const color = profit >= 0 ? 'var(--success)' : 'var(--danger)'
+                    return (
+                      <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color }}>
+                        {t('admin.profitMargin')}: {birr(profit)} ({pct}%)
+                      </p>
+                    )
+                  })()}
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="admin-supplier-name">{t('admin.supplierName')}</label>
-              <input
-                id="admin-supplier-name"
-                value={productForm.supplierName}
-                onChange={(e) => setProductForm((v) => ({ ...v, supplierName: e.target.value }))}
-                placeholder={t('admin.supplierNamePlaceholder')}
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="admin-supplier-name">{t('admin.supplierName')}</label>
+                  <input
+                    id="admin-supplier-name"
+                    value={productForm.supplierName}
+                    onChange={(e) => setProductForm((v) => ({ ...v, supplierName: e.target.value }))}
+                    placeholder={t('admin.supplierNamePlaceholder')}
+                  />
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="admin-supplier-contact">{t('admin.supplierContact')}</label>
-              <input
-                id="admin-supplier-contact"
-                value={productForm.supplierContact}
-                onChange={(e) => setProductForm((v) => ({ ...v, supplierContact: e.target.value }))}
-                placeholder={t('admin.supplierContactPlaceholder')}
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="admin-supplier-contact">{t('admin.supplierContact')}</label>
+                  <input
+                    id="admin-supplier-contact"
+                    value={productForm.supplierContact}
+                    onChange={(e) => setProductForm((v) => ({ ...v, supplierContact: e.target.value }))}
+                    placeholder={t('admin.supplierContactPlaceholder')}
+                  />
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="admin-restock">{t('admin.restockThreshold')}</label>
-              <input
-                id="admin-restock"
-                type="number"
-                min="0"
-                value={productForm.restockThreshold}
-                onChange={(e) => setProductForm((v) => ({ ...v, restockThreshold: e.target.value }))}
-                placeholder="5"
-              />
-            </div>
-          </div>}
+                <div className="form-group">
+                  <label htmlFor="admin-restock">{t('admin.restockThreshold')}</label>
+                  <input
+                    id="admin-restock"
+                    type="number"
+                    min="0"
+                    value={productForm.restockThreshold}
+                    onChange={(e) => setProductForm((v) => ({ ...v, restockThreshold: e.target.value }))}
+                    placeholder="5"
+                  />
+                </div>
+              </>
+            )}
+          </div>
 
           <button className="btn btn-primary" onClick={saveProduct} disabled={saveLoading}>
             {saveLoading ? '...' : t('admin.saveProduct')}
