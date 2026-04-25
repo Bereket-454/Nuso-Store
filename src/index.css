@@ -336,14 +336,14 @@ button {
   border-radius: 14px;
   overflow: hidden;
   aspect-ratio: 1 / 1;
-  background: rgba(255, 255, 255, 0.06);
+  background: #f8f8f8;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .hero-v2__img-cell img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
