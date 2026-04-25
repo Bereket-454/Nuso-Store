@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { useTranslation } from '../i18n'
+import { COLOR_MAP } from '../utils/colors'
 
 export function ProductCard({ product, activeCategory }) {
   const { t } = useTranslation()
@@ -71,6 +72,30 @@ export function ProductCard({ product, activeCategory }) {
             textOverflow: 'ellipsis',
           }}>{product.name}</h3>
           <p className="price">{priceStr}</p>
+          {product.colors?.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.25rem', marginBottom: '0.1rem' }}>
+              {product.colors.slice(0, 5).map((c) => (
+                <span
+                  key={c}
+                  title={c}
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: COLOR_MAP[c] ?? '#ccc',
+                    display: 'inline-block',
+                    flexShrink: 0,
+                    border: c === 'White' ? '1px solid #ddd' : '1px solid rgba(0,0,0,0.12)',
+                  }}
+                />
+              ))}
+              {product.colors.length > 5 && (
+                <span style={{ fontSize: '0.68rem', color: 'var(--muted)', lineHeight: 1 }}>
+                  +{product.colors.length - 5}
+                </span>
+              )}
+            </div>
+          )}
           <p className="muted">
             {product.stock > 0
               ? t('productCard.inStock', { count: product.stock })

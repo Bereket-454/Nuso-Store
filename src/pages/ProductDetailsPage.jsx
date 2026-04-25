@@ -5,6 +5,7 @@ import { ProductCard } from '../components/ProductCard'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
+import { COLOR_MAP } from '../utils/colors'
 
 export function ProductDetailsPage() {
   const { t } = useTranslation()
@@ -13,7 +14,8 @@ export function ProductDetailsPage() {
   const product = state.products.find((item) => item.id === id)
   const [selectedImage, setSelectedImage] = useState(0)
   const [size, setSize] = useState(product?.sizes[0] || '')
-  const [color, setColor] = useState(product?.colors[0] || '')
+  const [color, setColor] = useState('')
+  const [colorError, setColorError] = useState('')
   const [feedback, setFeedback] = useState('')
 
   const related = useMemo(() => {
@@ -26,7 +28,8 @@ export function ProductDetailsPage() {
   useEffect(() => {
     setSelectedImage(0)
     setSize(product?.sizes[0] || '')
-    setColor(product?.colors[0] || '')
+    setColor('')
+    setColorError('')
     setFeedback('')
     window.scrollTo({ top: 0 })
   }, [id])
@@ -124,21 +127,50 @@ export function ProductDetailsPage() {
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label htmlFor="color">{t('productDetail.color')}</label>
-            <select id="color" value={color} onChange={(event) => setColor(event.target.value)}>
-              {product.colors.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
+          {product.colors?.length > 0 && (
+            <div className="form-group">
+              <label>{t('productDetail.color')}{color ? <span style={{ fontWeight: 400, color: 'var(--muted)', marginLeft: '0.4rem' }}>— {color}</span> : null}</label>
+              <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', paddingTop: '0.3rem' }}>
+                {product.colors.map((c) => {
+                  const selected = color === c
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      title={c}
+                      aria-label={c}
+                      aria-pressed={selected}
+                      onClick={() => { setColor(c); setColorError('') }}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: COLOR_MAP[c] ?? '#ccc',
+                        border: selected ? '2.5px solid var(--accent)' : '2px solid var(--border)',
+                        boxShadow: selected
+                          ? 'inset 0 0 0 2px #fff'
+                          : c === 'White' ? 'inset 0 0 0 1px #ccc' : 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        flexShrink: 0,
+                        transition: 'border-color 0.15s, box-shadow 0.15s',
+                      }}
+                    />
+                  )
+                })}
+              </div>
+              {colorError && <p className="error-text" style={{ marginTop: '0.4rem' }}>{colorError}</p>}
+            </div>
+          )}
           <button
             className="btn btn-primary"
             disabled={product.stock <= 0}
             style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
             onClick={() => {
+              if (product.colors?.length > 0 && !color) {
+                setColorError(t('productDetail.selectColor'))
+                return
+              }
               dispatch({
                 type: 'CART_ADD',
                 payload: { productId: product.id, quantity: 1, size, color },

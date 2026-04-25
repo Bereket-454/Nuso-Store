@@ -6,6 +6,7 @@ import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
 import { upsertProduct, deleteProduct, fetchProducts } from '../services/productsService'
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
+import { PRODUCT_COLORS, COLOR_MAP } from '../utils/colors'
 
 const defaultProduct = {
   id: '',
@@ -433,6 +434,78 @@ export function AdminDashboardPage() {
                 setProductForm((value) => ({ ...value, description: event.target.value }))
               }
             />
+          </div>
+          <div className="form-group">
+            <label>{t('productDetail.color')}</label>
+            <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', paddingTop: '0.3rem' }}>
+              {PRODUCT_COLORS.map(({ name, hex }) => {
+                const selected = (productForm.colors ?? []).includes(name)
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    title={name}
+                    aria-label={name}
+                    aria-pressed={selected}
+                    onClick={() =>
+                      setProductForm((prev) => {
+                        const current = prev.colors ?? []
+                        return {
+                          ...prev,
+                          colors: current.includes(name)
+                            ? current.filter((c) => c !== name)
+                            : [...current, name],
+                        }
+                      })
+                    }
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: hex,
+                      border: selected ? '2px solid var(--accent)' : '2px solid var(--border)',
+                      boxShadow: selected
+                        ? 'inset 0 0 0 2px #fff'
+                        : name === 'White' ? 'inset 0 0 0 1px #ccc' : 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      flexShrink: 0,
+                    }}
+                  />
+                )
+              })}
+            </div>
+            {(productForm.colors ?? []).length > 0 && (
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.6rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--muted)', flexShrink: 0 }}>Selected:</span>
+                {(productForm.colors ?? []).map((name) => (
+                  <span
+                    key={name}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      fontSize: '0.78rem',
+                      background: 'var(--surface)',
+                      borderRadius: '999px',
+                      padding: '0.15rem 0.55rem 0.15rem 0.3rem',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <span style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: COLOR_MAP[name] ?? '#ccc',
+                      display: 'inline-block',
+                      flexShrink: 0,
+                      border: name === 'White' ? '1px solid #ccc' : 'none',
+                    }} />
+                    {name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label>{t('admin.productImage')}</label>
