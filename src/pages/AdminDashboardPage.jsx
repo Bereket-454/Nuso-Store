@@ -280,6 +280,8 @@ export function AdminDashboardPage() {
     }
   }
 
+  const isStaff = state.user?.role === 'staff'
+
   const overdueCount = requests.filter((r) => {
     if (r.status !== 'pending') return false
     const ageMs = Date.now() - new Date(r.created_at).getTime()
@@ -317,8 +319,8 @@ export function AdminDashboardPage() {
     <div>
       <h1>{t('admin.title')}</h1>
 
-      {/* Overdue requests alert */}
-      {overdueCount > 0 && (
+      {/* Overdue requests alert — admin only */}
+      {!isStaff && overdueCount > 0 && (
         <div
           role="alert"
           style={{
@@ -377,7 +379,7 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      <section className="grid cols-2">
+      <section className="grid cols-2" style={isStaff ? { gridTemplateColumns: '1fr' } : undefined}>
         <article
           ref={formRef}
           className="card card-body"
@@ -670,8 +672,8 @@ export function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* ── Private business fields ─────────────────────────────────────── */}
-          <div style={{
+          {/* ── Private business fields — admin only ──────────────────────── */}
+          {!isStaff && <div style={{
             borderTop: '1px dashed var(--border)',
             marginTop: '1rem',
             paddingTop: '0.9rem',
@@ -736,14 +738,14 @@ export function AdminDashboardPage() {
                 placeholder="5"
               />
             </div>
-          </div>
+          </div>}
 
           <button className="btn btn-primary" onClick={saveProduct} disabled={saveLoading}>
             {saveLoading ? '...' : t('admin.saveProduct')}
           </button>
         </article>
 
-        <article className="card card-body">
+        {!isStaff && <article className="card card-body">
           <h3>{t('admin.ordersTitle')}</h3>
           {adminOrders.length === 0 ? (
             <p className="muted">{t('admin.noOrders')}</p>
@@ -823,10 +825,10 @@ export function AdminDashboardPage() {
               </div>
             ))
           )}
-        </article>
+        </article>}
       </section>
 
-      <section ref={requestsRef} className="card card-body" style={{ marginTop: '1rem' }}>
+      {!isStaff && <section ref={requestsRef} className="card card-body" style={{ marginTop: '1rem' }}>
         <h3>{t('admin.requestsTitle')}</h3>
         {requests.length === 0 ? (
           <p className="muted">{t('admin.requestsEmpty')}</p>
@@ -954,10 +956,10 @@ export function AdminDashboardPage() {
             </div>
           )}
         </div>
-      </section>
+      </section>}
 
       {/* ── Inventory Dashboard ──────────────────────────────────────────── */}
-      <section className="card inv-dashboard" style={{ marginTop: '1rem' }}>
+      {!isStaff && <section className="card inv-dashboard" style={{ marginTop: '1rem' }}>
 
         {/* Section header */}
         <div className="inv-dashboard__header">
@@ -1161,7 +1163,7 @@ export function AdminDashboardPage() {
             )}
           </>
         )}
-      </section>
+      </section>}
     </div>
   )
 }
