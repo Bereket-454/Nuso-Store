@@ -760,7 +760,7 @@ export function AdminDashboardPage() {
               {t('admin.businessInfoTitle')}
             </p>
 
-            {isStaff ? (
+            {isStaff && editingName ? (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -780,6 +780,16 @@ export function AdminDashboardPage() {
               </div>
             ) : (
               <>
+                {isStaff && (
+                  <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    This info is private — only you and admin can see it
+                  </p>
+                )}
                 <div className="form-group">
                   <label htmlFor="admin-cost-price">{t('admin.costPrice')}</label>
                   <input
