@@ -177,7 +177,9 @@ export function AdminDashboardPage() {
 
   // Reload the full product list from Supabase and update the store.
   const reloadProducts = async () => {
+    console.log('[Admin reloadProducts] store has', state.products.length, 'products BEFORE fetch')
     const products = await fetchProducts()
+    console.log('[Admin reloadProducts] fetchProducts returned', products.length, 'products AFTER fetch (was', state.products.length, 'in store)')
     dispatch({ type: 'CATALOGUE_LOADED', payload: { products, categories: state.categories, subcategories: state.subcategories } })
   }
 
@@ -189,6 +191,7 @@ export function AdminDashboardPage() {
     }
     setPriceError('')
     setSaveLoading(true)
+    console.log('[Admin saveProduct] products in store BEFORE save:', state.products.length)
     try {
       const { id: savedId, error } = await upsertProduct({
         ...productForm,
@@ -909,7 +912,12 @@ export function AdminDashboardPage() {
       </section>
 
       <section className="card card-body" style={{ marginTop: '1rem' }}>
-        <h3>{t('admin.inventory')}</h3>
+        <h3>
+          {t('admin.inventory')}
+          <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', fontWeight: 500, color: 'var(--muted)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '999px', padding: '0.1rem 0.55rem' }}>
+            {state.products.length}
+          </span>
+        </h3>
         {state.products.map((product) => {
           const biz = businessInfo[product.id]
           const hasCost = biz?.cost_price > 0
