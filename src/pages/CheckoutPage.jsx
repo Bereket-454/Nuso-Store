@@ -203,10 +203,18 @@ export function CheckoutPage() {
       // ── Step 4: Post-payment rewards (fire-and-forget after DB write) ────
       if (userId) {
         // Award referral reward to referrer (idempotent — safe if already done).
-        if (isFirstOrder && state.user?.referred_by) {
-          completeReferralReward(orderId, userId).then(({ rewarded }) => {
-            console.log('[CheckoutPage] referral reward:', rewarded ? 'granted' : 'skipped')
+        // isFirstOrder is a client-side hint only; the server RPC enforces the rule.
+        console.log('[CheckoutPage] referral check — referred_by:', state.user?.referred_by, '| isFirstOrder (hint):', isFirstOrder)
+        if (state.user?.referred_by) {
+          console.log('attempting referral reward', { orderId, userId, referred_by: state.user.referred_by })
+          completeReferralReward(orderId, userId).then((result) => {
+            console.log('referral reward result:', result)
+            if (result.error) console.log('referral reward error:', result.error)
+          }).catch((err) => {
+            console.log('referral reward error:', err)
           })
+        } else {
+          console.log('[CheckoutPage] skipping referral reward — user has no referred_by')
         }
         // Deduct wallet credit.
         if (walletCreditApplied > 0) {
