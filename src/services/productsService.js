@@ -49,9 +49,11 @@ export async function fetchProducts() {
 /**
  * Upsert a product to Supabase.
  * Generates an id if none is provided (new product).
+ * Pass { addedById, addedByEmail } only when inserting — never on edits — so the
+ * original author is never overwritten by subsequent saves.
  * Returns { id, error }.
  */
-export async function upsertProduct(product) {
+export async function upsertProduct(product, { addedById, addedByEmail } = {}) {
   const id = product.id && product.id.trim() ? product.id.trim() : `p-${Date.now()}`
   // Normalize categories: prefer the array, otherwise wrap the single category string.
   const categories = Array.isArray(product.categories) && product.categories.length > 0
@@ -71,6 +73,10 @@ export async function upsertProduct(product) {
     images: product.images,
     is_best_seller: product.isBestSeller ?? false,
     is_new_arrival: product.isNewArrival ?? false,
+  }
+  if (addedById) {
+    row.added_by_id = addedById
+    row.added_by_email = addedByEmail || null
   }
   console.log('[upsertProduct] saving row — categories:', row.categories, 'category:', row.category)
   const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' })

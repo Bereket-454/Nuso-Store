@@ -64,6 +64,8 @@ export function AdminDashboardPage() {
   const [archivedLoading, setArchivedLoading] = useState(false)
   // Map of product_id -> business info row; keyed for O(1) lookup in inventory list.
   const [businessInfo, setBusinessInfo] = useState({})
+  // Products that have an added_by_email — used for the Staff Activity section.
+  const [staffProducts, setStaffProducts] = useState([])
   // Inventory dashboard navigation state.
   const [invCategory, setInvCategory] = useState(null) // null=overview, slug=drill-in
   const [invSearch, setInvSearch] = useState('')
@@ -101,6 +103,13 @@ export function AdminDashboardPage() {
           setBusinessInfo(map)
         }
       })
+
+    supabase
+      .from('products')
+      .select('id, name, added_by_id, added_by_email, created_at, category, categories, subcategory')
+      .not('added_by_email', 'is', null)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { if (data) setStaffProducts(data) })
   }, [])
 
   const updateRequestStatus = async (id, status) => {
@@ -201,7 +210,19 @@ export function AdminDashboardPage() {
     dispatch({ type: 'CATALOGUE_LOADED', payload: { products, categories: state.categories, subcategories: state.subcategories } })
   }
 
+  const reloadStaffActivity = async () => {
+    const { data } = await supabase
+      .from('products')
+      .select('id, name, added_by_id, added_by_email, created_at, category, categories, subcategory')
+      .not('added_by_email', 'is', null)
+      .order('created_at', { ascending: false })
+    if (data) setStaffProducts(data)
+  }
+
   const saveProduct = async () => {
+    const role = state.user?.role
+    console.log('[Admin saveProduct] role:', role, '| product id:', productForm.id || '(new)', '| name:', productForm.name)
+
     if (!productForm.name.trim()) return
     if (Number(productForm.price) <= 0) {
       setPriceError('Price must be greater than 0')
@@ -209,17 +230,23 @@ export function AdminDashboardPage() {
     }
     setPriceError('')
     setSaveLoading(true)
-    console.log('[Admin saveProduct] products in store BEFORE save:', state.products.length)
+    console.log('[Admin saveProduct] calling upsertProduct — store has', state.products.length, 'products BEFORE save')
     try {
-      const { id: savedId, error } = await upsertProduct({
-        ...productForm,
-        price: Number(productForm.price),
-        stock: Number(productForm.stock),
-      })
+      const { id: savedId, error } = await upsertProduct(
+        { ...productForm, price: Number(productForm.price), stock: Number(productForm.stock) },
+        // Pass author only on new products — editingName is non-empty when editing.
+        !editingName ? { addedById: state.user?.id, addedByEmail: state.user?.email } : {},
+      )
       if (error) {
-        console.error('[AdminDashboard] upsertProduct error:', error.message)
-      } else {
-        // Save private business info linked to the product id.
+        console.error('[AdminDashboard] upsertProduct error:', error.message, error)
+        showToast(`Save failed: ${error.message}`)
+        return
+      }
+
+      console.log('[Admin saveProduct] upsertProduct succeeded, savedId:', savedId)
+
+      // Staff have no business-info fields — skip that write entirely.
+      if (role !== 'staff') {
         const bizRow = {
           product_id: savedId,
           cost_price: Number(productForm.costPrice) || null,
@@ -235,13 +262,14 @@ export function AdminDashboardPage() {
         } else {
           setBusinessInfo((prev) => ({ ...prev, [savedId]: bizRow }))
         }
-
-        setProductForm(defaultProduct)
-        setEditingName('')
-        setUploadError('')
-        await reloadProducts()
-        showToast('Product saved successfully')
       }
+
+      setProductForm(defaultProduct)
+      setEditingName('')
+      setUploadError('')
+      await reloadProducts()
+      await reloadStaffActivity()
+      showToast('Product saved successfully')
     } finally {
       setSaveLoading(false)
     }
@@ -314,6 +342,20 @@ export function AdminDashboardPage() {
       if (invSort === 'stock-desc')  return b.stock - a.stock
       return 0 // newest: Supabase already returns created_at DESC
     })
+
+  // ── Staff activity computed data ───────────────────────────────────────────
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000
+  const staffTodayCount = staffProducts.filter(p => new Date(p.created_at) >= todayStart).length
+  const staffWeekCount  = staffProducts.filter(p => new Date(p.created_at).getTime() >= weekAgoMs).length
+  const staffAllCount   = staffProducts.length
+  const staffGroups = staffProducts.reduce((acc, p) => {
+    const key = p.added_by_email
+    if (!acc[key]) acc[key] = []
+    acc[key].push(p)
+    return acc
+  }, {})
 
   return (
     <div>
@@ -1164,6 +1206,80 @@ export function AdminDashboardPage() {
           </>
         )}
       </section>}
+
+      {/* ── Staff Activity — admin only ──────────────────────────────────────── */}
+      {!isStaff && (
+        <section className="card card-body" style={{ marginTop: '1rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Staff Activity</h3>
+
+          {/* Summary row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            {[
+              { label: 'Today',     count: staffTodayCount },
+              { label: 'This Week', count: staffWeekCount },
+              { label: 'All Time',  count: staffAllCount },
+            ].map(({ label, count }) => (
+              <div key={label} style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                padding: '0.85rem 1rem',
+                textAlign: 'center',
+              }}>
+                <p style={{ margin: '0 0 0.2rem', fontSize: '1.65rem', fontWeight: 700, color: 'var(--accent)' }}>{count}</p>
+                <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)' }}>{label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-staff groups */}
+          {Object.keys(staffGroups).length === 0 ? (
+            <p className="muted" style={{ fontSize: '0.9rem' }}>No products tracked yet — products added going forward will appear here.</p>
+          ) : (
+            Object.entries(staffGroups).map(([email, products]) => (
+              <div key={email} style={{ marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem', paddingBottom: '0.4rem', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.92rem' }}>{email}</span>
+                  <span style={{
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    borderRadius: '999px',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    padding: '0.15rem 0.55rem',
+                    flexShrink: 0,
+                  }}>
+                    {products.length}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                  {products.map((p) => (
+                    <div key={p.id} style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto auto',
+                      alignItems: 'baseline',
+                      gap: '0.75rem',
+                      padding: '0.45rem 0.65rem',
+                      background: 'var(--surface)',
+                      borderRadius: 'var(--radius)',
+                      border: '1px solid var(--border)',
+                    }}>
+                      <span style={{ fontWeight: 500, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                      <span className="muted" style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
+                        {(p.categories ?? [p.category]).map((c) => t(`category.${c}`)).join(', ')}
+                        {' · '}{t(`subcategory.${p.subcategory || 'apparel'}`)}
+                      </span>
+                      <span className="muted" style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
+                        {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </section>
+      )}
     </div>
   )
 }
