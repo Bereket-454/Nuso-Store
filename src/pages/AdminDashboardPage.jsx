@@ -8,6 +8,19 @@ import { upsertProduct, deleteProduct, fetchProducts } from '../services/product
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
 import { PRODUCT_COLORS, COLOR_MAP } from '../utils/colors'
 
+const SUBCATEGORY_ICONS = {
+  apparel:    '👕',
+  shoes:      '👟',
+  perfumes:   '🌸',
+  appliances: '⚡',
+}
+
+function getStockStatus(stock, threshold) {
+  if (stock === 0) return 'out'
+  if (stock <= (threshold ?? 5)) return 'low'
+  return 'in'
+}
+
 const defaultProduct = {
   id: '',
   name: '',
@@ -51,6 +64,11 @@ export function AdminDashboardPage() {
   const [archivedLoading, setArchivedLoading] = useState(false)
   // Map of product_id -> business info row; keyed for O(1) lookup in inventory list.
   const [businessInfo, setBusinessInfo] = useState({})
+  // Inventory dashboard navigation state.
+  const [invCategory, setInvCategory] = useState(null) // null=overview, slug=drill-in
+  const [invSearch, setInvSearch] = useState('')
+  const [invSort, setInvSort] = useState('newest')
+  const [invStatusFilter, setInvStatusFilter] = useState('all')
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
 
   // Load orders, product requests, and business info on mount.
@@ -267,6 +285,33 @@ export function AdminDashboardPage() {
     const ageMs = Date.now() - new Date(r.created_at).getTime()
     return ageMs > 30 * 60 * 1000
   }).length
+
+  // ── Inventory computed data ────────────────────────────────────────────────
+  const invGroups = state.products.reduce((acc, p) => {
+    const key = p.subcategory || 'apparel'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(p)
+    return acc
+  }, {})
+  const invTotalStock = state.products.reduce((s, p) => s + (p.stock || 0), 0)
+  const invLowCount   = state.products.filter(p =>
+    getStockStatus(p.stock, businessInfo[p.id]?.restock_threshold) === 'low'
+  ).length
+  const invOutCount   = state.products.filter(p => p.stock === 0).length
+  const invCatProducts = invCategory ? (invGroups[invCategory] ?? []) : []
+  const invFiltered = invCatProducts
+    .filter(p => {
+      if (invSearch && !p.name.toLowerCase().includes(invSearch.toLowerCase())) return false
+      if (invStatusFilter === 'all') return true
+      return getStockStatus(p.stock, businessInfo[p.id]?.restock_threshold) === invStatusFilter
+    })
+    .sort((a, b) => {
+      if (invSort === 'price-asc')   return a.price - b.price
+      if (invSort === 'price-desc')  return b.price - a.price
+      if (invSort === 'stock-asc')   return a.stock - b.stock
+      if (invSort === 'stock-desc')  return b.stock - a.stock
+      return 0 // newest: Supabase already returns created_at DESC
+    })
 
   return (
     <div>
@@ -911,101 +956,211 @@ export function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="card card-body" style={{ marginTop: '1rem' }}>
-        <h3>
-          {t('admin.inventory')}
-          <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', fontWeight: 500, color: 'var(--muted)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '999px', padding: '0.1rem 0.55rem' }}>
-            {state.products.length}
-          </span>
-        </h3>
-        {state.products.map((product) => {
-          const biz = businessInfo[product.id]
-          const hasCost = biz?.cost_price > 0
-          const profit = hasCost ? product.price - biz.cost_price : null
-          const profitPct = profit !== null && product.price > 0
-            ? ((profit / product.price) * 100).toFixed(1)
-            : null
-          const restockAlert = biz?.restock_threshold != null && product.stock <= biz.restock_threshold
+      {/* ── Inventory Dashboard ──────────────────────────────────────────── */}
+      <section className="card inv-dashboard" style={{ marginTop: '1rem' }}>
 
-          return (
-            <article key={product.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.7rem 0' }}>
-              <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <strong>{product.name}</strong>
-                {product.isBestSeller && (
-                  <span style={{ background: '#fff3cd', color: '#92600a', fontSize: '0.68rem', fontWeight: 700, padding: '0.1rem 0.5rem', borderRadius: '999px', border: '1px solid #f0c040' }}>
-                    ★ {t('admin.tagBestSeller')}
-                  </span>
-                )}
-                {product.isNewArrival && (
-                  <span style={{ background: '#e6f4ff', color: '#0055b3', fontSize: '0.68rem', fontWeight: 700, padding: '0.1rem 0.5rem', borderRadius: '999px', border: '1px solid #99ccff' }}>
-                    ✦ {t('admin.tagNewArrival')}
-                  </span>
-                )}
-                <span style={{ color: 'var(--muted)', fontWeight: 400 }}>
-                  ({(product.categories ?? [product.category]).map((c) => t(`category.${c}`)).join(', ')} ·{' '}
-                  {t(`subcategory.${product.subcategory || 'apparel'}`)})
-                </span>
-              </p>
-              <p className="muted" style={{ margin: '0.15rem 0' }}>
-                {t('admin.stock')}: {product.stock}
-                {restockAlert && (
-                  <span style={{ marginLeft: '0.5rem', color: 'var(--danger)', fontWeight: 600 }}>
-                    ⚠ {t('admin.restockAlert')}
-                  </span>
-                )}
-                {' | '}{t('common.price')}: {birr(product.price)}
-                {hasCost && (
-                  <>
-                    {' | '}{t('admin.costPrice')}: {birr(biz.cost_price)}
-                    {' | '}<span style={{ color: profit >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 500 }}>
-                      {t('admin.profitMargin')}: {birr(profit)} ({profitPct}%)
-                    </span>
-                  </>
-                )}
-              </p>
-              {biz?.supplier_name && (
-                <p className="muted" style={{ margin: '0.1rem 0', fontSize: '0.82rem' }}>
-                  {t('admin.supplierName')}: {biz.supplier_name}
-                  {biz.supplier_contact ? ` · ${biz.supplier_contact}` : ''}
-                </p>
-              )}
-              <div className="actions">
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    const b = businessInfo[product.id] || {}
-                    setProductForm({
-                      ...product,
-                      categories: product.categories ?? [product.category],
-                      costPrice: b.cost_price ?? '',
-                      supplierName: b.supplier_name ?? '',
-                      supplierContact: b.supplier_contact ?? '',
-                      restockThreshold: b.restock_threshold ?? '',
-                    })
-                    setEditingName(product.name)
-                    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }}
-                >
-                  {t('admin.edit')}
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={async () => {
-                    const { error } = await deleteProduct(product.id)
-                    if (error) {
-                      console.error('[AdminDashboard] deleteProduct error:', error.message)
-                    } else {
-                      await reloadProducts()
-                      showToast('Product deleted')
-                    }
-                  }}
-                >
-                  {t('admin.delete')}
-                </button>
-              </div>
-            </article>
+        {/* Section header */}
+        <div className="inv-dashboard__header">
+          {invCategory !== null && (
+            <button
+              type="button"
+              className="inv-back-btn"
+              onClick={() => { setInvCategory(null); setInvSearch(''); setInvStatusFilter('all'); setInvSort('newest') }}
+            >
+              ← {t('admin.inventory')}
+            </button>
+          )}
+          <h3 className="inv-dashboard__title">
+            {invCategory === null
+              ? t('admin.inventory')
+              : `${t(`subcategory.${invCategory}`)} Inventory`}
+            <span className="inv-count-badge">
+              {invCategory === null ? state.products.length : invCatProducts.length}
+            </span>
+          </h3>
+        </div>
+
+        {/* Summary metric cards — always visible */}
+        <div className="inv-summary-grid">
+          <div className="inv-summary-card">
+            <span className="inv-summary-card__value">{state.products.length}</span>
+            <span className="inv-summary-card__label">Total Products</span>
+          </div>
+          <div className="inv-summary-card">
+            <span className="inv-summary-card__value">{invTotalStock}</span>
+            <span className="inv-summary-card__label">Total Stock</span>
+          </div>
+          <div className={`inv-summary-card${invLowCount > 0 ? ' inv-summary-card--warn' : ''}`}>
+            <span className="inv-summary-card__value">{invLowCount}</span>
+            <span className="inv-summary-card__label">Low Stock</span>
+          </div>
+          <div className={`inv-summary-card${invOutCount > 0 ? ' inv-summary-card--danger' : ''}`}>
+            <span className="inv-summary-card__value">{invOutCount}</span>
+            <span className="inv-summary-card__label">Out of Stock</span>
+          </div>
+        </div>
+
+        {invCategory === null ? (
+          /* ── Category overview ─────────────────────────────────────────── */
+          Object.keys(invGroups).length === 0 ? (
+            <p className="muted" style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
+              No products yet. Add your first product above.
+            </p>
+          ) : (
+            <div className="inv-category-grid">
+              {Object.entries(invGroups).map(([slug, products]) => {
+                const catTotalStock = products.reduce((s, p) => s + (p.stock || 0), 0)
+                const catLow = products.filter(p =>
+                  getStockStatus(p.stock, businessInfo[p.id]?.restock_threshold) === 'low'
+                ).length
+                const catOut = products.filter(p => p.stock === 0).length
+                return (
+                  <button
+                    key={slug}
+                    type="button"
+                    className="inv-category-card"
+                    onClick={() => setInvCategory(slug)}
+                  >
+                    <div className="inv-category-card__icon">{SUBCATEGORY_ICONS[slug] ?? '📦'}</div>
+                    <div className="inv-category-card__body">
+                      <p className="inv-category-card__name">{t(`subcategory.${slug}`)}</p>
+                      <p className="inv-category-card__stat">{products.length} product{products.length !== 1 ? 's' : ''}</p>
+                      <p className="inv-category-card__stat">{catTotalStock} items in stock</p>
+                      {catLow > 0 && <p className="inv-category-card__stat inv-category-card__stat--warn">⚠ {catLow} low stock</p>}
+                      {catOut > 0 && <p className="inv-category-card__stat inv-category-card__stat--danger">{catOut} out of stock</p>}
+                    </div>
+                    <span className="inv-category-card__arrow" aria-hidden="true">→</span>
+                  </button>
+                )
+              })}
+            </div>
           )
-        })}
+        ) : (
+          /* ── Drill-in: products in selected category ───────────────────── */
+          <>
+            <div className="inv-toolbar">
+              <input
+                type="search"
+                className="inv-toolbar__search"
+                placeholder="Search products…"
+                value={invSearch}
+                onChange={(e) => setInvSearch(e.target.value)}
+              />
+              <select
+                className="inv-toolbar__select"
+                value={invStatusFilter}
+                onChange={(e) => setInvStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="in">In Stock</option>
+                <option value="low">Low Stock</option>
+                <option value="out">Out of Stock</option>
+              </select>
+              <select
+                className="inv-toolbar__select"
+                value={invSort}
+                onChange={(e) => setInvSort(e.target.value)}
+              >
+                <option value="newest">Newest</option>
+                <option value="price-desc">Price ↓</option>
+                <option value="price-asc">Price ↑</option>
+                <option value="stock-desc">Stock ↓</option>
+                <option value="stock-asc">Stock ↑</option>
+              </select>
+            </div>
+
+            {invFiltered.length === 0 ? (
+              <p className="muted" style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
+                No products match your filters.
+              </p>
+            ) : (
+              <div className="inv-product-list">
+                {invFiltered.map((product) => {
+                  const biz = businessInfo[product.id]
+                  const hasCost = biz?.cost_price > 0
+                  const profit = hasCost ? product.price - biz.cost_price : null
+                  const profitPct = profit !== null && product.price > 0
+                    ? ((profit / product.price) * 100).toFixed(1)
+                    : null
+                  const status = getStockStatus(product.stock, biz?.restock_threshold)
+                  return (
+                    <article key={product.id} className="inv-product-card">
+                      <div className="inv-product-card__main">
+                        <div className="inv-product-card__top">
+                          <strong className="inv-product-card__name">{product.name}</strong>
+                          <div className="inv-product-card__tags">
+                            {product.isBestSeller && (
+                              <span className="inv-tag inv-tag--gold">★ {t('admin.tagBestSeller')}</span>
+                            )}
+                            {product.isNewArrival && (
+                              <span className="inv-tag inv-tag--blue">✦ {t('admin.tagNewArrival')}</span>
+                            )}
+                            <span className={`stock-badge stock-badge--${status}`}>
+                              {status === 'in' ? 'In Stock' : status === 'low' ? 'Low Stock' : 'Out of Stock'}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="inv-product-card__sub">
+                          {(product.categories ?? [product.category]).map((c) => t(`category.${c}`)).join(', ')}
+                          {' · '}{t(`subcategory.${product.subcategory || 'apparel'}`)}
+                        </p>
+                        <div className="inv-product-card__meta">
+                          <span><span className="inv-meta-label">Price</span> {birr(product.price)}</span>
+                          <span><span className="inv-meta-label">Stock</span> {product.stock}</span>
+                          {hasCost && <span><span className="inv-meta-label">Cost</span> {birr(biz.cost_price)}</span>}
+                          {profit !== null && (
+                            <span className={profit >= 0 ? 'margin-positive' : 'margin-negative'}>
+                              <span className="inv-meta-label">Margin</span> {birr(profit)} ({profitPct}%)
+                            </span>
+                          )}
+                        </div>
+                        {biz?.supplier_name && (
+                          <p className="inv-product-card__supplier">
+                            {biz.supplier_name}{biz.supplier_contact ? ` · ${biz.supplier_contact}` : ''}
+                          </p>
+                        )}
+                      </div>
+                      <div className="inv-product-card__actions">
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => {
+                            const b = businessInfo[product.id] || {}
+                            setProductForm({
+                              ...product,
+                              categories: product.categories ?? [product.category],
+                              costPrice: b.cost_price ?? '',
+                              supplierName: b.supplier_name ?? '',
+                              supplierContact: b.supplier_contact ?? '',
+                              restockThreshold: b.restock_threshold ?? '',
+                            })
+                            setEditingName(product.name)
+                            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }}
+                        >
+                          {t('admin.edit')}
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          onClick={async () => {
+                            const { error } = await deleteProduct(product.id)
+                            if (error) {
+                              console.error('[AdminDashboard] deleteProduct error:', error.message)
+                            } else {
+                              await reloadProducts()
+                              showToast('Product deleted')
+                            }
+                          }}
+                        >
+                          {t('admin.delete')}
+                        </button>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
       </section>
     </div>
   )
