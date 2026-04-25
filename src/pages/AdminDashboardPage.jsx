@@ -66,12 +66,22 @@ export function AdminDashboardPage() {
   const [businessInfo, setBusinessInfo] = useState({})
   // Products that have an added_by_email — used for the Staff Activity section.
   const [staffProducts, setStaffProducts] = useState([])
+  const [myProductCount, setMyProductCount] = useState(0)
   // Inventory dashboard navigation state.
   const [invCategory, setInvCategory] = useState(null) // null=overview, slug=drill-in
   const [invSearch, setInvSearch] = useState('')
   const [invSort, setInvSort] = useState('newest')
   const [invStatusFilter, setInvStatusFilter] = useState('all')
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
+
+  useEffect(() => {
+    if (!state.user?.id) return
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('added_by_id', state.user.id)
+      .then(({ count }) => { if (count !== null) setMyProductCount(count) })
+  }, [state.user?.id])
 
   // Load orders, product requests, and business info on mount.
   useEffect(() => {
@@ -219,6 +229,15 @@ export function AdminDashboardPage() {
     if (data) setStaffProducts(data)
   }
 
+  const refreshMyCount = async () => {
+    if (!state.user?.id) return
+    const { count } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('added_by_id', state.user.id)
+    if (count !== null) setMyProductCount(count)
+  }
+
   const saveProduct = async () => {
     const role = state.user?.role
     console.log('[Admin saveProduct] role:', role, '| product id:', productForm.id || '(new)', '| name:', productForm.name)
@@ -269,6 +288,7 @@ export function AdminDashboardPage() {
       setUploadError('')
       await reloadProducts()
       await reloadStaffActivity()
+      await refreshMyCount()
       showToast('Product saved successfully')
     } finally {
       setSaveLoading(false)
@@ -418,6 +438,22 @@ export function AdminDashboardPage() {
           }}
         >
           {toast}
+        </div>
+      )}
+
+      {isStaff && (
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'baseline',
+          gap: '0.5rem',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          padding: '0.55rem 1rem',
+          marginBottom: '0.85rem',
+        }}>
+          <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)', lineHeight: 1 }}>{myProductCount}</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>products added by you</span>
         </div>
       )}
 
