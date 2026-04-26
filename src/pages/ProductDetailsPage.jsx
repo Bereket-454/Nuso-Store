@@ -90,12 +90,6 @@ export function ProductDetailsPage() {
             <img
               src={product.images[selectedImage]}
               alt={product.name}
-              style={{
-                width: '100%',
-                maxHeight: '420px',
-                objectFit: 'contain',
-                display: 'block',
-              }}
             />
             {total > 1 && (
               <button type="button" className="gallery-arrow gallery-arrow--next" onClick={goNext} aria-label="Next image">
