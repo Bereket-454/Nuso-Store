@@ -2722,3 +2722,55 @@ textarea {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── Product image gallery ─────────────────────────────────────────────────── */
+
+.gallery-wrap {
+  position: relative;
+  background: #f9f9f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 420px;
+  overflow: hidden;
+}
+
+.gallery-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.88);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  color: #222;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.15s ease;
+}
+
+.gallery-arrow:hover {
+  background: #ffffff;
+}
+
+.gallery-arrow--prev { left: 0.65rem; }
+.gallery-arrow--next { right: 0.65rem; }
+
+/* Show on container hover (desktop) */
+.gallery-wrap:hover .gallery-arrow {
+  opacity: 1;
+}
+
+/* Always visible on touch devices */
+@media (hover: none) {
+  .gallery-arrow {
+    opacity: 1;
+  }
+}

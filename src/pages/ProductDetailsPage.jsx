@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
@@ -17,6 +17,7 @@ export function ProductDetailsPage() {
   const [color, setColor] = useState('')
   const [colorError, setColorError] = useState('')
   const [feedback, setFeedback] = useState('')
+  const touchStartX = useRef(null)
 
   const related = useMemo(() => {
     if (!product) return []
@@ -34,6 +35,17 @@ export function ProductDetailsPage() {
     window.scrollTo({ top: 0 })
   }, [id])
 
+  useEffect(() => {
+    const total = product?.images?.length ?? 0
+    if (total <= 1) return
+    const handler = (e) => {
+      if (e.key === 'ArrowLeft')  setSelectedImage(i => (i - 1 + total) % total)
+      if (e.key === 'ArrowRight') setSelectedImage(i => (i + 1) % total)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [product?.images?.length])
+
   usePageMeta(product?.name || t('meta.product.title'), product?.description || t('meta.product.desc'))
 
   if (!product) {
@@ -47,19 +59,34 @@ export function ProductDetailsPage() {
     )
   }
 
+  const total = product.images.length
+  const goPrev = () => setSelectedImage(i => (i - 1 + total) % total)
+  const goNext = () => setSelectedImage(i => (i + 1) % total)
+  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX }
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    if (Math.abs(dx) > 40) dx < 0 ? goNext() : goPrev()
+    touchStartX.current = null
+  }
+
   return (
     <div>
       <section className="layout-split">
         <article className="card">
-          {/* Main image — contain so the full product is always visible */}
-          <div style={{
-            background: '#f9f9f9',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            maxHeight: '420px',
-            overflow: 'hidden',
-          }}>
+          {/* Main image with arrow navigation */}
+          <div
+            className="gallery-wrap"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {total > 1 && (
+              <button type="button" className="gallery-arrow gallery-arrow--prev" onClick={goPrev} aria-label="Previous image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6"/>
+                </svg>
+              </button>
+            )}
             <img
               src={product.images[selectedImage]}
               alt={product.name}
@@ -70,6 +97,13 @@ export function ProductDetailsPage() {
                 display: 'block',
               }}
             />
+            {total > 1 && (
+              <button type="button" className="gallery-arrow gallery-arrow--next" onClick={goNext} aria-label="Next image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </button>
+            )}
           </div>
           {/* Thumbnail strip — only shown when there are multiple images */}
           {product.images.length > 1 && (
