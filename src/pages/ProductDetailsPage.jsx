@@ -46,6 +46,11 @@ export function ProductDetailsPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [product?.images?.length])
 
+  useEffect(() => {
+    document.body.classList.add('has-sticky-cta')
+    return () => document.body.classList.remove('has-sticky-cta')
+  }, [])
+
   usePageMeta(product?.name || t('meta.product.title'), product?.description || t('meta.product.desc'))
 
   if (!product) {
@@ -70,8 +75,17 @@ export function ProductDetailsPage() {
     touchStartX.current = null
   }
 
+  const handleAddToCart = () => {
+    if (product.colors?.length > 0 && !color) {
+      setColorError(t('productDetail.selectColor'))
+      return
+    }
+    dispatch({ type: 'CART_ADD', payload: { productId: product.id, quantity: 1, size, color } })
+    setFeedback(t('productDetail.addedFeedback'))
+  }
+
   return (
-    <div>
+    <div className="product-detail-page">
       <section className="layout-split">
         <article className="card">
           {/* Main image with arrow navigation */}
@@ -137,8 +151,27 @@ export function ProductDetailsPage() {
         <article className="card card-body">
           <h1>{product.name}</h1>
           <p className="price">{birr(product.price)}</p>
-          <p>{product.description}</p>
-          {product.stock > 0 ? (
+
+          {/* Structured product copy — short description + feature bullets */}
+          {product.shortDescription && (
+            <p style={{ margin: '0 0 0.6rem', fontSize: '1rem', color: 'var(--text)' }}>
+              {product.shortDescription}
+            </p>
+          )}
+          {product.features?.length > 0 ? (
+            <ul className="product-features">
+              {product.features.map((f, i) => <li key={i}>{f}</li>)}
+            </ul>
+          ) : product.description ? (
+            <p style={{ margin: '0 0 0.6rem' }}>{product.description}</p>
+          ) : null}
+          {product.extraInfo && (
+            <p className="muted" style={{ fontSize: '0.85rem', margin: '0 0 0.5rem' }}>{product.extraInfo}</p>
+          )}
+
+          {product.stock > 0 && product.stock <= 10 ? (
+            <p className="stock-urgency">Only {product.stock} left!</p>
+          ) : product.stock > 0 ? (
             <p className="muted">{t('productDetail.inStock')}</p>
           ) : (
             <p style={{ color: 'var(--danger)', fontWeight: 600, margin: '0.4rem 0' }}>
@@ -158,7 +191,7 @@ export function ProductDetailsPage() {
           {product.colors?.length > 0 && (
             <div className="form-group">
               <label>{t('productDetail.color')}{color ? <span style={{ fontWeight: 400, color: 'var(--muted)', marginLeft: '0.4rem' }}>— {color}</span> : null}</label>
-              <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', paddingTop: '0.3rem' }}>
+              <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', paddingTop: '0.3rem' }}>
                 {product.colors.map((c) => {
                   const selected = color === c
                   return (
@@ -170,13 +203,13 @@ export function ProductDetailsPage() {
                       aria-pressed={selected}
                       onClick={() => { setColor(c); setColorError('') }}
                       style={{
-                        width: '32px',
-                        height: '32px',
+                        width: '40px',
+                        height: '40px',
                         borderRadius: '50%',
                         background: COLOR_MAP[c] ?? '#ccc',
                         border: selected ? '2.5px solid var(--accent)' : '2px solid var(--border)',
                         boxShadow: selected
-                          ? 'inset 0 0 0 2px #fff'
+                          ? 'inset 0 0 0 3px #fff'
                           : c === 'White' ? 'inset 0 0 0 1px #ccc' : 'none',
                         cursor: 'pointer',
                         padding: 0,
@@ -190,25 +223,18 @@ export function ProductDetailsPage() {
               {colorError && <p className="error-text" style={{ marginTop: '0.4rem' }}>{colorError}</p>}
             </div>
           )}
-          <button
-            className="btn btn-primary"
-            disabled={product.stock <= 0}
-            style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
-            onClick={() => {
-              if (product.colors?.length > 0 && !color) {
-                setColorError(t('productDetail.selectColor'))
-                return
-              }
-              dispatch({
-                type: 'CART_ADD',
-                payload: { productId: product.id, quantity: 1, size, color },
-              })
-              setFeedback(t('productDetail.addedFeedback'))
-            }}
-          >
-            {product.stock <= 0 ? t('productDetail.outOfStock') : t('productDetail.addToCart')}
-          </button>
-          {feedback ? <p className="success-text">{feedback}</p> : null}
+          {/* Inline CTA — hidden on mobile; sticky bar handles it there */}
+          <div className="product-detail-inline-cta">
+            <button
+              className="btn btn-primary"
+              disabled={product.stock <= 0}
+              style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
+              onClick={handleAddToCart}
+            >
+              {product.stock <= 0 ? t('productDetail.outOfStock') : t('productDetail.addToCart')}
+            </button>
+            {feedback ? <p className="success-text">{feedback}</p> : null}
+          </div>
         </article>
       </section>
 
@@ -220,6 +246,24 @@ export function ProductDetailsPage() {
           ))}
         </div>
       </section>
+
+      {/* Sticky Add to Cart bar — mobile only, controlled by CSS */}
+      <div className="sticky-cta">
+        <span className="sticky-cta__price">{birr(product.price)}</span>
+        <button
+          type="button"
+          className="btn btn-primary sticky-cta__btn"
+          disabled={product.stock <= 0}
+          style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
+          onClick={handleAddToCart}
+        >
+          {feedback
+            ? t('productDetail.addedFeedback')
+            : product.stock <= 0
+              ? t('productDetail.outOfStock')
+              : t('productDetail.addToCart')}
+        </button>
+      </div>
     </div>
   )
 }

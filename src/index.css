@@ -2787,3 +2787,103 @@ textarea {
     opacity: 1;
   }
 }
+
+/* ── Product feature bullets ───────────────────────────────────────────────── */
+
+.product-features {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.product-features li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.product-features li::before {
+  content: '';
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 0.45em;
+}
+
+/* ── Product detail page — mobile UX improvements ──────────────────────────── */
+
+/* Low-stock urgency badge */
+.stock-urgency {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0.55rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e65100;
+}
+
+.stock-urgency::before {
+  content: '▲';
+  font-size: 0.65em;
+  letter-spacing: 0;
+}
+
+/* Sticky CTA bar — hidden on desktop, shown on mobile */
+.sticky-cta {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Sticky bar */
+  .sticky-cta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding: 0.8rem 1.25rem;
+    /* Respect iOS safe area (home indicator) */
+    padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.07);
+  }
+
+  .sticky-cta__price {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+
+  .sticky-cta__btn {
+    flex: 1;
+  }
+
+  /* Hide inline CTA on mobile — sticky bar is the primary action */
+  .product-detail-inline-cta {
+    display: none;
+  }
+
+  /* Padding so the sticky bar doesn't cover the last bit of content */
+  .product-detail-page {
+    padding-bottom: 84px;
+  }
+
+  /* Push the floating cart button above the sticky CTA bar */
+  .has-sticky-cta .fab-cart {
+    bottom: calc(1.5rem + 76px);
+  }
+}
