@@ -88,7 +88,7 @@ export function CategoryPage() {
       ) : null}
 
       {state.productsLoading ? (
-        <div className="grid cols-3" style={{ marginTop: '1rem' }}>
+        <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
           {Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
@@ -101,7 +101,7 @@ export function CategoryPage() {
         </article>
       ) : (
         <>
-          <div className="grid cols-3" style={{ marginTop: '1rem' }}>
+          <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
             {products.map((product) => (
               <ProductCard key={product.id} product={product} activeCategory={isPrimary ? slug : undefined} />
             ))}
