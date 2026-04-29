@@ -1329,10 +1329,20 @@ textarea {
   display: none;
 }
 
+/* Admin nav link inside .nav — desktop already shows it in .actions */
+.nav-link--admin-mobile {
+  display: none;
+}
+
 @media (max-width: 768px) {
   /* Hide Men/Women/Children nav links — Shop page chips replace them */
   .nav-link--mobile-hide {
     display: none;
+  }
+
+  /* Show Admin link in top nav on mobile — .actions is hidden so this is the only entry point */
+  .nav-link--admin-mobile {
+    display: flex;
   }
 
   /* Smooth hide/show transition */

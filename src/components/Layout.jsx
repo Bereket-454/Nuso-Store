@@ -190,6 +190,14 @@ export function Layout() {
                 {t(`nav.${item.key}`)}
               </NavLink>
             ))}
+            {isAdminUser(state.user) && (
+              <NavLink
+                className={({ isActive }) => `nav-link nav-link--admin-mobile${isActive ? ' active' : ''}`}
+                to="/admin"
+              >
+                {t('nav.admin')}
+              </NavLink>
+            )}
           </nav>
           <div className="actions">
             <div className="lang-toggle" role="group" aria-label={t('language.toggleLabel')}>
