@@ -23,7 +23,16 @@ function IconTelebirr() {
 }
 
 function IconCbe() {
-  return <img src="/cbe-logo.png" alt="CBE" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+  const [failed, setFailed] = useState(false)
+  if (failed) {
+    return (
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="16" fill="#1565C0"/>
+        <text x="16" y="21" textAnchor="middle" fill="white" fontFamily="system-ui,-apple-system,sans-serif" fontSize="11" fontWeight="700" letterSpacing="0.3">CBE</text>
+      </svg>
+    )
+  }
+  return <img src="/cbe-logo.png" alt="CBE" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} onError={() => setFailed(true)} />
 }
 
 function IconCamera() {
