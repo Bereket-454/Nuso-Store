@@ -56,6 +56,7 @@ function loadState() {
     merged.subcategories = SUBCATEGORIES
     merged.user = null        // session is managed by Supabase, not localStorage
     merged.cart = []          // cart is managed per-user; loaded after auth resolves
+    merged.orders = []        // orders are fetched from Supabase, not localStorage
     merged.productsLoading = true // always fetch fresh on load
     merged.cartPurged = false // reset on every page load
     merged.wallet = null      // fetched from Supabase after auth resolves
@@ -65,7 +66,7 @@ function loadState() {
   }
 }
 
-function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, productsLoading: _productsLoading, wallet: _wallet, ...rest }) {
+function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, productsLoading: _productsLoading, wallet: _wallet, orders: _orders, ...rest }) {
   // Exclude session-managed or transiently-fetched fields from localStorage.
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
 }

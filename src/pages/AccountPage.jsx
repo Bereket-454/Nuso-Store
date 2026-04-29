@@ -5,6 +5,7 @@ import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { checkEmailExists, checkPhoneExists, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
+import { supabase } from '../lib/supabase'
 
 export function getFirstName(fullName) {
   if (!fullName || !fullName.trim()) return 'User'
@@ -555,13 +556,44 @@ function ProfileCard({ user, t, state, dispatch }) {
     signOut()
   }
 
-  const orderCount   = state.orders.length
-  const addressCount = state.addresses.length
-  const lastOrderAgo = state.orders[0]?.createdAt ? daysAgo(state.orders[0].createdAt, t) : null
-  const walletBal    = state.wallet?.balance ?? 0
+  const [dbOrders, setDbOrders] = useState(null)
+  const [ordersLoading, setOrdersLoading] = useState(false)
+
+  async function fetchOrders() {
+    setOrdersLoading(true)
+    const { data } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    setDbOrders(
+      (data ?? []).map((row) => ({
+        id: row.id,
+        total: row.total,
+        status: row.status,
+        paymentStatus: row.payment_status,
+        createdAt: row.created_at,
+        payment: row.payment,
+        shipping: row.shipping,
+      })),
+    )
+    setOrdersLoading(false)
+  }
+
+  useEffect(() => { fetchOrders() }, [user.id])
 
   const [openTab, setOpenTab] = useState(null)
-  function toggleTab(tab) { setOpenTab(prev => prev === tab ? null : tab) }
+  function toggleTab(tab) {
+    const next = openTab === tab ? null : tab
+    setOpenTab(next)
+    if (next === 'orders') fetchOrders()
+  }
+
+  const orders       = dbOrders ?? []
+  const orderCount   = orders.length
+  const addressCount = state.addresses.length
+  const lastOrderAgo = orders[0]?.createdAt ? daysAgo(orders[0].createdAt, t) : null
+  const walletBal    = state.wallet?.balance ?? 0
 
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -646,7 +678,9 @@ function ProfileCard({ user, t, state, dispatch }) {
           ) : null}
         </div>
         <div className="dash-section__body">
-          {state.orders.length === 0 ? (
+          {ordersLoading && dbOrders === null ? (
+            <p className="muted" style={{ textAlign: 'center', padding: '1.5rem 0' }}>...</p>
+          ) : orders.length === 0 ? (
             <div className="dash-empty">
               <span className="dash-empty__icon" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" height="64" style={{ width: 'auto' }}>
@@ -667,7 +701,7 @@ function ProfileCard({ user, t, state, dispatch }) {
             </div>
           ) : (
             <div className="dash-orders">
-              {state.orders.map((order) => (
+              {orders.map((order) => (
                 <div key={order.id} className="dash-order">
                   <div className="dash-order__left">
                     <p className="dash-order__id">{order.id}</p>
