@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
-import { getPaymentIntegrationStatus, initiateTelebirrPayment } from '../services/payment'
 import { recalculateBestSellers } from '../services/productsService'
 import { completeReferralReward } from '../services/referral'
 import { useWalletCredit } from '../services/wallet'
@@ -11,9 +10,9 @@ import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
 
 // Referral discount constants
-const REFERRAL_DISCOUNT_PCT  = 0.10   // 10%
-const REFERRAL_DISCOUNT_CAP  = 150    // ETB
-const REFERRAL_MIN_ORDER     = 300    // ETB minimum subtotal
+const REFERRAL_DISCOUNT_PCT  = 0.10
+const REFERRAL_DISCOUNT_CAP  = 150
+const REFERRAL_MIN_ORDER     = 300
 
 export function CheckoutPage() {
   const { t } = useTranslation()
@@ -29,18 +28,19 @@ export function CheckoutPage() {
     phone: '',
   })
   const [errors, setErrors] = useState({})
-  const [status, setStatus] = useState({
-    loading: false,
-    msgKey: null,
-    variant: 'muted',
-  })
+  const [status, setStatus] = useState({ loading: false, msgKey: null, variant: 'muted' })
 
-  // ── Referral & wallet state ──────────────────────────────────────────────
+  // Payment state
+  const [paymentMethod, setPaymentMethod] = useState('cod') // 'cod' | 'telebirr' | 'cbe'
+  const [payWhen, setPayWhen] = useState('after')           // 'after' | 'now'
+  const [screenshot, setScreenshot] = useState(null)
+  const [screenshotPreview, setScreenshotPreview] = useState('')
+  const screenshotRef = useRef(null)
+
+  // Referral & wallet state
   const [isFirstOrder, setIsFirstOrder]   = useState(false)
   const [walletBalance, setWalletBalance] = useState(state.wallet?.balance ?? 0)
   const [useWallet, setUseWallet]         = useState(false)
-
-  const paymentInfo = getPaymentIntegrationStatus()
 
   // Pre-fill shipping name/phone when user is signed in.
   useEffect(() => {
@@ -52,23 +52,17 @@ export function CheckoutPage() {
     }))
   }, [state.user?.id])
 
-  // Load referral eligibility and wallet balance when signed-in user loads the page.
+  // Load referral eligibility and wallet balance.
   useEffect(() => {
     if (!state.user?.id) return
-
-    // Check if this is the user's first paid order (discount applies only once).
     if (state.user.referred_by) {
       supabase
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', state.user.id)
         .eq('payment_status', 'paid')
-        .then(({ count }) => {
-          setIsFirstOrder(count === 0)
-        })
+        .then(({ count }) => setIsFirstOrder(count === 0))
     }
-
-    // Wallet balance — prefer fresh Supabase value over cached store.
     supabase
       .from('wallets')
       .select('balance_etb')
@@ -81,7 +75,7 @@ export function CheckoutPage() {
       })
   }, [state.user?.id])
 
-  // ── Cart ────────────────────────────────────────────────────────────────
+  // Cart
   const cartItems = state.cart
     .map((item) => {
       const product = state.products.find((p) => p.id === item.productId)
@@ -92,24 +86,17 @@ export function CheckoutPage() {
   const subtotal    = cartItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
   const deliveryFee = subtotal > 12000 ? 0 : state.deliveryFee
 
-  // ── Referral discount ────────────────────────────────────────────────────
+  // Referral discount
   const referralDiscount = useMemo(() => {
     if (!isFirstOrder || subtotal < REFERRAL_MIN_ORDER) return 0
     return Math.min(Math.floor(subtotal * REFERRAL_DISCOUNT_PCT), REFERRAL_DISCOUNT_CAP)
   }, [isFirstOrder, subtotal])
 
-  // ── Wallet credit ────────────────────────────────────────────────────────
+  // Wallet credit
   const afterDiscount       = subtotal - referralDiscount + deliveryFee
   const maxWalletApplicable = Math.min(walletBalance, afterDiscount)
   const walletCreditApplied = useWallet && maxWalletApplicable > 0 ? maxWalletApplicable : 0
   const finalTotal          = afterDiscount - walletCreditApplied
-
-  const shippingValid = useMemo(() => (
-    shipping.fullName.trim() &&
-    shipping.city.trim() &&
-    shipping.area.trim() &&
-    /^(\+251|0)\d{9}$/.test(shipping.phone.trim())
-  ), [shipping])
 
   if (!state.cart.length) {
     return (
@@ -132,186 +119,319 @@ export function CheckoutPage() {
     return Object.keys(nextErrors).length === 0
   }
 
-  const handlePay = async () => {
-    if (!validateShipping() || !shippingValid) {
+  const handlePlaceOrder = async () => {
+    if (!validateShipping()) {
       setStatus({ loading: false, msgKey: 'checkout.msg.fillAddress', variant: 'error' })
       return
     }
+    setStatus({ loading: true, msgKey: 'checkout.msg.placingOrder', variant: 'muted' })
 
-    setStatus({ loading: true, msgKey: 'checkout.msg.processingPayment', variant: 'muted' })
     try {
-      // ── Step 1: Telebirr payment (charge the final amount after discounts) ──
-      const paymentResult = await initiateTelebirrPayment({
-        subtotal:    finalTotal,
-        deliveryFee: 0,
-        total:       finalTotal,
-      })
-      if (!paymentResult.paid) {
-        setStatus({ loading: false, msgKey: 'checkout.msg.paymentFailed', variant: 'error' })
-        return
+      // Upload screenshot if user chose "pay now"
+      let screenshotUrl = null
+      if (paymentMethod !== 'cod' && payWhen === 'now' && screenshot) {
+        const ext = screenshot.name.split('.').pop().toLowerCase()
+        const fileName = `pay-${Date.now()}.${ext}`
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+          .from('payments')
+          .upload(fileName, screenshot, { cacheControl: '3600', upsert: false })
+        if (!uploadErr) {
+          const { data: urlData } = supabase.storage.from('payments').getPublicUrl(uploadData.path)
+          screenshotUrl = urlData.publicUrl
+        } else {
+          console.warn('[Checkout] screenshot upload failed (non-blocking):', uploadErr.message)
+        }
       }
 
-      // ── Step 2: Resolve user identity ────────────────────────────────────
+      // Resolve user identity
       const orderId = `ORD-${Date.now()}`
       const { data: { session: activeSession } } = await supabase.auth.getSession()
-      let userId, userEmail, idSource
+      let userId, userEmail
       if (activeSession?.user?.id) {
         userId    = activeSession.user.id
-        userEmail = activeSession.user.email || state.user?.email || null
-        idSource  = 'supabase.auth.getSession()'
+        userEmail = activeSession.user.email || null
       } else if (state.user?.id) {
         userId    = state.user.id
         userEmail = state.user.email || null
-        idSource  = 'state.user'
       } else {
         userId    = null
         userEmail = null
-        idSource  = 'none (guest)'
       }
-      console.log('[CheckoutPage] identity source:', idSource, '| userId:', userId)
 
       const customer = userId
         ? { id: userId, phone: state.user?.phone, name: state.user?.name || shipping.fullName }
         : { name: shipping.fullName, phone: shipping.phone }
 
-      // ── Step 3: Insert order (Supabase) ──────────────────────────────────
-      const supabasePayload = {
-        id:                  orderId,
-        user_id:             userId,
-        customer_name:       customer.name,
-        customer_phone:      customer.phone || null,
-        customer_email:      userEmail,
-        items:               cartItems,
-        shipping,
-        payment:             paymentResult,
-        subtotal,
-        delivery_fee:        deliveryFee,
-        total:               finalTotal,
-        payment_status:      'paid',
-        status:              'confirmed',
-        referral_discount:   referralDiscount,
-        wallet_credit_used:  walletCreditApplied,
-      }
-      console.log('[CheckoutPage] inserting order:', orderId)
-      const { error: insertError } = await supabase.from('orders').insert(supabasePayload)
-      if (insertError) {
-        console.error('[CheckoutPage] Supabase insert FAILED:', insertError.message)
-      } else {
-        console.log('[CheckoutPage] Supabase insert SUCCESS')
+      const payment = {
+        method: paymentMethod,
+        when: paymentMethod === 'cod' ? 'on_delivery' : payWhen,
+        screenshotUrl,
       }
 
-      // ── Step 4: Post-payment rewards (fire-and-forget after DB write) ────
+      // Insert order — payment_status is 'pending'; admin confirms before delivery
+      const { error: insertError } = await supabase.from('orders').insert({
+        id:                 orderId,
+        user_id:            userId,
+        customer_name:      customer.name,
+        customer_phone:     customer.phone || null,
+        customer_email:     userEmail,
+        items:              cartItems,
+        shipping,
+        payment,
+        subtotal,
+        delivery_fee:       deliveryFee,
+        total:              finalTotal,
+        payment_status:     'pending',
+        status:             'confirmed',
+        referral_discount:  referralDiscount,
+        wallet_credit_used: walletCreditApplied,
+      })
+
+      if (insertError) {
+        console.error('[Checkout] insert error:', insertError.message)
+        setStatus({ loading: false, msgKey: 'checkout.msg.orderFailed', variant: 'error' })
+        return
+      }
+
+      // Post-order rewards (fire-and-forget)
       if (userId) {
-        // Award referral reward to referrer (idempotent — safe if already done).
-        // isFirstOrder is a client-side hint only; the server RPC enforces the rule.
-        console.log('[CheckoutPage] referral check — referred_by:', state.user?.referred_by, '| isFirstOrder (hint):', isFirstOrder)
         if (state.user?.referred_by) {
-          console.log('attempting referral reward', { orderId, userId, referred_by: state.user.referred_by })
-          completeReferralReward(orderId, userId).then((result) => {
-            console.log('referral reward result:', result)
-            if (result.error) console.log('referral reward error:', result.error)
-          }).catch((err) => {
-            console.log('referral reward error:', err)
-          })
-        } else {
-          console.log('[CheckoutPage] skipping referral reward — user has no referred_by')
+          completeReferralReward(orderId, userId).catch(console.error)
         }
-        // Deduct wallet credit.
         if (walletCreditApplied > 0) {
           useWalletCredit(userId, walletCreditApplied, orderId).then(({ success, newBalance }) => {
-            console.log('[CheckoutPage] wallet credit deducted:', success, 'new balance:', newBalance)
-            if (success) {
-              dispatch({ type: 'WALLET_LOADED', payload: { balance: newBalance } })
-            }
+            if (success) dispatch({ type: 'WALLET_LOADED', payload: { balance: newBalance } })
           })
         }
       }
 
-      // ── Step 5: Update local store ────────────────────────────────────────
       dispatch({ type: 'SAVE_ADDRESS', payload: shipping })
       const newOrder = {
-        id:              orderId,
-        items:           cartItems,
+        id: orderId,
+        items: cartItems,
         subtotal,
         deliveryFee,
-        total:           finalTotal,
+        total: finalTotal,
         referralDiscount,
         walletCreditUsed: walletCreditApplied,
         shipping,
-        payment:         paymentResult,
-        paymentStatus:   'paid',
-        status:          'confirmed',
+        payment,
+        paymentStatus: 'pending',
+        status: 'confirmed',
         customer,
-        createdAt:       new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       }
       dispatch({ type: 'ORDER_CREATE', payload: newOrder })
-
-      // ── Step 6: Background tasks ──────────────────────────────────────────
       recalculateBestSellers([newOrder, ...state.orders])
 
       navigate(`/order-confirmation/${orderId}`)
     } catch (err) {
-      console.error('[CheckoutPage] handlePay error:', err)
-      setStatus({ loading: false, msgKey: 'checkout.msg.paymentUnavailable', variant: 'error' })
+      console.error('[Checkout] handlePlaceOrder error:', err)
+      setStatus({ loading: false, msgKey: 'checkout.msg.orderFailed', variant: 'error' })
     }
   }
 
   const statusClass =
-    status.variant === 'success' ? 'success-text'
-    : status.variant === 'error' ? 'error-text'
+    status.variant === 'error'   ? 'error-text'
+    : status.variant === 'success' ? 'success-text'
     : 'muted'
 
   return (
     <div className="layout-split">
-      {/* ── Shipping form ─────────────────────────────────────────────────── */}
-      <section className="card card-body">
-        <h1>{t('checkout.title')}</h1>
-        <p className="muted" style={{ marginBottom: '1rem' }}>
-          {state.user
-            ? t('auth.signedInAs', { email: state.user.email || state.user.id })
-            : t('checkout.guestNote')}
-        </p>
 
-        <h3>{t('checkout.stepShipping')}</h3>
-        {Object.keys(errors).length > 0 && (
-          <p className="error-text">{t('checkout.fillBeforePayment')}</p>
-        )}
+      {/* ── Left column: delivery + payment ─────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-        {[
-          { id: 'fullName', label: t('checkout.fullName'),  autoComplete: 'name' },
-          { id: 'city',     label: t('checkout.city'),      autoComplete: 'address-level2' },
-          { id: 'area',     label: t('checkout.area'),      autoComplete: 'address-level3' },
-          { id: 'landmark', label: t('checkout.landmark'),  autoComplete: 'off', optional: true },
-        ].map(({ id, label, autoComplete, optional }) => (
-          <div className="form-group" key={id}>
-            <label htmlFor={`shipping-${id}`}>{label}</label>
+        {/* Delivery Details */}
+        <section className="card card-body">
+          <h1 style={{ marginBottom: '0.25rem' }}>{t('checkout.title')}</h1>
+          <p className="muted" style={{ marginBottom: '1rem', fontSize: '0.88rem' }}>
+            {state.user
+              ? t('auth.signedInAs', { email: state.user.email || state.user.id })
+              : t('checkout.guestNote')}
+          </p>
+
+          <h3>{t('checkout.stepShipping')}</h3>
+          {Object.keys(errors).length > 0 && (
+            <p className="error-text">{t('checkout.fillBeforePayment')}</p>
+          )}
+
+          {[
+            { id: 'fullName', label: t('checkout.fullName'),  autoComplete: 'name' },
+            { id: 'city',     label: t('checkout.city'),      autoComplete: 'address-level2' },
+            { id: 'area',     label: t('checkout.area'),      autoComplete: 'address-level3' },
+            { id: 'landmark', label: t('checkout.landmark'),  autoComplete: 'off', optional: true },
+          ].map(({ id, label, autoComplete, optional }) => (
+            <div className="form-group" key={id}>
+              <label htmlFor={`shipping-${id}`}>{label}</label>
+              <input
+                id={`shipping-${id}`}
+                autoComplete={autoComplete}
+                value={shipping[id]}
+                onChange={(e) => setShipping((v) => ({ ...v, [id]: e.target.value }))}
+              />
+              {!optional && errors[id] && (
+                <span className="error-text">{t(errors[id])}</span>
+              )}
+            </div>
+          ))}
+
+          <div className="form-group">
+            <label htmlFor="shipping-phone">{t('checkout.phone')}</label>
             <input
-              id={`shipping-${id}`}
-              autoComplete={autoComplete}
-              value={shipping[id]}
-              onChange={(e) => setShipping((v) => ({ ...v, [id]: e.target.value }))}
+              id="shipping-phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder={t('checkout.phonePlaceholder')}
+              value={shipping.phone}
+              onChange={(e) => setShipping((v) => ({ ...v, phone: e.target.value }))}
             />
-            {!optional && errors[id] && (
-              <span className="error-text">{t(errors[id])}</span>
-            )}
+            {errors.phone && <span className="error-text">{t(errors.phone)}</span>}
           </div>
-        ))}
+        </section>
 
-        <div className="form-group">
-          <label htmlFor="shipping-phone">{t('checkout.phone')}</label>
-          <input
-            id="shipping-phone"
-            type="tel"
-            autoComplete="tel"
-            placeholder={t('checkout.phonePlaceholder')}
-            value={shipping.phone}
-            onChange={(e) => setShipping((v) => ({ ...v, phone: e.target.value }))}
-          />
-          {errors.phone && <span className="error-text">{t(errors.phone)}</span>}
-        </div>
-      </section>
+        {/* Payment Method */}
+        <section className="card card-body">
+          <h3 style={{ marginBottom: '0.6rem' }}>{t('checkout.paymentMethod')}</h3>
 
-      {/* ── Order summary ─────────────────────────────────────────────────── */}
+          {/* Trust signals */}
+          <div className="chk-trust-strip">
+            <span>✓ {t('checkout.trustNoUpfront')}</span>
+            <span>✓ {t('checkout.trustConfirm')}</span>
+          </div>
+
+          {/* Payment option cards */}
+          <div className="chk-payment">
+            <button
+              type="button"
+              className={`chk-payment__option${paymentMethod === 'cod' ? ' chk-payment__option--active' : ''}`}
+              onClick={() => setPaymentMethod('cod')}
+            >
+              <span className="chk-payment__icon" aria-hidden="true">💵</span>
+              <span className="chk-payment__info">
+                <span className="chk-payment__label">
+                  {t('checkout.paymentCod')}
+                  <span className="chk-payment__badge">{t('checkout.paymentRecommended')}</span>
+                </span>
+                <span className="chk-payment__hint">{t('checkout.paymentCodHint')}</span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={`chk-payment__option${paymentMethod === 'telebirr' ? ' chk-payment__option--active' : ''}`}
+              onClick={() => setPaymentMethod('telebirr')}
+            >
+              <span className="chk-payment__icon" aria-hidden="true">📱</span>
+              <span className="chk-payment__info">
+                <span className="chk-payment__label">{t('checkout.paymentTelebirr')}</span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={`chk-payment__option${paymentMethod === 'cbe' ? ' chk-payment__option--active' : ''}`}
+              onClick={() => setPaymentMethod('cbe')}
+            >
+              <span className="chk-payment__icon" aria-hidden="true">🏦</span>
+              <span className="chk-payment__info">
+                <span className="chk-payment__label">{t('checkout.paymentCbe')}</span>
+              </span>
+            </button>
+          </div>
+
+          {/* Pay timing — only for Telebirr / CBE */}
+          {paymentMethod !== 'cod' && (
+            <div className="chk-pay-when">
+              <p className="chk-pay-when__title">{t('checkout.payWhenTitle')}</p>
+              <div className="chk-pay-when__options">
+                <label className={`chk-pay-when__opt${payWhen === 'after' ? ' chk-pay-when__opt--active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payWhen"
+                    value="after"
+                    checked={payWhen === 'after'}
+                    onChange={() => setPayWhen('after')}
+                  />
+                  <span>
+                    <span className="chk-pay-when__opt-label">{t('checkout.payWhenAfter')}</span>
+                    <span className="chk-pay-when__opt-hint">{t('checkout.payWhenAfterHint')}</span>
+                  </span>
+                </label>
+                <label className={`chk-pay-when__opt${payWhen === 'now' ? ' chk-pay-when__opt--active' : ''}`}>
+                  <input
+                    type="radio"
+                    name="payWhen"
+                    value="now"
+                    checked={payWhen === 'now'}
+                    onChange={() => setPayWhen('now')}
+                  />
+                  <span>
+                    <span className="chk-pay-when__opt-label">{t('checkout.payWhenNow')}</span>
+                    <span className="chk-pay-when__opt-hint">{t('checkout.payWhenNowHint')}</span>
+                  </span>
+                </label>
+              </div>
+
+              {/* Pay now — account details + screenshot */}
+              {payWhen === 'now' && (
+                <div className="chk-pay-now">
+                  <div className="chk-pay-now__account">
+                    <span className="chk-pay-now__account-label">
+                      {paymentMethod === 'telebirr' ? 'Telebirr' : 'CBE Account'}
+                    </span>
+                    <span className="chk-pay-now__account-value">
+                      {paymentMethod === 'telebirr'
+                        ? t('checkout.telebirrNumber')
+                        : t('checkout.cbeAccount')}
+                    </span>
+                  </div>
+                  <p className="chk-pay-now__amount">
+                    Amount: <strong>{birr(finalTotal)}</strong>
+                  </p>
+
+                  {/* Screenshot upload */}
+                  <div
+                    className={`chk-screenshot${screenshotPreview ? ' chk-screenshot--has-image' : ''}`}
+                    onClick={() => screenshotRef.current?.click()}
+                    onKeyDown={(e) => e.key === 'Enter' && screenshotRef.current?.click()}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={screenshot ? t('checkout.changeScreenshot') : t('checkout.uploadScreenshot')}
+                  >
+                    {screenshotPreview ? (
+                      <>
+                        <img src={screenshotPreview} alt="Payment receipt" className="chk-screenshot__preview" />
+                        <span className="chk-screenshot__change">{t('checkout.changeScreenshot')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="chk-screenshot__icon" aria-hidden="true">📷</span>
+                        <span className="chk-screenshot__label">{t('checkout.uploadScreenshot')}</span>
+                        <span className="chk-screenshot__hint">{t('checkout.uploadScreenshotHint')}</span>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    ref={screenshotRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setScreenshot(file)
+                      setScreenshotPreview(URL.createObjectURL(file))
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ── Right column: order summary ──────────────────────────────────────── */}
       <aside className="card card-body">
         <h3>{t('checkout.orderSummary')}</h3>
 
@@ -323,13 +443,11 @@ export function CheckoutPage() {
 
         <hr style={{ border: '1px solid var(--border)', width: '100%', margin: '0.75rem 0' }} />
 
-        {/* Subtotal */}
         <div className="chk-line">
           <span>{t('cart.subtotal')}</span>
           <span>{birr(subtotal)}</span>
         </div>
 
-        {/* Referral discount */}
         {referralDiscount > 0 && (
           <div className="chk-line chk-line--discount">
             <span>🎁 {t('checkout.referralDiscount')}</span>
@@ -340,13 +458,11 @@ export function CheckoutPage() {
           <p className="chk-note">{t('checkout.referralMinNote', { min: birr(REFERRAL_MIN_ORDER) })}</p>
         )}
 
-        {/* Delivery fee */}
         <div className="chk-line">
           <span>{t('cart.deliveryFee')}</span>
           <span>{deliveryFee === 0 ? t('cart.free') : birr(deliveryFee)}</span>
         </div>
 
-        {/* Wallet credit toggle */}
         {walletBalance > 0 && (
           <div className="chk-wallet">
             <label className="chk-wallet__label">
@@ -356,9 +472,7 @@ export function CheckoutPage() {
                 onChange={(e) => setUseWallet(e.target.checked)}
                 className="chk-wallet__checkbox"
               />
-              <span>
-                {t('checkout.applyWallet', { amount: birr(walletBalance) })}
-              </span>
+              <span>{t('checkout.applyWallet', { amount: birr(walletBalance) })}</span>
             </label>
             {useWallet && walletCreditApplied > 0 && (
               <div className="chk-line chk-line--wallet">
@@ -371,7 +485,6 @@ export function CheckoutPage() {
 
         <hr style={{ border: '1px solid var(--border)', width: '100%', margin: '0.75rem 0' }} />
 
-        {/* Total */}
         <div className="chk-line chk-line--total">
           <span>{t('cart.total')}</span>
           <span>{birr(finalTotal)}</span>
@@ -383,18 +496,24 @@ export function CheckoutPage() {
           </p>
         )}
 
-        <p className="muted" style={{ fontSize: '0.82rem', margin: '0.5rem 0 1rem' }}>
-          {paymentInfo.isLive ? t('payment.live') : t('payment.mock')}
-        </p>
-
         {status.msgKey && (
-          <p className={statusClass} style={{ marginBottom: '0.75rem' }}>{t(status.msgKey)}</p>
+          <p className={statusClass} style={{ margin: '0.5rem 0 0.75rem' }}>{t(status.msgKey)}</p>
         )}
 
-        <button className="btn btn-primary" disabled={status.loading} onClick={handlePay} style={{ width: '100%' }}>
-          {status.loading ? t('checkout.processing') : t('checkout.payTelebirr')}
+        <button
+          className="btn btn-primary"
+          disabled={status.loading}
+          onClick={handlePlaceOrder}
+          style={{ width: '100%', marginTop: '0.5rem' }}
+        >
+          {status.loading ? t('checkout.processing') : t('checkout.placeOrder')}
         </button>
+
+        <p className="muted" style={{ fontSize: '0.78rem', textAlign: 'center', marginTop: '0.6rem' }}>
+          ✓ {t('checkout.trustNoUpfront')} · ✓ {t('checkout.trustConfirm')}
+        </p>
       </aside>
+
     </div>
   )
 }
