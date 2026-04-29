@@ -2892,7 +2892,8 @@ textarea {
 
 @media (max-width: 640px) {
   /* Override the global 1-column collapse — listing stays at 2 per row */
-  .cols-3.product-listing-grid {
+  .cols-3.product-listing-grid,
+  .cols-4.product-listing-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.6rem;
   }

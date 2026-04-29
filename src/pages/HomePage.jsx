@@ -85,7 +85,7 @@ export function HomePage() {
 
       <section>
         <h2 className="section-title">{t('home.bestSellers')}</h2>
-        <div className="grid cols-4">
+        <div className="grid cols-4 product-listing-grid">
           {state.productsLoading
             ? Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)
             : bestSellers.map((product) => <ProductCard key={product.id} product={product} />)}
@@ -94,7 +94,7 @@ export function HomePage() {
 
       <section>
         <h2 className="section-title">{t('home.newArrivals')}</h2>
-        <div className="grid cols-4">
+        <div className="grid cols-4 product-listing-grid">
           {state.productsLoading
             ? Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)
             : newArrivals.map((product) => <ProductCard key={product.id} product={product} />)}
