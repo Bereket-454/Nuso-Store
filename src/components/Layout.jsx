@@ -37,9 +37,9 @@ const IconShield = () => (
 const navRoutes = [
   { to: '/', key: 'home' },
   { to: '/products', key: 'shop' },
-  { to: '/category/men', key: 'men' },
-  { to: '/category/women', key: 'women' },
-  { to: '/category/children', key: 'children' },
+  { to: '/category/men', key: 'men', mobileHide: true },
+  { to: '/category/women', key: 'women', mobileHide: true },
+  { to: '/category/children', key: 'children', mobileHide: true },
   { to: '/request', key: 'request' },
 ]
 
@@ -157,7 +157,9 @@ export function Layout() {
             {navRoutes.map((item) => (
               <NavLink
                 key={item.to}
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                className={({ isActive }) =>
+                  `nav-link${isActive ? ' active' : ''}${item.mobileHide ? ' nav-link--mobile-hide' : ''}`
+                }
                 to={item.to}
               >
                 {t(`nav.${item.key}`)}

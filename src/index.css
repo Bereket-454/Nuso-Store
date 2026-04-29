@@ -643,6 +643,78 @@ textarea {
   font: inherit;
 }
 
+/* ── Shop page compact filters ─────────────────────────────────────────────── */
+.shop-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.shop-search {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.shop-chips {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.shop-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.shop-chip {
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0.38rem 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.shop-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.shop-chip--active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.shop-filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.shop-filter-row select {
+  width: 100%;
+  padding: 0.52rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
 .footer {
   margin-top: 3rem;
   border-top: 1px solid var(--border);
@@ -1215,6 +1287,11 @@ textarea {
 }
 
 @media (max-width: 768px) {
+  /* Hide Men/Women/Children nav links — the Shop page chips replace them */
+  .nav-link--mobile-hide {
+    display: none;
+  }
+
   /* Smooth hide/show transition — only applied on mobile so desktop is untouched */
   .header {
     transition: transform 0.28s ease;

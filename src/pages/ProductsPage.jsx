@@ -44,67 +44,67 @@ export function ProductsPage() {
   return (
     <div>
       <h1>{t('products.title')}</h1>
-      <section className="card card-body">
-        <div className="filter-grid">
-          <div className="form-group">
-            <label htmlFor="search">{t('products.search')}</label>
-            <input
-              id="search"
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value)
-                setPage(1)
-              }}
-              placeholder={t('products.searchPlaceholder')}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="category">{t('products.shopFor')}</label>
-            <select
-              id="category"
-              value={category}
-              onChange={(event) => {
-                setCategory(event.target.value)
-                setPage(1)
-              }}
+      <div className="shop-filters">
+        <input
+          id="search"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value)
+            setPage(1)
+          }}
+          placeholder={t('products.searchPlaceholder')}
+          aria-label={t('products.search')}
+          className="shop-search"
+        />
+        <div className="shop-chips" role="group" aria-label={t('products.shopFor')}>
+          <button
+            type="button"
+            className={`shop-chip${category === 'all' ? ' shop-chip--active' : ''}`}
+            onClick={() => { setCategory('all'); setPage(1) }}
+          >
+            {t('products.all')}
+          </button>
+          {state.categories.map((item) => (
+            <button
+              key={item.slug}
+              type="button"
+              className={`shop-chip${category === item.slug ? ' shop-chip--active' : ''}`}
+              onClick={() => { setCategory(item.slug); setPage(1) }}
             >
-              <option value="all">{t('products.all')}</option>
-              {state.categories.map((item) => (
-                <option key={item.slug} value={item.slug}>
-                  {t(`category.${item.slug}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label htmlFor="subcategory">{t('products.type')}</label>
-            <select
-              id="subcategory"
-              value={subcategory}
-              onChange={(event) => {
-                setSubcategory(event.target.value)
-                setPage(1)
-              }}
-            >
-              <option value="all">{t('products.allTypes')}</option>
-              {state.subcategories.map((item) => (
-                <option key={item.slug} value={item.slug}>
-                  {t(`subcategory.${item.slug}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label htmlFor="sort">{t('products.sortBy')}</label>
-            <select id="sort" value={sort} onChange={(event) => setSort(event.target.value)}>
-              <option value="featured">{t('products.sortFeatured')}</option>
-              <option value="price-asc">{t('products.sortPriceAsc')}</option>
-              <option value="price-desc">{t('products.sortPriceDesc')}</option>
-              <option value="newest">{t('products.sortNewest')}</option>
-            </select>
-          </div>
+              {t(`category.${item.slug}`)}
+            </button>
+          ))}
         </div>
-      </section>
+        <div className="shop-filter-row">
+          <select
+            id="subcategory"
+            value={subcategory}
+            onChange={(event) => {
+              setSubcategory(event.target.value)
+              setPage(1)
+            }}
+            aria-label={t('products.type')}
+          >
+            <option value="all">{t('products.allTypes')}</option>
+            {state.subcategories.map((item) => (
+              <option key={item.slug} value={item.slug}>
+                {t(`subcategory.${item.slug}`)}
+              </option>
+            ))}
+          </select>
+          <select
+            id="sort"
+            value={sort}
+            onChange={(event) => setSort(event.target.value)}
+            aria-label={t('products.sortBy')}
+          >
+            <option value="featured">{t('products.sortFeatured')}</option>
+            <option value="price-asc">{t('products.sortPriceAsc')}</option>
+            <option value="price-desc">{t('products.sortPriceDesc')}</option>
+            <option value="newest">{t('products.sortNewest')}</option>
+          </select>
+        </div>
+      </div>
 
       {state.productsLoading ? (
         <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
