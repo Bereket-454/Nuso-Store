@@ -3,6 +3,7 @@ import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { useTranslation } from '../i18n'
 import { COLOR_MAP } from '../utils/colors'
+import { AddToCartButton } from './AddToCartButton'
 
 export function ProductCard({ product, activeCategory }) {
   const { t } = useTranslation()
@@ -120,9 +121,8 @@ export function ProductCard({ product, activeCategory }) {
             {t('productCard.addedToCart')}
           </p>
         ) : null}
-        <button
-          type="button"
-          className="btn btn-primary"
+        <AddToCartButton
+          label={outOfStock ? t('productCard.outOfStock') : isInCart ? t('productCard.addAgain') : t('productCard.addToCart')}
           disabled={outOfStock}
           style={outOfStock ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
           aria-label={
@@ -132,22 +132,15 @@ export function ProductCard({ product, activeCategory }) {
                 ? t('productCard.addAgainA11y', { name: product.name })
                 : t('productCard.addA11y', { name: product.name })
           }
-          onClick={(event) => {
-            event.preventDefault()
-            event.stopPropagation()
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
             dispatch({
               type: 'CART_ADD',
-              payload: {
-                productId: product.id,
-                quantity: 1,
-                size: defaultSize,
-                color: defaultColor,
-              },
+              payload: { productId: product.id, quantity: 1, size: defaultSize, color: defaultColor },
             })
           }}
-        >
-          {outOfStock ? t('productCard.outOfStock') : isInCart ? t('productCard.addAgain') : t('productCard.addToCart')}
-        </button>
+        />
       </div>
     </article>
   )

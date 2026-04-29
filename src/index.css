@@ -155,6 +155,12 @@ button {
 .btn-primary {
   background: var(--accent);
   color: #ffffff;
+  transition: background-color 0.2s ease;
+}
+
+/* Add-to-cart success flash — applied by AddToCartButton for ~900 ms */
+.atc-btn--added {
+  background: #2d9e6b !important;
 }
 
 .btn-secondary {

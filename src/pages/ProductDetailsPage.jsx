@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
+import { AddToCartButton } from '../components/AddToCartButton'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
@@ -78,7 +79,7 @@ export function ProductDetailsPage() {
   const handleAddToCart = () => {
     if (product.colors?.length > 0 && !color) {
       setColorError(t('productDetail.selectColor'))
-      return
+      return false  // tells AddToCartButton not to play the success animation
     }
     dispatch({ type: 'CART_ADD', payload: { productId: product.id, quantity: 1, size, color } })
     setFeedback(t('productDetail.addedFeedback'))
@@ -225,14 +226,12 @@ export function ProductDetailsPage() {
           )}
           {/* Inline CTA — hidden on mobile; sticky bar handles it there */}
           <div className="product-detail-inline-cta">
-            <button
-              className="btn btn-primary"
-              disabled={product.stock <= 0}
-              style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
+            <AddToCartButton
               onClick={handleAddToCart}
-            >
-              {product.stock <= 0 ? t('productDetail.outOfStock') : t('productDetail.addToCart')}
-            </button>
+              disabled={product.stock <= 0}
+              label={product.stock <= 0 ? t('productDetail.outOfStock') : t('productDetail.addToCart')}
+              style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
+            />
             {feedback ? <p className="success-text">{feedback}</p> : null}
           </div>
         </article>
@@ -250,19 +249,13 @@ export function ProductDetailsPage() {
       {/* Sticky Add to Cart bar — mobile only, controlled by CSS */}
       <div className="sticky-cta">
         <span className="sticky-cta__price">{birr(product.price)}</span>
-        <button
-          type="button"
+        <AddToCartButton
           className="btn btn-primary sticky-cta__btn"
-          disabled={product.stock <= 0}
-          style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
           onClick={handleAddToCart}
-        >
-          {feedback
-            ? t('productDetail.addedFeedback')
-            : product.stock <= 0
-              ? t('productDetail.outOfStock')
-              : t('productDetail.addToCart')}
-        </button>
+          disabled={product.stock <= 0}
+          label={product.stock <= 0 ? t('productDetail.outOfStock') : t('productDetail.addToCart')}
+          style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
+        />
       </div>
     </div>
   )
