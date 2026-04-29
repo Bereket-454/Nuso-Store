@@ -257,6 +257,8 @@ export function AdminDashboardPage() {
       const { id: savedId, error } = await upsertProduct(
         {
           ...productForm,
+          // Staff must always INSERT — strip any id so upsertProduct auto-generates one.
+          id: role === 'staff' ? '' : productForm.id,
           price: Number(productForm.price),
           stock: Number(productForm.stock),
           // features is a textarea string in the form; split to array for storage.
@@ -264,8 +266,8 @@ export function AdminDashboardPage() {
             ? productForm.features.split('\n').map((s) => s.trim()).filter(Boolean)
             : [],
         },
-        // Pass author only on new products — editingName is non-empty when editing.
-        !editingName ? { addedById: state.user?.id, addedByEmail: state.user?.email } : {},
+        // Pass author on new products (no editingName) or whenever staff saves (always an INSERT).
+        role === 'staff' || !editingName ? { addedById: state.user?.id, addedByEmail: state.user?.email } : {},
       )
       if (error) {
         console.error('[AdminDashboard] upsertProduct error:', error.message, error)
@@ -477,14 +479,16 @@ export function AdminDashboardPage() {
           <h3 style={editingName ? { color: 'var(--accent)' } : undefined}>
             {editingName ? `${t('admin.editing')}: ${editingName}` : t('admin.addEditProduct')}
           </h3>
-          <div className="form-group">
-            <label htmlFor="admin-id">{t('admin.productId')}</label>
-            <input
-              id="admin-id"
-              value={productForm.id}
-              onChange={(event) => setProductForm((value) => ({ ...value, id: event.target.value }))}
-            />
-          </div>
+          {!isStaff && (
+            <div className="form-group">
+              <label htmlFor="admin-id">{t('admin.productId')}</label>
+              <input
+                id="admin-id"
+                value={productForm.id}
+                onChange={(event) => setProductForm((value) => ({ ...value, id: event.target.value }))}
+              />
+            </div>
+          )}
           <div className="form-group">
             <label htmlFor="admin-name">{t('admin.name')}</label>
             <input
