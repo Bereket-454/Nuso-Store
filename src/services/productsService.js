@@ -73,8 +73,6 @@ export async function upsertProduct(product, { addedById, addedByEmail } = {}) {
     colors: product.colors,
     sizes: product.sizes,
     description: product.description,
-    short_description: product.shortDescription || null,
-    features: Array.isArray(product.features) ? product.features : [],
     images: product.images,
     is_best_seller: product.isBestSeller ?? false,
     is_new_arrival: product.isNewArrival ?? false,
