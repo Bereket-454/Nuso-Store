@@ -34,6 +34,31 @@ const IconShield = () => (
   </svg>
 )
 
+// Bottom tab bar icons — larger for touch targets
+const IconShopLg = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="3" width="7" height="7" rx="1"/>
+    <rect x="14" y="3" width="7" height="7" rx="1"/>
+    <rect x="14" y="14" width="7" height="7" rx="1"/>
+    <rect x="3" y="14" width="7" height="7" rx="1"/>
+  </svg>
+)
+
+const IconCartLg = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <path d="M16 10a4 4 0 01-8 0"/>
+  </svg>
+)
+
+const IconPersonLg = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="8" r="4"/>
+    <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
+  </svg>
+)
+
 const navRoutes = [
   { to: '/', key: 'home' },
   { to: '/products', key: 'shop' },
@@ -226,11 +251,43 @@ export function Layout() {
       <footer className="footer">
         <div className="container muted">{t('layout.footer')}</div>
       </footer>
-      {/* Floating cart button — mobile only, always accessible even when header is hidden */}
-      <NavLink to="/cart" className="fab-cart" aria-label={`Cart, ${cartItemsCount} items`}>
-        <IconCart />
-        <span className="fab-cart__count">{cartItemsCount}</span>
-      </NavLink>
+      {/* Bottom tab bar — mobile only, replaces floating cart button */}
+      <nav className="bottom-nav" aria-label="Main navigation">
+        <NavLink
+          to="/products"
+          className={({ isActive }) => `bottom-nav__item${isActive ? ' active' : ''}`}
+        >
+          <IconShopLg />
+          <span>{t('nav.shop')}</span>
+        </NavLink>
+        <NavLink
+          to="/cart"
+          className={({ isActive }) => `bottom-nav__item${isActive ? ' active' : ''}`}
+        >
+          <span className="bottom-nav__cart-wrap">
+            <span
+              key={cartAnimKey}
+              className={cartAnimKey > 0 ? 'header-cart--bump' : undefined}
+              style={{ display: 'inline-flex' }}
+            >
+              <IconCartLg />
+            </span>
+            {cartItemsCount > 0 && (
+              <span className="bottom-nav__badge">{cartItemsCount}</span>
+            )}
+          </span>
+          <span>{t('nav.cart')}</span>
+        </NavLink>
+        <NavLink
+          to="/account"
+          className={({ isActive }) => `bottom-nav__item${isActive ? ' active' : ''}`}
+        >
+          <IconPersonLg />
+          <span>
+            {state.user ? getFirstName(state.user.name) : t('nav.account')}
+          </span>
+        </NavLink>
+      </nav>
     </>
   )
 }

@@ -1281,93 +1281,132 @@ textarea {
   }
 }
 
-/* Floating cart button — hidden on desktop */
-.fab-cart {
+/* Bottom tab bar — hidden on desktop */
+.bottom-nav {
   display: none;
 }
 
 @media (max-width: 768px) {
-  /* Hide Men/Women/Children nav links — the Shop page chips replace them */
+  /* Hide Men/Women/Children nav links — Shop page chips replace them */
   .nav-link--mobile-hide {
     display: none;
   }
 
-  /* Smooth hide/show transition — only applied on mobile so desktop is untouched */
+  /* Smooth hide/show transition */
   .header {
     transition: transform 0.28s ease;
   }
 
-  /* Scroll-down: slide the sticky header fully off the top of the viewport */
+  /* Scroll-down: slide header off the top */
   .header--hidden {
     transform: translateY(-100%);
   }
 
-  /* Floating cart button */
-  .fab-cart {
-    display: flex;
+  /* Single-row mobile header — override the 980px column stack */
+  .header-inner {
+    flex-direction: row;
     align-items: center;
-    gap: 0.45rem;
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    z-index: 50;
-    background: var(--accent);
-    color: #ffffff;
-    border-radius: 999px;
-    padding: 0.8rem 1.1rem;
-    font-size: 0.88rem;
-    font-weight: 700;
-    text-decoration: none;
-    box-shadow: 0 4px 20px rgba(10, 132, 255, 0.4);
-    min-width: 3.2rem;
-    min-height: 3.2rem;
-    justify-content: center;
-    /* Ensure it is always tappable even when header animates */
-    -webkit-tap-highlight-color: transparent;
+    padding: 0.55rem 0;
+    gap: 0.75rem;
   }
 
-  .fab-cart:hover {
-    background: #0070d8;
+  .brand svg {
+    height: 32px;
   }
 
-  .fab-cart__count {
-    line-height: 1;
+  /* Hide desktop action pills — bottom tab bar handles cart + account */
+  .actions {
+    display: none;
   }
-}
 
-@media (max-width: 480px) {
-  /* Bug 1: nav links scroll horizontally instead of wrapping */
+  /* Nav: slim horizontal scroller */
   .nav {
+    flex: 1;
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
+    gap: 0.2rem;
   }
+
   .nav::-webkit-scrollbar {
-    display: none; /* Chrome / Safari */
+    display: none;
   }
+
   .nav-link {
     white-space: nowrap;
     flex-shrink: 0;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.82rem;
   }
 
-  /* Bug 2: action bar — show icons only, hide text labels */
-  .nav-icon {
-    display: inline-flex;
+  /* ── Bottom tab bar ── */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.07);
   }
-  .nav-label {
-    display: none;
-  }
-  /* Give icon-only pills a square tap target with enough spacing */
-  .actions .pill {
-    padding: 0.55rem 0.7rem;
-    min-width: 2.4rem;
+
+  .bottom-nav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    gap: 0.22rem;
+    padding: 0.6rem 0.25rem;
+    min-height: 56px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s ease;
+  }
+
+  .bottom-nav__item.active {
+    color: var(--accent);
+  }
+
+  .bottom-nav__item.active svg {
+    stroke: var(--accent);
+  }
+
+  .bottom-nav__cart-wrap {
+    position: relative;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
   }
-  .actions {
-    gap: 0.4rem;
+
+  .bottom-nav__badge {
+    position: absolute;
+    top: -5px;
+    right: -9px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    line-height: 1;
+  }
+
+  /* Main content clears the bottom tab bar */
+  main {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -2920,21 +2959,19 @@ textarea {
 }
 
 @media (max-width: 768px) {
-  /* Sticky bar */
+  /* Sticky bar — sits above the bottom tab bar */
   .sticky-cta {
     display: flex;
     align-items: center;
     gap: 1rem;
     position: fixed;
-    bottom: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     z-index: 40;
     background: #fff;
     border-top: 1px solid var(--border);
     padding: 0.8rem 1.25rem;
-    /* Respect iOS safe area (home indicator) */
-    padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.07);
   }
 
@@ -2954,14 +2991,9 @@ textarea {
     display: none;
   }
 
-  /* Padding so the sticky bar doesn't cover the last bit of content */
+  /* Clear both bottom tab bar (56px) and sticky CTA (~76px) */
   .product-detail-page {
-    padding-bottom: 84px;
-  }
-
-  /* Push the floating cart button above the sticky CTA bar */
-  .has-sticky-cta .fab-cart {
-    bottom: calc(1.5rem + 76px);
+    padding-bottom: calc(56px + 80px + env(safe-area-inset-bottom, 0px));
   }
 }
 
