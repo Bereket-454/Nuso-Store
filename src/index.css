@@ -1451,6 +1451,11 @@ textarea {
   main {
     padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
+
+  /* Footer sits outside <main> — give it space above the bottom nav */
+  .footer {
+    margin-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
