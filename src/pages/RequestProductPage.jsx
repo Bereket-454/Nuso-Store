@@ -215,188 +215,182 @@ export function RequestProductPage() {
 
   return (
     <div className="req-page">
+      <div className="req-layout">
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="req-hero">
-        <div className="req-hero__icon" aria-hidden="true">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" height="64" style={{ width: 'auto' }}>
-            <path d="M6 24 L6 56 Q6 60 10 60 L46 60 Q50 60 50 56 L50 24 Z" fill="#1a2340"/>
-            <path d="M28 24 L50 24 L50 46 Z" fill="#FF6B00"/>
-            <path d="M16 24 Q16 10 28 10 Q40 10 40 24" fill="none" stroke="#FF6B00" strokeWidth="4" strokeLinecap="round"/>
-            <rect x="11" y="30" width="6" height="22" rx="1.5" fill="white"/>
-            <rect x="35" y="30" width="6" height="22" rx="1.5" fill="white"/>
-            <line x1="17" y1="30" x2="35" y2="52" stroke="#FF6B00" strokeWidth="6" strokeLinecap="round"/>
-            <text x="62" y="36" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="26" fill="#1a2340">NUSO</text>
-            <text x="78" y="55" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="16" fill="#FF6B00" letterSpacing="4">STORE</text>
-          </svg>
-        </div>
-        <h1 className="req-hero__title">{t('request.heroTitle')}</h1>
-        <p className="req-hero__subtitle">{t('request.heroSubtitle')}</p>
-        <div className="req-trust-pills">
-          <span className="req-trust-pill">⚡ {t('request.trust1')}</span>
-          <span className="req-trust-pill">📦 {t('request.trust2')}</span>
-          <span className="req-trust-pill">🎓 {t('request.trust3')}</span>
-        </div>
-      </div>
+        {/* ── Left sidebar: hero, benefits, steps ─────────────────────────── */}
+        <div className="req-sidebar">
+          <div className="req-hero">
+            <h1 className="req-hero__title">{t('request.heroTitle')}</h1>
+            <p className="req-urgency">{t('request.urgency')}</p>
+            <p className="req-trust-line">{t('request.trustLine')}</p>
+            <div className="req-trust-pills">
+              <span className="req-trust-pill">⚡ {t('request.trust1')}</span>
+              <span className="req-trust-pill">📦 {t('request.trust2')}</span>
+              <span className="req-trust-pill">🎓 {t('request.trust3')}</span>
+            </div>
+          </div>
 
-      {/* ── Step indicators ───────────────────────────────────────────────── */}
-      <div className="req-steps" aria-label="How it works">
-        <div className="req-step">
-          <div className="req-step__num" aria-hidden="true">1</div>
-          <div className="req-step__label">{t('request.step1Label')}</div>
+          <div className="req-steps" aria-label="How it works">
+            <div className="req-step">
+              <div className="req-step__num" aria-hidden="true">1</div>
+              <div className="req-step__label">{t('request.step1Label')}</div>
+            </div>
+            <div className="req-step-divider" aria-hidden="true" />
+            <div className="req-step">
+              <div className="req-step__num" aria-hidden="true">2</div>
+              <div className="req-step__label">{t('request.step2Label')}</div>
+            </div>
+            <div className="req-step-divider" aria-hidden="true" />
+            <div className="req-step">
+              <div className="req-step__num" aria-hidden="true">3</div>
+              <div className="req-step__label">{t('request.step3Label')}</div>
+            </div>
+          </div>
         </div>
-        <div className="req-step-divider" aria-hidden="true" />
-        <div className="req-step">
-          <div className="req-step__num" aria-hidden="true">2</div>
-          <div className="req-step__label">{t('request.step2Label')}</div>
-        </div>
-        <div className="req-step-divider" aria-hidden="true" />
-        <div className="req-step">
-          <div className="req-step__num" aria-hidden="true">3</div>
-          <div className="req-step__label">{t('request.step3Label')}</div>
-        </div>
-      </div>
 
-      {/* ── Form card ─────────────────────────────────────────────────────── */}
-      <div className="req-card">
-        <form onSubmit={handleSubmit} noValidate>
+        {/* ── Right: form card ────────────────────────────────────────────── */}
+        <div className="req-card">
+          <form onSubmit={handleSubmit} noValidate>
 
-          {/* Photo upload zone */}
-          <div
-            className={`req-photo-zone${photoPreview ? ' req-photo-zone--has-photo' : ''}`}
-            onClick={() => fileInputRef.current?.click()}
-            onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-            role="button"
-            tabIndex={0}
-            aria-label={photo ? t('request.changePhoto') : t('request.photoLabel')}
-          >
-            {photoPreview ? (
-              <>
-                <img src={photoPreview} alt="Product preview" className="req-photo-preview" />
-                <span className="req-photo-zone__change">{t('request.changePhoto')}</span>
-              </>
-            ) : (
-              <>
-                <div className="req-photo-zone__icon" aria-hidden="true">📷</div>
-                <div className="req-photo-zone__label">{t('request.photoLabel')}</div>
-                <div className="req-photo-zone__hint">{t('request.photoHint')}</div>
-              </>
+            {/* Product name — first, most important */}
+            <div className="form-group req-form-group">
+              <label htmlFor="req-name" className="req-label">
+                {t('request.productNameLabel')} <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>
+              </label>
+              <input
+                id="req-name"
+                className="req-input"
+                value={form.productName}
+                onChange={set('productName')}
+                placeholder={t('request.productNamePlaceholder')}
+              />
+              {errors.productName && <p className="error-text">{errors.productName}</p>}
+            </div>
+
+            {/* Description */}
+            <div className="form-group req-form-group">
+              <label htmlFor="req-desc" className="req-label">
+                {t('request.descriptionLabel')} <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>
+              </label>
+              <textarea
+                id="req-desc"
+                className="req-input"
+                rows={3}
+                value={form.description}
+                onChange={set('description')}
+                placeholder={t('request.descriptionPlaceholder')}
+              />
+              {errors.description && <p className="error-text">{errors.description}</p>}
+            </div>
+
+            {/* Customer name — read-only when signed in */}
+            <div className="form-group req-form-group">
+              <label htmlFor="req-customer-name" className="req-label">
+                {t('request.customerNameLabel')} <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>
+              </label>
+              {user ? (
+                <>
+                  <input
+                    id="req-customer-name"
+                    className="req-input req-input--readonly"
+                    value={form.customerName}
+                    readOnly
+                  />
+                  <p className="req-signed-in-note">
+                    ✓ {t('request.signedInAs', { name: user.name || user.email })}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <input
+                    id="req-customer-name"
+                    className="req-input"
+                    value={form.customerName}
+                    onChange={set('customerName')}
+                    placeholder={t('request.customerNamePlaceholder')}
+                  />
+                  {errors.customerName && <p className="error-text">{errors.customerName}</p>}
+                </>
+              )}
+            </div>
+
+            {/* Telegram phone */}
+            <div className="form-group req-form-group">
+              <label htmlFor="req-phone" className="req-label">
+                {t('request.telegramPhoneLabel')} <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>
+              </label>
+              <input
+                id="req-phone"
+                className="req-input"
+                type="tel"
+                value={form.telegramPhone}
+                onChange={set('telegramPhone')}
+                placeholder={t('request.telegramPhonePlaceholder')}
+              />
+              {errors.telegramPhone && <p className="error-text">{errors.telegramPhone}</p>}
+            </div>
+
+            {/* Photo — secondary, after main fields */}
+            <div className="form-group req-form-group">
+              <label className="req-label">{t('request.photoLabel')}</label>
+              <div
+                className={`req-photo-zone${photoPreview ? ' req-photo-zone--has-photo' : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                aria-label={photo ? t('request.changePhoto') : t('request.photoLabel')}
+              >
+                {photoPreview ? (
+                  <>
+                    <img src={photoPreview} alt="Product preview" className="req-photo-preview" />
+                    <span className="req-photo-zone__change">{t('request.changePhoto')}</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="req-photo-zone__icon" aria-hidden="true">📷</div>
+                    <div className="req-photo-zone__label">{t('request.photoHint')}</div>
+                  </>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                style={{ display: 'none' }}
+              />
+              {errors.photo && <p className="error-text" style={{ marginTop: '0.25rem' }}>{errors.photo}</p>}
+            </div>
+
+            {/* Extra details (optional) */}
+            <div className="form-group req-form-group">
+              <label htmlFor="req-extra" className="req-label">{t('request.extraDetailsLabel')}</label>
+              <textarea
+                id="req-extra"
+                className="req-input"
+                rows={2}
+                value={form.extraDetails}
+                onChange={set('extraDetails')}
+                placeholder={t('request.extraDetailsPlaceholder')}
+              />
+            </div>
+
+            {errors.submit && (
+              <p className="error-text" style={{ marginBottom: '1rem' }}>{errors.submit}</p>
             )}
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            style={{ display: 'none' }}
-          />
-          {errors.photo && <p className="error-text" style={{ marginTop: '-0.75rem', marginBottom: '1rem' }}>{errors.photo}</p>}
 
-          {/* Product name */}
-          <div className="form-group req-form-group">
-            <label htmlFor="req-name" className="req-label">
-              {t('request.productNameLabel')} <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>
-            </label>
-            <input
-              id="req-name"
-              className="req-input"
-              value={form.productName}
-              onChange={set('productName')}
-              placeholder={t('request.productNamePlaceholder')}
-            />
-            {errors.productName && <p className="error-text">{errors.productName}</p>}
-          </div>
+            <button type="submit" className="req-submit-btn" disabled={loading}>
+              {loading
+                ? t('request.submitting')
+                : <>{t('request.submitButton')} <span aria-hidden="true">→</span></>
+              }
+            </button>
+            <p className="req-microcopy">{t('request.microcopy')}</p>
+          </form>
+        </div>
 
-          {/* Description */}
-          <div className="form-group req-form-group">
-            <label htmlFor="req-desc" className="req-label">
-              {t('request.descriptionLabel')} <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>
-            </label>
-            <textarea
-              id="req-desc"
-              className="req-input"
-              rows={4}
-              value={form.description}
-              onChange={set('description')}
-              placeholder={t('request.descriptionPlaceholder')}
-            />
-            {errors.description && <p className="error-text">{errors.description}</p>}
-          </div>
-
-          {/* Customer name — read-only when signed in */}
-          <div className="form-group req-form-group">
-            <label htmlFor="req-customer-name" className="req-label">
-              {t('request.customerNameLabel')} <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>
-            </label>
-            {user ? (
-              <>
-                <input
-                  id="req-customer-name"
-                  className="req-input req-input--readonly"
-                  value={form.customerName}
-                  readOnly
-                />
-                <p className="req-signed-in-note">
-                  ✓ {t('request.signedInAs', { name: user.name || user.email })}
-                </p>
-              </>
-            ) : (
-              <>
-                <input
-                  id="req-customer-name"
-                  className="req-input"
-                  value={form.customerName}
-                  onChange={set('customerName')}
-                  placeholder={t('request.customerNamePlaceholder')}
-                />
-                {errors.customerName && <p className="error-text">{errors.customerName}</p>}
-              </>
-            )}
-          </div>
-
-          {/* Telegram phone — pre-filled from account phone when signed in, always editable */}
-          <div className="form-group req-form-group">
-            <label htmlFor="req-phone" className="req-label">
-              {t('request.telegramPhoneLabel')} <span aria-hidden="true" style={{ color: 'var(--danger)' }}>*</span>
-            </label>
-            <input
-              id="req-phone"
-              className="req-input"
-              type="tel"
-              value={form.telegramPhone}
-              onChange={set('telegramPhone')}
-              placeholder={t('request.telegramPhonePlaceholder')}
-            />
-            {errors.telegramPhone && <p className="error-text">{errors.telegramPhone}</p>}
-          </div>
-
-          {/* Extra details (optional) */}
-          <div className="form-group req-form-group">
-            <label htmlFor="req-extra" className="req-label">{t('request.extraDetailsLabel')}</label>
-            <textarea
-              id="req-extra"
-              className="req-input"
-              rows={3}
-              value={form.extraDetails}
-              onChange={set('extraDetails')}
-              placeholder={t('request.extraDetailsPlaceholder')}
-            />
-          </div>
-
-          {errors.submit && (
-            <p className="error-text" style={{ marginBottom: '1rem' }}>{errors.submit}</p>
-          )}
-
-          <button type="submit" className="req-submit-btn" disabled={loading}>
-            {loading
-              ? t('request.submitting')
-              : <>{t('request.submitButton')} <span aria-hidden="true">→</span></>
-            }
-          </button>
-          <p className="req-microcopy">{t('request.microcopy')}</p>
-        </form>
       </div>
-
     </div>
   )
 }

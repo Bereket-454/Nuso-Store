@@ -361,8 +361,10 @@ export const translations = {
     },
     request: {
       title: 'Request a Product',
-      heroTitle: 'Can\'t find what you need? We\'ll get it for you.',
+      heroTitle: 'Can\'t find it? We\'ll get it for you — fast.',
       heroSubtitle: 'Tell us what you\'re looking for — we\'ll handle the rest.',
+      urgency: 'Most requests are fulfilled within 30–60 minutes.',
+      trustLine: 'Trusted by students in Wolaita Sodo',
       trust1: 'Fast response',
       trust2: 'Local sourcing',
       trust3: 'Campus delivery',
@@ -818,8 +820,10 @@ export const translations = {
     },
     request: {
       title: 'ምርት ጠይቅ',
-      heroTitle: 'የሚፈልጉትን ማግኘት አልቻሉም? እኛ እናቀርብልዎታለን።',
+      heroTitle: 'ያልገኘዎትን? — በፍጥነት እናቀርብልዎታለን።',
       heroSubtitle: 'ምን እንደሚፈልጉ ያሳውቁን — ቀሪውን እኛ እንሠራለን።',
+      urgency: 'አብዛኛዎቹ ጥያቄዎች ውስጥ 30–60 ደቂቃ ይሟላሉ።',
+      trustLine: 'በወላይታ ሶዶ ተማሪዎች የሚያምኑበት',
       trust1: 'ፈጣን ምላሽ',
       trust2: 'የአካባቢ አቅርቦት',
       trust3: 'ለካምፓስ',
