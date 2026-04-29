@@ -19,21 +19,11 @@ function IconCod() {
 }
 
 function IconTelebirr() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-      <circle cx="14" cy="14" r="14" fill="#FF6B00"/>
-      <text x="14" y="19.5" textAnchor="middle" fill="white" fontFamily="system-ui,-apple-system,sans-serif" fontSize="15" fontWeight="700">T</text>
-    </svg>
-  )
+  return <img src="/telebirr-logo.png" alt="Telebirr" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
 }
 
 function IconCbe() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-      <circle cx="14" cy="14" r="14" fill="#1565C0"/>
-      <text x="14" y="18" textAnchor="middle" fill="white" fontFamily="system-ui,-apple-system,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing="0.3">CBE</text>
-    </svg>
-  )
+  return <img src="/cbe-logo.png" alt="CBE" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
 }
 
 function IconCamera() {
