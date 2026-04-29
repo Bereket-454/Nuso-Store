@@ -9,6 +9,42 @@ import { useWalletCredit } from '../services/wallet'
 import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
 
+function IconCod() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r="14" fill="#2d9e6b"/>
+      <path d="M9 14l3.5 3.5L19 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </svg>
+  )
+}
+
+function IconTelebirr() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r="14" fill="#FF6B00"/>
+      <text x="14" y="19.5" textAnchor="middle" fill="white" fontFamily="system-ui,-apple-system,sans-serif" fontSize="15" fontWeight="700">T</text>
+    </svg>
+  )
+}
+
+function IconCbe() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r="14" fill="#1565C0"/>
+      <text x="14" y="18" textAnchor="middle" fill="white" fontFamily="system-ui,-apple-system,sans-serif" fontSize="9.5" fontWeight="700" letterSpacing="0.3">CBE</text>
+    </svg>
+  )
+}
+
+function IconCamera() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+  )
+}
+
 // Referral discount constants
 const REFERRAL_DISCOUNT_PCT  = 0.10
 const REFERRAL_DISCOUNT_CAP  = 150
@@ -307,7 +343,7 @@ export function CheckoutPage() {
               className={`chk-payment__option${paymentMethod === 'cod' ? ' chk-payment__option--active' : ''}`}
               onClick={() => setPaymentMethod('cod')}
             >
-              <span className="chk-payment__icon" aria-hidden="true">💵</span>
+              <span className="chk-payment__icon"><IconCod /></span>
               <span className="chk-payment__info">
                 <span className="chk-payment__label">
                   {t('checkout.paymentCod')}
@@ -322,7 +358,7 @@ export function CheckoutPage() {
               className={`chk-payment__option${paymentMethod === 'telebirr' ? ' chk-payment__option--active' : ''}`}
               onClick={() => setPaymentMethod('telebirr')}
             >
-              <span className="chk-payment__icon" aria-hidden="true">📱</span>
+              <span className="chk-payment__icon"><IconTelebirr /></span>
               <span className="chk-payment__info">
                 <span className="chk-payment__label">{t('checkout.paymentTelebirr')}</span>
               </span>
@@ -333,7 +369,7 @@ export function CheckoutPage() {
               className={`chk-payment__option${paymentMethod === 'cbe' ? ' chk-payment__option--active' : ''}`}
               onClick={() => setPaymentMethod('cbe')}
             >
-              <span className="chk-payment__icon" aria-hidden="true">🏦</span>
+              <span className="chk-payment__icon"><IconCbe /></span>
               <span className="chk-payment__info">
                 <span className="chk-payment__label">{t('checkout.paymentCbe')}</span>
               </span>
@@ -353,7 +389,7 @@ export function CheckoutPage() {
                     checked={payWhen === 'after'}
                     onChange={() => setPayWhen('after')}
                   />
-                  <span>
+                  <span className="chk-pay-when__opt-body">
                     <span className="chk-pay-when__opt-label">{t('checkout.payWhenAfter')}</span>
                     <span className="chk-pay-when__opt-hint">{t('checkout.payWhenAfterHint')}</span>
                   </span>
@@ -366,7 +402,7 @@ export function CheckoutPage() {
                     checked={payWhen === 'now'}
                     onChange={() => setPayWhen('now')}
                   />
-                  <span>
+                  <span className="chk-pay-when__opt-body">
                     <span className="chk-pay-when__opt-label">{t('checkout.payWhenNow')}</span>
                     <span className="chk-pay-when__opt-hint">{t('checkout.payWhenNowHint')}</span>
                   </span>
@@ -406,7 +442,7 @@ export function CheckoutPage() {
                       </>
                     ) : (
                       <>
-                        <span className="chk-screenshot__icon" aria-hidden="true">📷</span>
+                        <span className="chk-screenshot__icon"><IconCamera /></span>
                         <span className="chk-screenshot__label">{t('checkout.uploadScreenshot')}</span>
                         <span className="chk-screenshot__hint">{t('checkout.uploadScreenshotHint')}</span>
                       </>

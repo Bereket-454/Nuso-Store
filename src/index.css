@@ -2140,8 +2140,10 @@ textarea {
 }
 
 .chk-payment__icon {
-  font-size: 1.4rem;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
 
@@ -2204,6 +2206,8 @@ textarea {
   align-items: flex-start;
   gap: 0.65rem;
   padding: 0.75rem 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
   border: 1.5px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
@@ -2211,10 +2215,21 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+.chk-pay-when__opt-body {
+  flex: 1;
+  min-width: 0;
+}
+
 .chk-pay-when__opt input[type="radio"] {
-  margin-top: 2px;
+  /* undo the global input { width: 100%; padding; border } rule */
+  width: auto;
+  padding: 0;
+  border: none;
+  background: none;
   flex-shrink: 0;
+  margin-top: 3px;
   accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .chk-pay-when__opt--active {
@@ -2305,8 +2320,10 @@ textarea {
 }
 
 .chk-screenshot__icon {
-  font-size: 1.5rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
 }
 
 .chk-screenshot__label {
