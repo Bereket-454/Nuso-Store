@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
 import { isAdminUser } from '../utils/auth'
 import { useTranslation } from '../i18n'
@@ -71,6 +72,8 @@ const navRoutes = [
 export function Layout() {
   const { t, language, setLanguage } = useTranslation()
   const { state } = useStore()
+  const location = useLocation()
+  const prefersReduced = useReducedMotion()
   const cartItemsCount = state.cart.reduce((sum, item) => sum + item.quantity, 0)
   const prevCartCount = useRef(null)
   const [cartAnimKey, setCartAnimKey] = useState(0)
@@ -254,7 +257,16 @@ export function Layout() {
         </div>
       </header>
       <main className="container">
-        <Outlet />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: prefersReduced ? 0 : 0.2 }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
       <footer className="footer">
         <div className="container muted">{t('layout.footer')}</div>
@@ -280,9 +292,20 @@ export function Layout() {
             >
               <IconCartLg />
             </span>
-            {cartItemsCount > 0 && (
-              <span className="bottom-nav__badge">{cartItemsCount}</span>
-            )}
+            <AnimatePresence>
+              {cartItemsCount > 0 && (
+                <motion.span
+                  key={cartItemsCount}
+                  className="bottom-nav__badge"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={prefersReduced ? { scale: 1, opacity: 1 } : { scale: [0.5, 1.4, 1], opacity: 1 }}
+                  exit={{ scale: 0.5, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                >
+                  {cartItemsCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </span>
           <span>{t('nav.cart')}</span>
         </NavLink>

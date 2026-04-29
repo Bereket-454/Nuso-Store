@@ -102,8 +102,8 @@ export function CategoryPage() {
       ) : (
         <>
           <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} activeCategory={isPrimary ? slug : undefined} />
+            {products.map((product, i) => (
+              <ProductCard key={product.id} product={product} activeCategory={isPrimary ? slug : undefined} index={i} />
             ))}
           </div>
           <RequestBanner compact />

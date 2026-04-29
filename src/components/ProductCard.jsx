@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { useTranslation } from '../i18n'
 import { COLOR_MAP } from '../utils/colors'
 import { AddToCartButton } from './AddToCartButton'
 
-export function ProductCard({ product, activeCategory }) {
+export function ProductCard({ product, activeCategory, index = 0 }) {
+  const prefersReduced = useReducedMotion()
   const { t } = useTranslation()
   const { state, dispatch } = useStore()
   const isInCart = state.cart.some((item) => item.productId === product.id)
@@ -22,7 +24,14 @@ export function ProductCard({ product, activeCategory }) {
   const priceStr = birr(product.price)
 
   return (
-    <article className="card product-card">
+    <motion.article
+      className="card product-card"
+      initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut', delay: Math.min(index, 5) * 0.06 }}
+      whileHover={prefersReduced ? undefined : { scale: 1.02, transition: { duration: 0.2 } }}
+      whileTap={prefersReduced ? undefined : { scale: 0.97, transition: { duration: 0.1 } }}
+    >
       <Link
         className="product-card__link"
         to={`/products/${product.id}`}
@@ -142,6 +151,6 @@ export function ProductCard({ product, activeCategory }) {
           }}
         />
       </div>
-    </article>
+    </motion.article>
   )
 }

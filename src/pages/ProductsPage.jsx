@@ -141,8 +141,8 @@ export function ProductsPage() {
       ) : (
         <>
           <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
-            {visible.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {visible.map((product, i) => (
+              <ProductCard key={product.id} product={product} index={i % PAGE_SIZE} />
             ))}
           </div>
           {/* Sentinel — sits just below the grid; IntersectionObserver loads the next page */}

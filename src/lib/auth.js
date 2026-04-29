@@ -39,11 +39,15 @@ export async function signUp(email, password, phone, name, referralCode) {
   if (referralCode && referralCode.trim()) {
     meta.referral_code_used = referralCode.trim().toUpperCase()
   }
+  console.log('attempting signup with email:', email)
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: meta },
   })
+  if (error) {
+    console.log('supabase signUp error:', error, '| message:', error.message, '| status:', error.status, '| code:', error.code)
+  }
   return { data, error }
 }
 

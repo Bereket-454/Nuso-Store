@@ -429,21 +429,13 @@ button {
   font-size: 1.35rem;
 }
 
-@keyframes product-fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 .product-card {
   position: relative;
-  animation: product-fade-in 0.22s ease both;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  /* entrance + scale interactions handled by Framer Motion in ProductCard.jsx */
+  transition: box-shadow 0.2s ease;
 }
 
 .product-card:hover {
-  transform: translateY(-2px) scale(1.015);
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.09),
     0 4px 10px rgba(0, 0, 0, 0.04);

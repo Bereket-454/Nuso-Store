@@ -88,7 +88,7 @@ export function HomePage() {
         <div className="grid cols-4 product-listing-grid">
           {state.productsLoading
             ? Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)
-            : bestSellers.map((product) => <ProductCard key={product.id} product={product} />)}
+            : bestSellers.map((product, i) => <ProductCard key={product.id} product={product} index={i} />)}
         </div>
       </section>
 
@@ -97,7 +97,7 @@ export function HomePage() {
         <div className="grid cols-4 product-listing-grid">
           {state.productsLoading
             ? Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)
-            : newArrivals.map((product) => <ProductCard key={product.id} product={product} />)}
+            : newArrivals.map((product, i) => <ProductCard key={product.id} product={product} index={i} />)}
         </div>
       </section>
 

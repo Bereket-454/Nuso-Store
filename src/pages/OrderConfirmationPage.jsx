@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
@@ -13,6 +14,34 @@ const paymentMethodLabel = (payment, t) => {
     return payment.when === 'now' ? t('orderConfirm.paymentNow') : t('orderConfirm.paymentAfter')
   }
   return payment.method
+}
+
+function SuccessIcon() {
+  const prefersReduced = useReducedMotion()
+  return (
+    <motion.div
+      className="ord-confirm__icon"
+      aria-hidden="true"
+      initial={{ scale: 0.7, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: prefersReduced ? 0 : 0.35, ease: 'easeOut' }}
+    >
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+        <circle cx="26" cy="26" r="26" fill="#2d9e6b" />
+        <motion.path
+          d="M15 27l8 8 14-16"
+          stroke="white"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={prefersReduced ? { duration: 0 } : { duration: 0.6, ease: 'easeOut', delay: 0.2 }}
+        />
+      </svg>
+    </motion.div>
+  )
 }
 
 export function OrderConfirmationPage() {
@@ -35,8 +64,7 @@ export function OrderConfirmationPage() {
 
   return (
     <article className="card card-body" style={{ maxWidth: 560, margin: '2rem auto' }}>
-      {/* Success icon */}
-      <div className="ord-confirm__icon" aria-hidden="true">✓</div>
+      <SuccessIcon />
 
       <span className="badge" style={{ marginBottom: '0.75rem', display: 'inline-block' }}>
         {t('orderConfirm.badge')}

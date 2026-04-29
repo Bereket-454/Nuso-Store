@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
@@ -10,6 +11,7 @@ import { COLOR_MAP } from '../utils/colors'
 
 export function ProductDetailsPage() {
   const { t } = useTranslation()
+  const prefersReduced = useReducedMotion()
   const { id } = useParams()
   const { state, dispatch } = useStore()
   const product = state.products.find((item) => item.id === id)
@@ -102,10 +104,17 @@ export function ProductDetailsPage() {
                 </svg>
               </button>
             )}
-            <img
-              src={product.images[selectedImage]}
-              alt={product.name}
-            />
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.img
+                key={selectedImage}
+                src={product.images[selectedImage]}
+                alt={product.name}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: prefersReduced ? 0 : 0.2 }}
+              />
+            </AnimatePresence>
             {total > 1 && (
               <button type="button" className="gallery-arrow gallery-arrow--next" onClick={goNext} aria-label="Next image">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -240,8 +249,8 @@ export function ProductDetailsPage() {
       <section>
         <h2 className="section-title">{t('productDetail.relatedTitle')}</h2>
         <div className="grid cols-4">
-          {related.map((item) => (
-            <ProductCard key={item.id} product={item} />
+          {related.map((item, i) => (
+            <ProductCard key={item.id} product={item} index={i} />
           ))}
         </div>
       </section>
