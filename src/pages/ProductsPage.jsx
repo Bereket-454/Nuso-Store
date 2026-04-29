@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
@@ -18,6 +18,7 @@ export function ProductsPage() {
   const [subcategory, setSubcategory] = useState('all')
   const [sort, setSort] = useState('featured')
   const [page, setPage] = useState(1)
+  const sentinelRef = useRef(null)
 
   const filtered = useMemo(() => {
     const text = search.trim().toLowerCase()
@@ -40,6 +41,25 @@ export function ProductsPage() {
 
   const maxPage = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const visible = filtered.slice(0, page * PAGE_SIZE)
+  const allLoaded = page >= maxPage
+
+  // Infinite scroll — advance page when the sentinel enters the viewport.
+  // rootMargin of 400px fires early enough that products appear before the
+  // user reaches the exact bottom, keeping the experience seamless.
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !allLoaded) {
+          setPage((p) => p + 1)
+        }
+      },
+      { rootMargin: '400px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [allLoaded])
 
   return (
     <div>
@@ -125,14 +145,9 @@ export function ProductsPage() {
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-          {page < maxPage && (
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '1.2rem 0' }}>
-              <button className="btn btn-secondary" onClick={() => setPage((value) => value + 1)}>
-                {t('products.loadMore')}
-              </button>
-            </div>
-          )}
-          <RequestBanner compact />
+          {/* Sentinel — sits just below the grid; IntersectionObserver loads the next page */}
+          <div ref={sentinelRef} aria-hidden="true" style={{ height: '1px' }} />
+          {allLoaded && <RequestBanner compact />}
         </>
       )}
     </div>

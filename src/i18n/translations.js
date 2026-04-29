@@ -371,7 +371,7 @@ export const translations = {
       step3Label: 'We deliver',
       microcopy: 'No commitment · We\'ll reply on Telegram within 30 min',
       subtitle: 'Can\'t find it here? Tell us what you need — we\'ll get it for you.',
-      banner: 'Can\'t find what you\'re looking for?',
+      banner: 'Didn\'t find what you\'re looking for?',
       bannerHint: 'Tell us what you need — we\'ll reach out on Telegram within 30 minutes.',
       bannerButton: 'Request a Product',
       photoLabel: 'Add a Photo',
