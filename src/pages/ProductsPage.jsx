@@ -107,7 +107,7 @@ export function ProductsPage() {
       </section>
 
       {state.productsLoading ? (
-        <div className="grid cols-3" style={{ marginTop: '1rem' }}>
+        <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
           {Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -120,7 +120,7 @@ export function ProductsPage() {
         </article>
       ) : (
         <>
-          <div className="grid cols-3" style={{ marginTop: '1rem' }}>
+          <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
             {visible.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
