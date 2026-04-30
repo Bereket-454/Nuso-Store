@@ -52,6 +52,7 @@ export function AdminNav() {
   const handleSignOut = async () => {
     close()
     await signOut()
+    navigate('/')
   }
 
   return (

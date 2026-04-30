@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
 import { isAdminUser } from '../utils/auth'
@@ -63,6 +63,7 @@ export function Layout() {
   const { t, language, setLanguage } = useTranslation()
   const { state } = useStore()
   const location = useLocation()
+  const navigate = useNavigate()
   const prefersReduced = useReducedMotion()
   const cartItemsCount = state.cart.reduce((sum, item) => sum + item.quantity, 0)
   const prevCartCount = useRef(null)
@@ -161,6 +162,7 @@ export function Layout() {
   const handleSignOut = async () => {
     setProfileOpen(false)
     await signOut()
+    navigate('/')
   }
 
   const closeDropdown = () => setProfileOpen(false)

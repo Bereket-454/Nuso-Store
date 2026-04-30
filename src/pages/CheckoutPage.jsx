@@ -8,6 +8,7 @@ import { completeReferralReward } from '../services/referral'
 import { useWalletCredit } from '../services/wallet'
 import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
+import { fetchDefaultShipping, saveDefaultShipping } from '../lib/auth'
 
 function IconCod() {
   return (
@@ -77,14 +78,30 @@ export function CheckoutPage() {
   const [walletBalance, setWalletBalance] = useState(state.wallet?.balance ?? 0)
   const [useWallet, setUseWallet]         = useState(false)
 
-  // Pre-fill shipping name/phone when user is signed in.
+  // Pre-fill all shipping fields when user is signed in.
+  // Priority: existing form input > Supabase saved > localStorage addresses > user profile.
   useEffect(() => {
-    if (!state.user) return
+    if (!state.user?.id) return
+    const local = state.addresses[0] ?? {}
+    // Seed immediately from localStorage so the form is never blank on slow connections.
     setShipping((prev) => ({
-      ...prev,
-      fullName: prev.fullName || state.user.name || '',
-      phone:    prev.phone    || state.user.phone || '',
+      fullName: prev.fullName || local.fullName || state.user.name  || '',
+      phone:    prev.phone    || local.phone    || state.user.phone || '',
+      city:     prev.city     || local.city     || '',
+      area:     prev.area     || local.area     || '',
+      landmark: prev.landmark || local.landmark || '',
     }))
+    // Then try Supabase for cross-device sync — overwrites only still-empty fields.
+    fetchDefaultShipping(state.user.id).then((remote) => {
+      if (!remote) return
+      setShipping((prev) => ({
+        fullName: prev.fullName || remote.fullName || '',
+        phone:    prev.phone    || remote.phone    || '',
+        city:     prev.city     || remote.city     || '',
+        area:     prev.area     || remote.area     || '',
+        landmark: prev.landmark || remote.landmark || '',
+      }))
+    })
   }, [state.user?.id])
 
   // Load referral eligibility and wallet balance.
@@ -241,6 +258,8 @@ export function CheckoutPage() {
       }
 
       dispatch({ type: 'SAVE_ADDRESS', payload: shipping })
+      // Persist delivery details for future checkouts (fire-and-forget).
+      if (userId) saveDefaultShipping(userId, shipping)
       const newOrder = {
         id: orderId,
         items: cartItems,

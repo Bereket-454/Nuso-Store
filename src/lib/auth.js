@@ -139,3 +139,37 @@ export async function updateProfile({ userId, name, phone, newPassword }) {
 export async function signOut() {
   return supabase.auth.signOut()
 }
+
+/**
+ * Fetch the user's saved default shipping address from their profile row.
+ * Returns the parsed shipping object, or null on any error (including when
+ * the default_shipping column doesn't yet exist in the table).
+ */
+export async function fetchDefaultShipping(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('default_shipping')
+      .eq('id', userId)
+      .single()
+    if (error || !data?.default_shipping) return null
+    return data.default_shipping
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Persist the user's delivery details back to their profile row so future
+ * checkouts can be pre-filled. Fire-and-forget — never blocks order placement.
+ */
+export async function saveDefaultShipping(userId, shipping) {
+  try {
+    await supabase
+      .from('profiles')
+      .update({ default_shipping: shipping })
+      .eq('id', userId)
+  } catch {
+    // Non-blocking: the order is already placed; localStorage already has it.
+  }
+}
