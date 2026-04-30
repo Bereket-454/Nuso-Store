@@ -3843,3 +3843,273 @@ textarea {
     padding: 0.15rem 0.4rem;
   }
 }
+
+/* ── Admin Store Banner ─────────────────────────────────────────────────────── */
+
+.admin-store-banner {
+  background: #1a2340;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.admin-store-banner__back {
+  background: #FF6B00;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.22rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: opacity 0.15s;
+}
+
+.admin-store-banner__back:hover {
+  opacity: 0.85;
+}
+
+/* ── Admin Nav ──────────────────────────────────────────────────────────────── */
+
+.admin-nav {
+  background: #1a2340;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.admin-nav__inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: min(1180px, 94vw);
+  margin: 0 auto;
+  padding: 0.7rem 0;
+}
+
+.admin-nav__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.admin-nav__badge {
+  background: #FF6B00;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+/* Desktop nav links */
+.admin-nav__links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.admin-nav__link {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.38rem 0.7rem;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.admin-nav__link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-nav__link--active {
+  color: #FF6B00;
+  background: rgba(255, 107, 0, 0.12);
+}
+
+.admin-nav__link--active:hover {
+  color: #FF6B00;
+  background: rgba(255, 107, 0, 0.18);
+}
+
+/* Reset button styles for scroll links */
+.admin-nav__link--btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.admin-nav__link--signout {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Mobile footer inside the dropdown — hidden on desktop */
+.admin-nav__mobile-footer {
+  display: none;
+}
+
+/* Desktop right actions */
+.admin-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.admin-nav__user {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.admin-nav__view-store {
+  background: transparent;
+  border: 1px solid rgba(255, 107, 0, 0.6);
+  color: #FF6B00;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.32rem 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.admin-nav__view-store:hover {
+  border-color: #FF6B00;
+  background: rgba(255, 107, 0, 0.1);
+}
+
+.admin-nav__signout-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.32rem 0.6rem;
+  border-radius: 6px;
+  font-family: inherit;
+  transition: color 0.15s, background 0.15s;
+}
+
+.admin-nav__signout-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Hamburger — hidden on desktop */
+.admin-nav__hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  line-height: 0;
+  margin-left: auto;
+}
+
+.admin-nav__backdrop {
+  display: none;
+}
+
+/* Hide regular header when admin nav takes over */
+.header--hidden-always {
+  display: none !important;
+}
+
+/* Hide bottom tab bar when admin nav is active */
+.bottom-nav--hidden {
+  display: none !important;
+}
+
+/* ── Admin Nav — mobile ─────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .admin-nav__links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1a2340;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.5rem 0 0.25rem;
+    z-index: 39;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .admin-nav__links--open {
+    display: flex;
+  }
+
+  .admin-nav__link {
+    padding: 0.75rem 1.25rem;
+    border-radius: 0;
+    font-size: 0.95rem;
+    text-align: left;
+  }
+
+  .admin-nav__actions {
+    display: none;
+  }
+
+  .admin-nav__hamburger {
+    display: block;
+  }
+
+  .admin-nav__mobile-footer {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+  }
+
+  .admin-nav__user-mobile {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem 0.25rem;
+  }
+
+  .admin-nav__backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 38;
+  }
+
+  .admin-nav {
+    position: sticky;
+    top: 0;
+  }
+}

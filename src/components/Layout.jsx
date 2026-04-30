@@ -6,6 +6,7 @@ import { isAdminUser } from '../utils/auth'
 import { signOut } from '../lib/auth'
 import { useTranslation } from '../i18n'
 import { getFirstName } from '../pages/AccountPage'
+import { AdminNav } from './AdminNav'
 
 const IconPerson = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -153,12 +154,21 @@ export function Layout() {
     }
   }, [])
 
+  const adminViewStore = localStorage.getItem('adminViewStore') === 'true'
+  const showAdminNav = isAdminUser(state.user) && !adminViewStore
+  const showAdminBanner = isAdminUser(state.user) && adminViewStore
+
   const handleSignOut = async () => {
     setProfileOpen(false)
     await signOut()
   }
 
   const closeDropdown = () => setProfileOpen(false)
+
+  const handleBackToAdmin = () => {
+    localStorage.removeItem('adminViewStore')
+    window.location.href = '/admin'
+  }
 
   return (
     <>
@@ -180,8 +190,17 @@ export function Layout() {
           }
         }
       `}</style>
+      {showAdminBanner && (
+        <div className="admin-store-banner">
+          <span>Admin Mode — you're browsing as a customer</span>
+          <button type="button" className="admin-store-banner__back" onClick={handleBackToAdmin}>
+            ← Back to Admin
+          </button>
+        </div>
+      )}
       <div className="top-note">{t('layout.topNote')}</div>
-      <header className={`header${headerHidden ? ' header--hidden' : ''}`}>
+      {showAdminNav && <AdminNav />}
+      <header className={`header${headerHidden ? ' header--hidden' : ''}${showAdminNav ? ' header--hidden-always' : ''}`}>
         <div className="container header-inner">
           <NavLink to="/" className="brand" aria-label="Nuso Store — home">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 70" aria-hidden="true">
@@ -336,8 +355,8 @@ export function Layout() {
         <div className="container muted">{t('layout.footer')}</div>
       </footer>
 
-      {/* Bottom tab bar — mobile only, replaces floating cart button */}
-      <nav className="bottom-nav" aria-label="Main navigation">
+      {/* Bottom tab bar — mobile only, hidden when admin nav is active */}
+      <nav className={`bottom-nav${showAdminNav ? ' bottom-nav--hidden' : ''}`} aria-label="Main navigation">
         <NavLink
           to="/products"
           className={({ isActive }) => `bottom-nav__item${isActive ? ' active' : ''}`}

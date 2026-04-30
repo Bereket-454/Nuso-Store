@@ -474,6 +474,7 @@ export function AdminDashboardPage() {
 
       <section className="grid cols-2" style={isStaff ? { gridTemplateColumns: '1fr' } : undefined}>
         <article
+          id="admin-section-products"
           ref={formRef}
           className="card card-body"
           style={editingName ? { outline: '2px solid var(--accent)', outlineOffset: '2px' } : undefined}
@@ -903,7 +904,7 @@ export function AdminDashboardPage() {
           </button>
         </article>
 
-        {!isStaff && <article className="card card-body">
+        {!isStaff && <article id="admin-section-orders" className="card card-body">
           <h3>{t('admin.ordersTitle')}</h3>
           {adminOrders.length === 0 ? (
             <p className="muted">{t('admin.noOrders')}</p>
@@ -946,7 +947,7 @@ export function AdminDashboardPage() {
         </article>}
       </section>
 
-      {!isStaff && <section ref={requestsRef} className="card card-body" style={{ marginTop: '1rem' }}>
+      {!isStaff && <section id="admin-section-requests" ref={requestsRef} className="card card-body" style={{ marginTop: '1rem' }}>
         <h3>{t('admin.requestsTitle')}</h3>
         {requests.length === 0 ? (
           <p className="muted">{t('admin.requestsEmpty')}</p>
@@ -1077,7 +1078,7 @@ export function AdminDashboardPage() {
       </section>}
 
       {/* ── Inventory Dashboard ──────────────────────────────────────────── */}
-      {!isStaff && <section className="card inv-dashboard" style={{ marginTop: '1rem' }}>
+      {!isStaff && <section id="admin-section-inventory" className="card inv-dashboard" style={{ marginTop: '1rem' }}>
 
         {/* Section header */}
         <div className="inv-dashboard__header">
