@@ -3,35 +3,22 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
 import { isAdminUser } from '../utils/auth'
+import { signOut } from '../lib/auth'
 import { useTranslation } from '../i18n'
 import { getFirstName } from '../pages/AccountPage'
-import { NotificationBell } from './NotificationBell'
 
 const IconPerson = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <circle cx="12" cy="8" r="4"/>
     <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
   </svg>
 )
 
-const IconPin = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/>
-    <circle cx="12" cy="9" r="2.5"/>
-  </svg>
-)
-
 const IconCart = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
     <line x1="3" y1="6" x2="21" y2="6"/>
     <path d="M16 10a4 4 0 01-8 0"/>
-  </svg>
-)
-
-const IconShield = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 2l8 4v6c0 5-3.6 9.7-8 11-4.4-1.3-8-6-8-11V6l8-4z"/>
   </svg>
 )
 
@@ -60,13 +47,15 @@ const IconPersonLg = () => (
   </svg>
 )
 
+// Center nav routes (desktop + mobile).
+// desktopHide = only visible in mobile top nav scroll; the desktop .actions handles it separately.
 const navRoutes = [
   { to: '/', key: 'home' },
   { to: '/products', key: 'shop' },
   { to: '/category/men', key: 'men', mobileHide: true },
   { to: '/category/women', key: 'women', mobileHide: true },
   { to: '/category/children', key: 'children', mobileHide: true },
-  { to: '/request', key: 'request' },
+  { to: '/request', key: 'request', desktopHide: true },
 ]
 
 export function Layout() {
@@ -78,6 +67,8 @@ export function Layout() {
   const prevCartCount = useRef(null)
   const [cartAnimKey, setCartAnimKey] = useState(0)
   const [headerHidden, setHeaderHidden] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef(null)
   const lastScrollY = useRef(0)
 
   useEffect(() => {
@@ -90,6 +81,22 @@ export function Layout() {
       setCartAnimKey((key) => key + 1) // eslint-disable-line react-hooks/set-state-in-effect -- sync animation to cart total
     }
   }, [cartItemsCount])
+
+  // Close profile dropdown on click outside or Escape
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false)
+      }
+    }
+    const onEscape = (e) => { if (e.key === 'Escape') setProfileOpen(false) }
+    document.addEventListener('mousedown', onClickOutside)
+    document.addEventListener('keydown', onEscape)
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside)
+      document.removeEventListener('keydown', onEscape)
+    }
+  }, [])
 
   // Hide header on scroll down, show on scroll up — mobile only (CSS gates the visual effect).
   //
@@ -146,6 +153,13 @@ export function Layout() {
     }
   }, [])
 
+  const handleSignOut = async () => {
+    setProfileOpen(false)
+    await signOut()
+  }
+
+  const closeDropdown = () => setProfileOpen(false)
+
   return (
     <>
       <style>{`
@@ -181,12 +195,14 @@ export function Layout() {
               <text x="78" y="55" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="16" fill="#FF6B00" letterSpacing="4">STORE</text>
             </svg>
           </NavLink>
+
+          {/* Center nav — text links, no pills */}
           <nav className="nav">
             {navRoutes.map((item) => (
               <NavLink
                 key={item.to}
                 className={({ isActive }) =>
-                  `nav-link${isActive ? ' active' : ''}${item.mobileHide ? ' nav-link--mobile-hide' : ''}`
+                  `nav-link${isActive ? ' active' : ''}${item.mobileHide ? ' nav-link--mobile-hide' : ''}${item.desktopHide ? ' nav-link--desktop-hide' : ''}`
                 }
                 to={item.to}
               >
@@ -202,7 +218,10 @@ export function Layout() {
               </NavLink>
             )}
           </nav>
+
+          {/* Right actions — desktop only */}
           <div className="actions">
+            {/* Language toggle */}
             <div className="lang-toggle" role="group" aria-label={t('language.toggleLabel')}>
               <button
                 type="button"
@@ -212,9 +231,7 @@ export function Layout() {
               >
                 EN
               </button>
-              <span className="lang-toggle__sep" aria-hidden="true">
-                |
-              </span>
+              <span className="lang-toggle__sep" aria-hidden="true">|</span>
               <button
                 type="button"
                 className={`pill ${language === 'am' ? 'pill-active' : ''}`}
@@ -224,38 +241,84 @@ export function Layout() {
                 {t('language.amShort')}
               </button>
             </div>
-            <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/account">
-              <span className="nav-icon"><IconPerson /></span>
-              <span className="nav-label">
-                {state.user
-                  ? t('auth.helloUser', { name: getFirstName(state.user.name) })
-                  : t('nav.account')}
-              </span>
+
+            {/* Request — brand orange CTA */}
+            <NavLink to="/request" className="nav-request-cta">
+              {t('nav.request')}
             </NavLink>
-            <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/tracking">
-              <span className="nav-icon"><IconPin /></span>
-              <span className="nav-label">{t('nav.track')}</span>
-            </NavLink>
-            <NotificationBell userId={state.user?.id} />
-            <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/cart">
+
+            {/* Cart icon with count badge */}
+            <NavLink
+              to="/cart"
+              className={({ isActive }) => `nav-icon-btn${isActive ? ' active' : ''}`}
+              aria-label={`${t('nav.cart')} (${cartItemsCount})`}
+            >
               <span
                 key={cartAnimKey}
                 className={cartAnimKey > 0 ? 'header-cart--bump' : undefined}
-                style={{ display: 'inline-block' }}
+                style={{ position: 'relative', display: 'inline-flex' }}
               >
-                <span className="nav-icon"><IconCart /></span>
-                <span className="nav-label">{t('nav.cart')} </span>({cartItemsCount})
+                <IconCart />
+                {cartItemsCount > 0 && (
+                  <span className="nav-cart-badge" aria-hidden="true">{cartItemsCount}</span>
+                )}
               </span>
             </NavLink>
-            {isAdminUser(state.user) ? (
-              <NavLink className={({ isActive }) => `pill${isActive ? ' active' : ''}`} to="/admin">
-                <span className="nav-icon"><IconShield /></span>
-                <span className="nav-label">{t('nav.admin')}</span>
-              </NavLink>
-            ) : null}
+
+            {/* Profile icon + dropdown */}
+            <div className="nav-profile" ref={profileRef}>
+              <button
+                type="button"
+                className={`nav-icon-btn${profileOpen ? ' active' : ''}`}
+                onClick={() => setProfileOpen((o) => !o)}
+                aria-label={t('nav.account')}
+                aria-expanded={profileOpen}
+                aria-haspopup="menu"
+              >
+                <IconPerson />
+              </button>
+
+              {profileOpen && (
+                <div className="nav-dropdown" role="menu">
+                  {/* Signed-in user header */}
+                  {state.user && (
+                    <div className="nav-dropdown__user">
+                      <span className="nav-dropdown__user-name">{getFirstName(state.user.name)}</span>
+                      <span className="nav-dropdown__user-email">{state.user.email}</span>
+                    </div>
+                  )}
+
+                  <NavLink className="nav-dropdown__item" to="/account" onClick={closeDropdown} role="menuitem">
+                    {t('nav.account')}
+                  </NavLink>
+                  <NavLink className="nav-dropdown__item" to="/tracking" onClick={closeDropdown} role="menuitem">
+                    {t('nav.track')}
+                  </NavLink>
+                  <NavLink className="nav-dropdown__item" to="/notifications" onClick={closeDropdown} role="menuitem">
+                    {t('nav.notifications')}
+                  </NavLink>
+
+                  {isAdminUser(state.user) && (
+                    <NavLink className="nav-dropdown__item" to="/admin" onClick={closeDropdown} role="menuitem">
+                      {t('nav.admin')}
+                    </NavLink>
+                  )}
+
+                  <button
+                    type="button"
+                    className="nav-dropdown__item nav-dropdown__signout"
+                    onClick={handleSignOut}
+                    role="menuitem"
+                  >
+                    {t('auth.signOut')}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
+
       <main className="container">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -268,9 +331,11 @@ export function Layout() {
           </motion.div>
         </AnimatePresence>
       </main>
+
       <footer className="footer">
         <div className="container muted">{t('layout.footer')}</div>
       </footer>
+
       {/* Bottom tab bar — mobile only, replaces floating cart button */}
       <nav className="bottom-nav" aria-label="Main navigation">
         <NavLink

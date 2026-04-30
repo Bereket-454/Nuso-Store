@@ -38,6 +38,7 @@ export const translations = {
       cart: 'Cart',
       admin: 'Admin',
       request: 'Request',
+      notifications: 'Notifications',
     },
     layout: {
       topNote:
@@ -527,6 +528,7 @@ export const translations = {
       cart: 'ጋሪ',
       admin: 'አስተዳዳር',
       request: 'ጠይቅ',
+      notifications: 'ማሳወቂያዎች',
     },
     layout: {
       topNote:
