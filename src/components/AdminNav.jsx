@@ -71,14 +71,16 @@ export function AdminNav() {
           className={`admin-nav__links${menuOpen ? ' admin-nav__links--open' : ''}`}
           aria-label="Admin navigation"
         >
-          <NavLink
-            to="/admin"
-            end
-            className={({ isActive }) => `admin-nav__link${isActive ? ' admin-nav__link--active' : ''}`}
-            onClick={close}
-          >
-            Dashboard
-          </NavLink>
+          {!isStaff && (
+            <NavLink
+              to="/admin"
+              end
+              className={({ isActive }) => `admin-nav__link${isActive ? ' admin-nav__link--active' : ''}`}
+              onClick={close}
+            >
+              Dashboard
+            </NavLink>
+          )}
 
           {sections.map(s => (
             <button
@@ -93,10 +95,12 @@ export function AdminNav() {
 
           {/* Shown only inside mobile dropdown */}
           <div className="admin-nav__mobile-footer">
-            <span className="admin-nav__user-mobile">{firstName}</span>
-            <button type="button" className="admin-nav__link admin-nav__link--btn" onClick={handleViewStore}>
-              View Store ↗
-            </button>
+            {!isStaff && <span className="admin-nav__user-mobile">{firstName}</span>}
+            {!isStaff && (
+              <button type="button" className="admin-nav__link admin-nav__link--btn" onClick={handleViewStore}>
+                View Store ↗
+              </button>
+            )}
             <button
               type="button"
               className="admin-nav__link admin-nav__link--btn admin-nav__link--signout"
@@ -109,10 +113,12 @@ export function AdminNav() {
 
         {/* Desktop right actions */}
         <div className="admin-nav__actions">
-          <span className="admin-nav__user">{firstName}</span>
-          <button type="button" className="admin-nav__view-store" onClick={handleViewStore}>
-            View Store ↗
-          </button>
+          {!isStaff && <span className="admin-nav__user">{firstName}</span>}
+          {!isStaff && (
+            <button type="button" className="admin-nav__view-store" onClick={handleViewStore}>
+              View Store ↗
+            </button>
+          )}
           <button type="button" className="admin-nav__signout-btn" onClick={handleSignOut}>
             Sign Out
           </button>
