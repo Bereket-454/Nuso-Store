@@ -2,13 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { signOut } from '../lib/auth'
-
-const SECTIONS = [
-  { id: 'admin-section-orders',    label: 'Orders',    staffOnly: false },
-  { id: 'admin-section-products',  label: 'Products',  staffOnly: true  },
-  { id: 'admin-section-inventory', label: 'Inventory', staffOnly: false },
-  { id: 'admin-section-requests',  label: 'Requests',  staffOnly: false },
-]
+import { isSuperAdmin, isOrderManager, isDeliveryManager, isProductOperator } from '../utils/auth'
 
 export function AdminNav() {
   const { state } = useStore()
@@ -16,9 +10,22 @@ export function AdminNav() {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const isStaff = state.user?.role === 'staff'
-  const firstName = (state.user?.name ?? '').split(' ')[0] || state.user?.email?.split('@')[0] || 'Admin'
-  const sections = isStaff ? SECTIONS.filter(s => s.staffOnly) : SECTIONS
+  const user = state.user
+  const firstName = (user?.name ?? '').split(' ')[0] || user?.email?.split('@')[0] || 'Admin'
+
+  // Which nav items this role may see
+  const showDashboard = isSuperAdmin(user)
+  const showOrders    = isSuperAdmin(user) || isOrderManager(user) || isDeliveryManager(user)
+  const showProducts  = isSuperAdmin(user) || isProductOperator(user)
+  const showInventory = isSuperAdmin(user) || isProductOperator(user)
+  const showRequests  = isSuperAdmin(user)
+
+  const sections = [
+    showOrders    && { id: 'admin-section-orders',    label: 'Orders' },
+    showProducts  && { id: 'admin-section-products',  label: 'Products' },
+    showInventory && { id: 'admin-section-inventory', label: 'Inventory' },
+    showRequests  && { id: 'admin-section-requests',  label: 'Requests' },
+  ].filter(Boolean)
 
   const close = () => setMenuOpen(false)
 
@@ -66,12 +73,12 @@ export function AdminNav() {
           <span className="admin-nav__badge">Admin</span>
         </NavLink>
 
-        {/* Nav links (desktop horizontal / mobile dropdown) */}
+        {/* Nav links — desktop horizontal / mobile dropdown */}
         <nav
           className={`admin-nav__links${menuOpen ? ' admin-nav__links--open' : ''}`}
           aria-label="Admin navigation"
         >
-          {!isStaff && (
+          {showDashboard && (
             <NavLink
               to="/admin"
               end
@@ -93,14 +100,12 @@ export function AdminNav() {
             </button>
           ))}
 
-          {/* Shown only inside mobile dropdown */}
+          {/* Mobile-only footer */}
           <div className="admin-nav__mobile-footer">
-            {!isStaff && <span className="admin-nav__user-mobile">{firstName}</span>}
-            {!isStaff && (
-              <button type="button" className="admin-nav__link admin-nav__link--btn" onClick={handleViewStore}>
-                View Store ↗
-              </button>
-            )}
+            <span className="admin-nav__user-mobile">{firstName}</span>
+            <button type="button" className="admin-nav__link admin-nav__link--btn" onClick={handleViewStore}>
+              View Store ↗
+            </button>
             <button
               type="button"
               className="admin-nav__link admin-nav__link--btn admin-nav__link--signout"
@@ -113,12 +118,10 @@ export function AdminNav() {
 
         {/* Desktop right actions */}
         <div className="admin-nav__actions">
-          {!isStaff && <span className="admin-nav__user">{firstName}</span>}
-          {!isStaff && (
-            <button type="button" className="admin-nav__view-store" onClick={handleViewStore}>
-              View Store ↗
-            </button>
-          )}
+          <span className="admin-nav__user">{firstName}</span>
+          <button type="button" className="admin-nav__view-store" onClick={handleViewStore}>
+            View Store ↗
+          </button>
           <button type="button" className="admin-nav__signout-btn" onClick={handleSignOut}>
             Sign Out
           </button>

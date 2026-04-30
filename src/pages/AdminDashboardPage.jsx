@@ -9,6 +9,7 @@ import { insertNotification, sendOrderEmail } from '../services/notificationsSer
 import { PRODUCT_COLORS, COLOR_MAP } from '../utils/colors'
 import { AdminOrderActions } from '../components/AdminOrderActions'
 import { resolveStatus } from '../components/OrderTracker'
+import { isSuperAdmin, isProductOperator, isOrderManager, isDeliveryManager, isAnyAdmin } from '../utils/auth'
 
 const SUBCATEGORY_ICONS = {
   apparel:    '👕',
@@ -279,8 +280,7 @@ export function AdminDashboardPage() {
 
       console.log('[Admin saveProduct] upsertProduct succeeded, savedId:', savedId)
 
-      // Staff have no business-info fields — skip that write entirely.
-      if (role !== 'staff') {
+      if (canEditBusinessInfo) {
         const bizRow = {
           product_id: savedId,
           cost_price: Number(productForm.costPrice) || null,
@@ -343,7 +343,13 @@ export function AdminDashboardPage() {
     }
   }
 
-  const isStaff = state.user?.role === 'staff'
+  const canManageProducts    = isSuperAdmin(state.user) || isProductOperator(state.user)
+  const canViewOrders        = isSuperAdmin(state.user) || isOrderManager(state.user) || isDeliveryManager(state.user)
+  const canViewRequests      = isSuperAdmin(state.user)
+  const canViewInventory     = isSuperAdmin(state.user) || isProductOperator(state.user)
+  const canEditBusinessInfo  = isSuperAdmin(state.user)
+  const showMyProductCount   = isProductOperator(state.user) && !isSuperAdmin(state.user)
+  const canViewStaffActivity = isSuperAdmin(state.user)
 
   const overdueCount = requests.filter((r) => {
     if (r.status !== 'pending') return false
@@ -392,12 +398,22 @@ export function AdminDashboardPage() {
     return acc
   }, {})
 
+  if (!isAnyAdmin(state.user)) {
+    return (
+      <div style={{ padding: '4rem 1rem', textAlign: 'center' }}>
+        <p style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--danger)' }}>
+          You do not have permission to access this.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div>
       <h1>{t('admin.title')}</h1>
 
-      {/* Overdue requests alert — admin only */}
-      {!isStaff && overdueCount > 0 && (
+      {/* Overdue requests alert — super_admin only */}
+      {canViewRequests && overdueCount > 0 && (
         <div
           role="alert"
           style={{
@@ -456,7 +472,7 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      {isStaff && (
+      {showMyProductCount && (
         <div style={{
           display: 'inline-flex',
           alignItems: 'baseline',
@@ -472,7 +488,8 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      <section className="grid cols-2" style={isStaff ? { gridTemplateColumns: '1fr' } : undefined}>
+      <section className="grid cols-2" style={!(canManageProducts && canViewOrders) ? { gridTemplateColumns: '1fr' } : undefined}>
+        {canManageProducts && (
         <article
           id="admin-section-products"
           ref={formRef}
@@ -482,7 +499,7 @@ export function AdminDashboardPage() {
           <h3 style={editingName ? { color: 'var(--accent)' } : undefined}>
             {editingName ? `${t('admin.editing')}: ${editingName}` : t('admin.addEditProduct')}
           </h3>
-          {!isStaff && (
+          {canEditBusinessInfo && (
             <div className="form-group">
               <label htmlFor="admin-id">{t('admin.productId')}</label>
               <input
@@ -809,36 +826,8 @@ export function AdminDashboardPage() {
               {t('admin.businessInfoTitle')}
             </p>
 
-            {isStaff && editingName ? (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.7rem 0.9rem',
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius)',
-                color: 'var(--muted)',
-                fontSize: '0.85rem',
-              }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                This information is private — admin only
-              </div>
-            ) : (
+            {canEditBusinessInfo ? (
               <>
-                {isStaff && (
-                  <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="12" y1="8" x2="12" y2="12"/>
-                      <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    This info is private — only you and admin can see it
-                  </p>
-                )}
                 <div className="form-group">
                   <label htmlFor="admin-cost-price">{t('admin.costPrice')}</label>
                   <input
@@ -896,6 +885,24 @@ export function AdminDashboardPage() {
                   />
                 </div>
               </>
+            ) : (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                padding: '0.7rem 0.9rem',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                color: 'var(--muted)',
+                fontSize: '0.85rem',
+              }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                This information is private — admin only
+              </div>
             )}
           </div>
 
@@ -903,8 +910,9 @@ export function AdminDashboardPage() {
             {saveLoading ? '...' : t('admin.saveProduct')}
           </button>
         </article>
+        )}
 
-        {!isStaff && <article id="admin-section-orders" className="card card-body">
+        {canViewOrders && <article id="admin-section-orders" className="card card-body">
           <h3>{t('admin.ordersTitle')}</h3>
           {adminOrders.length === 0 ? (
             <p className="muted">{t('admin.noOrders')}</p>
@@ -947,7 +955,7 @@ export function AdminDashboardPage() {
         </article>}
       </section>
 
-      {!isStaff && <section id="admin-section-requests" ref={requestsRef} className="card card-body" style={{ marginTop: '1rem' }}>
+      {canViewRequests && <section id="admin-section-requests" ref={requestsRef} className="card card-body" style={{ marginTop: '1rem' }}>
         <h3>{t('admin.requestsTitle')}</h3>
         {requests.length === 0 ? (
           <p className="muted">{t('admin.requestsEmpty')}</p>
@@ -1078,7 +1086,7 @@ export function AdminDashboardPage() {
       </section>}
 
       {/* ── Inventory Dashboard ──────────────────────────────────────────── */}
-      {!isStaff && <section id="admin-section-inventory" className="card inv-dashboard" style={{ marginTop: '1rem' }}>
+      {canViewInventory && <section id="admin-section-inventory" className="card inv-dashboard" style={{ marginTop: '1rem' }}>
 
         {/* Section header */}
         <div className="inv-dashboard__header">
@@ -1289,7 +1297,7 @@ export function AdminDashboardPage() {
       </section>}
 
       {/* ── Staff Activity — admin only ──────────────────────────────────────── */}
-      {!isStaff && (
+      {canViewStaffActivity && (
         <section className="card card-body" style={{ marginTop: '1rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Staff Activity</h3>
 
