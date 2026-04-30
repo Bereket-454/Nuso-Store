@@ -125,6 +125,17 @@ function IconGift() {
   )
 }
 
+function IconShop() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+    </svg>
+  )
+}
+
 function ChevronIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -661,6 +672,10 @@ function ProfileCard({ user, t, state, dispatch }) {
         <Link to="/referral" className="dash-action">
           <div className="dash-action__icon-wrap"><IconGift /></div>
           <span className="dash-action__label">{t('account.referralRewards')}</span>
+        </Link>
+        <Link to="/products" className="dash-action">
+          <div className="dash-action__icon-wrap"><IconShop /></div>
+          <span className="dash-action__label">{t('account.continueShopping')}</span>
         </Link>
       </div>
 

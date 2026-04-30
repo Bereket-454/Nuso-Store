@@ -291,32 +291,29 @@ export function Layout() {
               <button
                 type="button"
                 className={`nav-icon-btn${profileOpen ? ' active' : ''}`}
-                onClick={() => setProfileOpen((o) => !o)}
+                onClick={() => {
+                  if (!state.user) { navigate('/account'); return }
+                  setProfileOpen((o) => !o)
+                }}
                 aria-label={t('nav.account')}
-                aria-expanded={profileOpen}
-                aria-haspopup="menu"
+                aria-expanded={state.user ? profileOpen : undefined}
+                aria-haspopup={state.user ? 'menu' : undefined}
               >
                 <IconPerson />
               </button>
 
-              {profileOpen && (
+              {profileOpen && state.user && (
                 <div className="nav-dropdown" role="menu">
-                  {/* Signed-in user header */}
-                  {state.user && (
-                    <div className="nav-dropdown__user">
-                      <span className="nav-dropdown__user-name">{getFirstName(state.user.name)}</span>
-                      <span className="nav-dropdown__user-email">{state.user.email}</span>
-                    </div>
-                  )}
+                  <div className="nav-dropdown__user">
+                    <span className="nav-dropdown__user-name">{getFirstName(state.user.name)}</span>
+                    <span className="nav-dropdown__user-email">{state.user.email}</span>
+                  </div>
 
                   <NavLink className="nav-dropdown__item" to="/account" onClick={closeDropdown} role="menuitem">
                     {t('nav.account')}
                   </NavLink>
                   <NavLink className="nav-dropdown__item" to="/tracking" onClick={closeDropdown} role="menuitem">
                     {t('nav.track')}
-                  </NavLink>
-                  <NavLink className="nav-dropdown__item" to="/notifications" onClick={closeDropdown} role="menuitem">
-                    {t('nav.notifications')}
                   </NavLink>
 
                   {isAdminUser(state.user) && (
