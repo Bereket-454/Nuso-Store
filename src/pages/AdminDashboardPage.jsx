@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabase'
 import { upsertProduct, deleteProduct, fetchProducts } from '../services/productsService'
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
 import { PRODUCT_COLORS, COLOR_MAP } from '../utils/colors'
+import { AdminOrderActions } from '../components/AdminOrderActions'
+import { resolveStatus } from '../components/OrderTracker'
 
 const SUBCATEGORY_ICONS = {
   apparel:    '👕',
@@ -919,65 +921,25 @@ export function AdminDashboardPage() {
                   {' · '}{t('admin.total')}: <strong>{birr(order.total)}</strong>
                 </p>
                 <p className="muted" style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
-                  {t('admin.orderStatus') || 'Status'}: <strong>{t(`orderStatus.${order.status}`)}</strong>
+                  Status: <strong>{t(`orderStatus.${resolveStatus(order.status)}`)}</strong>
                   {order.created_at && (
                     <span style={{ marginLeft: '0.5rem' }}>
                       · {formatRequestDate(order.created_at)}
                     </span>
                   )}
                 </p>
-                <div className="actions">
-                  {['confirmed', 'packed', 'out-for-delivery', 'delivered'].map((statusValue) => (
-                    <button
-                      className={`btn ${order.status === statusValue ? 'btn-primary' : 'btn-secondary'}`}
-                      key={statusValue}
-                      onClick={async () => {
-                        // Update Supabase
-                        const { error } = await supabase
-                          .from('orders')
-                          .update({ status: statusValue })
-                          .eq('id', order.id)
-                        if (error) {
-                          console.error('[AdminDashboard] order status update error:', error.message)
-                          return
-                        }
-                        // Update local list
-                        setAdminOrders((prev) =>
-                          prev.map((o) => (o.id === order.id ? { ...o, status: statusValue } : o))
-                        )
-
-                        const userId = order.user_id
-                        const orderId = order.id
-                        const msgMap = {
-                          confirmed:          { en: `✅ Your order ${orderId} has been confirmed`,     am: `✅ ትዕዛዝዎ ${orderId} ተረጋግጧል` },
-                          packed:             { en: `📦 Your order ${orderId} is being packed`,        am: `📦 ትዕዛዝዎ ${orderId} እየታሸገ ነው` },
-                          'out-for-delivery': { en: `🚚 Your order ${orderId} is out for delivery`,   am: `🚚 ትዕዛዝዎ ${orderId} ለማድረሻ ሄዷል` },
-                          delivered:          { en: `🎉 Your order ${orderId} has been delivered!`,    am: `🎉 ትዕዛዝዎ ${orderId} ደርሷል!` },
-                        }
-                        const msg = msgMap[statusValue]
-                        if (msg) {
-                          insertNotification({
-                            userId,
-                            type: `order_${statusValue}`,
-                            message: msg.en,
-                            messageAm: msg.am,
-                            link: `/account`,
-                          })
-                          if (statusValue === 'confirmed' || statusValue === 'delivered') {
-                            sendOrderEmail({
-                              toEmail: order.customer_email,
-                              toName: order.customer_name,
-                              message: msg.en,
-                              orderId,
-                            })
-                          }
-                        }
-                      }}
-                    >
-                      {t(`orderStatus.${statusValue}`)}
-                    </button>
-                  ))}
-                </div>
+                <AdminOrderActions
+                  order={order}
+                  onUpdated={(newStatus) =>
+                    setAdminOrders((prev) =>
+                      prev.map((o) =>
+                        o.id === order.id
+                          ? { ...o, status: newStatus, updated_at: new Date().toISOString() }
+                          : o,
+                      ),
+                    )
+                  }
+                />
               </div>
             ))
           )}

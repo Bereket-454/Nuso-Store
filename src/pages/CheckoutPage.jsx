@@ -217,7 +217,7 @@ export function CheckoutPage() {
         delivery_fee:       deliveryFee,
         total:              finalTotal,
         payment_status:     'pending',
-        status:             'confirmed',
+        status:             'order_received',
         referral_discount:  referralDiscount,
         wallet_credit_used: walletCreditApplied,
       })
@@ -252,7 +252,7 @@ export function CheckoutPage() {
         shipping,
         payment,
         paymentStatus: 'pending',
-        status: 'confirmed',
+        status: 'order_received',
         customer,
         createdAt: new Date().toISOString(),
       }

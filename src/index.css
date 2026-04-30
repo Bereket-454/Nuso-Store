@@ -2517,6 +2517,272 @@ textarea {
   font-weight: 600;
 }
 
+/* ── Order Tracker ───────────────────────────────────────────────────────────── */
+
+.tracking-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.tracking-form h1 {
+  margin: 0 0 1.25rem;
+  font-size: 1.4rem;
+}
+
+.tracking-result__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tracking-result__details {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tracking-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  font-size: 0.88rem;
+}
+
+/* ── Tracker body ─────────────────────────────────────────────────── */
+
+.order-tracker {
+  padding: 0.25rem 0 0.5rem;
+}
+
+.tracker-eta {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0 0 1.5rem;
+  font-style: italic;
+}
+
+.tracker-body {
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+/* Track line sits at the vertical center of the circles (20px = half of 40px circle) */
+.tracker-line-wrap {
+  position: absolute;
+  top: 20px;
+  left: calc(100% / 12);  /* inset to center-align with first/last nodes */
+  right: calc(100% / 12);
+  height: 3px;
+  pointer-events: none;
+}
+
+.tracker-line-bg {
+  width: 100%;
+  height: 100%;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.tracker-line-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #2d9e6b 0%, #FF6B00 100%);
+  border-radius: 2px;
+}
+
+/* Step row */
+.tracker-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.tracker-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1;
+}
+
+/* Circle node */
+.tracker-step__circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tracker-step--done .tracker-step__circle {
+  background: #2d9e6b;
+  color: #fff;
+}
+
+.tracker-step--current .tracker-step__circle {
+  background: #FF6B00;
+  color: #fff;
+  box-shadow: 0 0 0 5px rgba(255, 107, 0, 0.12);
+}
+
+.tracker-step--future .tracker-step__circle {
+  background: var(--surface);
+  color: var(--muted);
+  border: 2px solid var(--border);
+}
+
+/* Pulsing ring overlay on current step */
+.tracker-step__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #FF6B00;
+  pointer-events: none;
+}
+
+/* Labels */
+.tracker-step__label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.25;
+  max-width: 72px;
+}
+
+.tracker-step--done .tracker-step__label {
+  color: #2d9e6b;
+  font-weight: 600;
+}
+
+.tracker-step--current .tracker-step__label {
+  color: #FF6B00;
+  font-weight: 700;
+}
+
+/* Last-updated line */
+.tracker-updated {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 1.25rem 0 0;
+  text-align: right;
+}
+
+/* ── Mobile: collapse to vertical stepper ─────────────────────────── */
+@media (max-width: 560px) {
+  .tracker-line-wrap {
+    display: none;  /* hide horizontal line */
+  }
+
+  .tracker-steps {
+    flex-direction: column;
+    gap: 0;
+    padding-left: 20px;     /* space for the vertical connector */
+    position: relative;
+  }
+
+  /* Vertical connector drawn as a left border on the steps container */
+  .tracker-steps::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 20px;
+    bottom: 20px;
+    width: 2px;
+    background: var(--border);
+    border-radius: 1px;
+  }
+
+  .tracker-step {
+    flex-direction: row;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    align-items: center;
+    position: relative;
+  }
+
+  .tracker-step__circle {
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .tracker-step__label {
+    text-align: left;
+    max-width: none;
+    font-size: 0.82rem;
+  }
+}
+
+/* ── Admin order actions ─────────────────────────────────────────────── */
+
+.admin-order-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.admin-order-actions__primary {
+  font-size: 0.82rem;
+  padding: 0.38rem 0.85rem;
+}
+
+.admin-order-actions__more {
+  font-size: 0.82rem;
+  padding: 0.38rem 0.65rem;
+  min-width: 0;
+}
+
+.admin-order-actions__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  z-index: 50;
+  overflow: hidden;
+  min-width: 170px;
+  padding: 4px 0;
+}
+
+.admin-order-actions__menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 1rem;
+  font-size: 0.84rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.12s ease;
+}
+
+.admin-order-actions__menu-item:hover {
+  background: var(--surface);
+}
+
 /* Order confirmation page */
 .ord-confirm__icon {
   width: 56px;
