@@ -1769,6 +1769,56 @@ textarea {
   border-color: #e53e3e;
 }
 
+/* ── Shop CTA strip ──────────────────────────────────────────────────────── */
+.dash-shop-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.dash-shop-cta__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dash-shop-cta__btn-wrap {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dash-shop-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  background: #FF6B00;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.18s;
+}
+
+.dash-shop-cta__btn:hover {
+  background: #e55f00;
+}
+
+.dash-shop-cta__arrow {
+  display: inline-block;
+  transition: transform 0.18s ease;
+}
+
+.dash-shop-cta__btn:hover .dash-shop-cta__arrow {
+  transform: translateX(3px);
+}
+
 /* ── Quick action cards ───────────────────────────────────────────────────── */
 .dash-quick {
   display: grid;
