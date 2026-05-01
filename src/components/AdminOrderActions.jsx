@@ -35,6 +35,7 @@ function buildNotif(targetStatus, orderId) {
 export function AdminOrderActions({ order, onUpdated }) {
   const [loading, setLoading] = useState(false)
   const [showMore, setShowMore] = useState(false)
+  const [advError, setAdvError] = useState('')
   const { state } = useStore()
 
   const currentIndex = statusIndex(order.status)
@@ -43,10 +44,10 @@ export function AdminOrderActions({ order, onUpdated }) {
   const futureSteps  = ORDER_STEPS.slice(currentIndex + 2)
 
   const canAdvanceTo = (targetStatus) => {
-    if (isSuperAdmin(state.user))     return true
-    if (isOrderManager(state.user))   return ORDER_MANAGER_STEPS.has(targetStatus)
+    if (isSuperAdmin(state.user))      return true
+    if (isOrderManager(state.user))    return ORDER_MANAGER_STEPS.has(targetStatus)
     if (isDeliveryManager(state.user)) return DELIVERY_STEPS.has(targetStatus)
-    return false // product_operator has no order actions
+    return false
   }
 
   const allowedNextStep    = nextStep   && canAdvanceTo(nextStep.id)  ? nextStep  : null
@@ -54,43 +55,51 @@ export function AdminOrderActions({ order, onUpdated }) {
 
   const advance = async (targetStatus) => {
     setLoading(true)
-    setShowMore(false)
+    setAdvError('')
 
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: targetStatus, updated_at: new Date().toISOString() })
-      .eq('id', order.id)
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: targetStatus, updated_at: new Date().toISOString() })
+        .eq('id', order.id)
 
-    if (error) {
-      console.error('[AdminOrderActions] status update failed:', error.message)
+      if (error) {
+        console.error('[AdminOrderActions] status update failed:', error.message)
+        setAdvError(`Failed: ${error.message}`)
+        setLoading(false)
+        return
+      }
+
+      // Fire notifications (non-blocking)
+      const notif = buildNotif(targetStatus, order.id)
+      if (notif && order.user_id) {
+        insertNotification({
+          userId: order.user_id,
+          type: `order_${targetStatus}`,
+          message: notif.en,
+          messageAm: notif.am,
+          link: '/account',
+        })
+      }
+
+      // Email on key milestones
+      if ((targetStatus === 'confirmed' || targetStatus === 'delivered') && notif) {
+        sendOrderEmail({
+          toEmail: order.customer_email,
+          toName: order.customer_name,
+          message: notif.en,
+          orderId: order.id,
+        })
+      }
+
       setLoading(false)
-      return
+      setShowMore(false)
+      onUpdated?.(targetStatus)
+    } catch (err) {
+      console.error('[AdminOrderActions] unexpected error:', err)
+      setAdvError('Unexpected error — please try again.')
+      setLoading(false)
     }
-
-    // Fire notifications (non-blocking)
-    const notif = buildNotif(targetStatus, order.id)
-    if (notif && order.user_id) {
-      insertNotification({
-        userId: order.user_id,
-        type: `order_${targetStatus}`,
-        message: notif.en,
-        messageAm: notif.am,
-        link: '/account',
-      })
-    }
-
-    // Email on key milestones
-    if ((targetStatus === 'confirmed' || targetStatus === 'delivered') && notif) {
-      sendOrderEmail({
-        toEmail: order.customer_email,
-        toName: order.customer_name,
-        message: notif.en,
-        orderId: order.id,
-      })
-    }
-
-    setLoading(false)
-    onUpdated?.(targetStatus)
   }
 
   // Order is fully delivered — nothing left to do
@@ -110,6 +119,7 @@ export function AdminOrderActions({ order, onUpdated }) {
       {/* Primary: advance to next allowed step */}
       {allowedNextStep && (
         <button
+          type="button"
           className="btn btn-primary admin-order-actions__primary"
           onClick={() => advance(allowedNextStep.id)}
           disabled={loading}
@@ -137,7 +147,10 @@ export function AdminOrderActions({ order, onUpdated }) {
                   key={step.id}
                   type="button"
                   className="admin-order-actions__menu-item"
-                  onClick={() => advance(step.id)}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    advance(step.id)
+                  }}
                 >
                   {ACTION_LABELS[step.id] ?? step.id}
                 </button>
@@ -145,6 +158,12 @@ export function AdminOrderActions({ order, onUpdated }) {
             </div>
           )}
         </div>
+      )}
+
+      {advError && (
+        <p style={{ color: 'var(--danger)', fontSize: '0.78rem', margin: '0.25rem 0 0', width: '100%' }}>
+          {advError}
+        </p>
       )}
     </div>
   )

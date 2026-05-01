@@ -343,7 +343,9 @@ export function AdminDashboardPage() {
     }
   }
 
-  const canManageProducts    = isSuperAdmin(state.user) || isProductOperator(state.user)
+  const canManageProducts    = isAnyAdmin(state.user)
+  const canEditProducts      = isSuperAdmin(state.user)
+  const canDeleteProducts    = isSuperAdmin(state.user)
   const canViewOrders        = isSuperAdmin(state.user) || isOrderManager(state.user) || isDeliveryManager(state.user)
   const canViewRequests      = isSuperAdmin(state.user)
   const canViewInventory     = isSuperAdmin(state.user) || isProductOperator(state.user)
@@ -1250,42 +1252,45 @@ export function AdminDashboardPage() {
                         )}
                       </div>
                       <div className="inv-product-card__actions">
-                        <button
-                          className="btn btn-secondary"
-                          onClick={() => {
-                            const b = businessInfo[product.id] || {}
-                            setProductForm({
-                              ...product,
-                              categories: product.categories ?? [product.category],
-                              // Convert structured arrays/fields back to form-friendly strings.
-                              features: (product.features ?? []).join('\n'),
-                              shortDescription: product.shortDescription ?? '',
-                              extraInfo: product.extraInfo ?? '',
-                              costPrice: b.cost_price ?? '',
-                              supplierName: b.supplier_name ?? '',
-                              supplierContact: b.supplier_contact ?? '',
-                              restockThreshold: b.restock_threshold ?? '',
-                            })
-                            setEditingName(product.name)
-                            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                          }}
-                        >
-                          {t('admin.edit')}
-                        </button>
-                        <button
-                          className="btn btn-danger"
-                          onClick={async () => {
-                            const { error } = await deleteProduct(product.id)
-                            if (error) {
-                              console.error('[AdminDashboard] deleteProduct error:', error.message)
-                            } else {
-                              await reloadProducts()
-                              showToast('Product deleted')
-                            }
-                          }}
-                        >
-                          {t('admin.delete')}
-                        </button>
+                        {canEditProducts && (
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => {
+                              const b = businessInfo[product.id] || {}
+                              setProductForm({
+                                ...product,
+                                categories: product.categories ?? [product.category],
+                                features: (product.features ?? []).join('\n'),
+                                shortDescription: product.shortDescription ?? '',
+                                extraInfo: product.extraInfo ?? '',
+                                costPrice: b.cost_price ?? '',
+                                supplierName: b.supplier_name ?? '',
+                                supplierContact: b.supplier_contact ?? '',
+                                restockThreshold: b.restock_threshold ?? '',
+                              })
+                              setEditingName(product.name)
+                              formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                            }}
+                          >
+                            {t('admin.edit')}
+                          </button>
+                        )}
+                        {canDeleteProducts && (
+                          <button
+                            className="btn btn-danger"
+                            onClick={async () => {
+                              const { error } = await deleteProduct(product.id)
+                              if (error) {
+                                console.error('[AdminDashboard] deleteProduct error:', error.message)
+                              } else {
+                                await reloadProducts()
+                                showToast('Product deleted')
+                              }
+                            }}
+                          >
+                            {t('admin.delete')}
+                          </button>
+                        )}
                       </div>
                     </article>
                   )
