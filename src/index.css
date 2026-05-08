@@ -3807,10 +3807,23 @@ textarea {
   margin-bottom: 0.6rem;
 }
 
-/* Mobile: also reduce the vertical gap between stacked gallery and info cards */
+/* Mobile: collapse the gap between stacked gallery and info cards to ~6px total */
 @media (max-width: 980px) {
   .product-detail-page .layout-split {
-    gap: 0.35rem;
+    gap: 0;
+  }
+
+  /* Square off the touching corners so the cards read as one connected unit */
+  .product-detail-page .layout-split > article:first-child {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
+  }
+
+  .product-detail-page .layout-split > article:last-child {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding-top: 0.4rem;
   }
 }
 
