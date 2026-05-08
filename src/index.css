@@ -4163,3 +4163,101 @@ textarea {
     top: 0;
   }
 }
+
+/* ── Personal activity bar ───────────────────────────────────────────────────── */
+.admin-my-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 4px solid #FF6B00;
+  border-radius: var(--radius);
+  padding: 0.85rem 1.2rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.admin-my-greeting {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.admin-my-greeting__name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a2340;
+}
+
+.admin-my-greeting__role {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #FF6B00;
+  color: #fff;
+}
+
+.admin-my-stats {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.admin-my-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 1.1rem;
+  min-width: 70px;
+}
+
+.admin-my-stat + .admin-my-stat {
+  border-left: 1px solid var(--border);
+}
+
+.admin-my-stat:first-child {
+  padding-left: 0;
+}
+
+.admin-my-stat__num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #FF6B00;
+  line-height: 1;
+}
+
+.admin-my-stat__label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 0.2rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .admin-my-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-my-stats {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .admin-my-stat {
+    padding: 0;
+    flex: 1;
+  }
+
+  .admin-my-stat + .admin-my-stat {
+    border-left: 1px solid var(--border);
+  }
+}

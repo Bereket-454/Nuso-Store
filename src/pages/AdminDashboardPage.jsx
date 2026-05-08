@@ -72,7 +72,9 @@ export function AdminDashboardPage() {
   const [businessInfo, setBusinessInfo] = useState({})
   // Products that have an added_by_email — used for the Staff Activity section.
   const [staffProducts, setStaffProducts] = useState([])
-  const [myProductCount, setMyProductCount] = useState(0)
+  const [myProductCount, setMyProductCount] = useState(null)
+  const [myCountToday, setMyCountToday]     = useState(null)
+  const [myCountWeek, setMyCountWeek]       = useState(null)
   // Inventory dashboard navigation state.
   const [invCategory, setInvCategory] = useState(null) // null=overview, slug=drill-in
   const [invSearch, setInvSearch] = useState('')
@@ -82,11 +84,18 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     if (!state.user?.id) return
-    supabase
-      .from('products')
-      .select('id', { count: 'exact', head: true })
-      .eq('added_by_id', state.user.id)
-      .then(({ count }) => { if (count !== null) setMyProductCount(count) })
+    const uid = state.user.id
+    const todayISO = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString() })()
+    const weekISO  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    Promise.all([
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('added_by_id', uid),
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('added_by_id', uid).gte('created_at', todayISO),
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('added_by_id', uid).gte('created_at', weekISO),
+    ]).then(([all, today, week]) => {
+      if (all.count   !== null) setMyProductCount(all.count)
+      if (today.count !== null) setMyCountToday(today.count)
+      if (week.count  !== null) setMyCountWeek(week.count)
+    })
   }, [state.user?.id])
 
   // Load orders, product requests, and business info on mount.
@@ -237,11 +246,17 @@ export function AdminDashboardPage() {
 
   const refreshMyCount = async () => {
     if (!state.user?.id) return
-    const { count } = await supabase
-      .from('products')
-      .select('id', { count: 'exact', head: true })
-      .eq('added_by_id', state.user.id)
-    if (count !== null) setMyProductCount(count)
+    const uid = state.user.id
+    const todayISO = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString() })()
+    const weekISO  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const [all, today, week] = await Promise.all([
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('added_by_id', uid),
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('added_by_id', uid).gte('created_at', todayISO),
+      supabase.from('products').select('id', { count: 'exact', head: true }).eq('added_by_id', uid).gte('created_at', weekISO),
+    ])
+    if (all.count   !== null) setMyProductCount(all.count)
+    if (today.count !== null) setMyCountToday(today.count)
+    if (week.count  !== null) setMyCountWeek(week.count)
   }
 
   const saveProduct = async () => {
@@ -350,7 +365,6 @@ export function AdminDashboardPage() {
   const canViewRequests      = isSuperAdmin(state.user)
   const canViewInventory     = isSuperAdmin(state.user) || isProductOperator(state.user)
   const canEditBusinessInfo  = isSuperAdmin(state.user)
-  const showMyProductCount   = isProductOperator(state.user) && !isSuperAdmin(state.user)
   const canViewStaffActivity = isSuperAdmin(state.user)
 
   const overdueCount = requests.filter((r) => {
@@ -410,9 +424,43 @@ export function AdminDashboardPage() {
     )
   }
 
+  const showMyBar    = isAnyAdmin(state.user) && !isSuperAdmin(state.user)
+  const adminFirstName = (state.user?.name ?? '').split(' ')[0] || state.user?.email?.split('@')[0] || 'Admin'
+  const ROLE_LABELS  = {
+    order_manager:    'Order Manager',
+    delivery_manager: 'Delivery Manager',
+    product_operator: 'Product Operator',
+    staff:            'Staff',
+  }
+  const roleLabel = ROLE_LABELS[state.user?.role] ?? state.user?.role ?? 'Admin'
+
   return (
     <div>
       <h1>{t('admin.title')}</h1>
+
+      {/* Personal activity bar — all non-super_admin roles */}
+      {showMyBar && (
+        <div className="admin-my-bar">
+          <div className="admin-my-greeting">
+            <span className="admin-my-greeting__name">Hello, {adminFirstName}</span>
+            <span className="admin-my-greeting__role">{roleLabel}</span>
+          </div>
+          <div className="admin-my-stats">
+            <div className="admin-my-stat">
+              <span className="admin-my-stat__num">{myCountToday ?? '—'}</span>
+              <span className="admin-my-stat__label">Today</span>
+            </div>
+            <div className="admin-my-stat">
+              <span className="admin-my-stat__num">{myCountWeek ?? '—'}</span>
+              <span className="admin-my-stat__label">This Week</span>
+            </div>
+            <div className="admin-my-stat">
+              <span className="admin-my-stat__num">{myProductCount ?? '—'}</span>
+              <span className="admin-my-stat__label">All Time</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overdue requests alert — super_admin only */}
       {canViewRequests && overdueCount > 0 && (
@@ -474,21 +522,6 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      {showMyProductCount && (
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'baseline',
-          gap: '0.5rem',
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
-          padding: '0.55rem 1rem',
-          marginBottom: '0.85rem',
-        }}>
-          <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent)', lineHeight: 1 }}>{myProductCount}</span>
-          <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>products added by you</span>
-        </div>
-      )}
 
       <section className="grid cols-2" style={!(canManageProducts && canViewOrders) ? { gridTemplateColumns: '1fr' } : undefined}>
         {canManageProducts && (
