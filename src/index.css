@@ -3779,6 +3779,41 @@ textarea {
   letter-spacing: 0;
 }
 
+/* ── Product detail — compact gallery-to-info spacing ──────────────────────── */
+
+/* Info card: pull the top padding in so the title sits closer to the gallery */
+.product-detail-page .layout-split > article:last-child {
+  padding-top: 0.75rem;
+}
+
+/* h1: strip browser-default top margin (~21px) and tighten bottom */
+.product-detail-page .layout-split > article:last-child h1 {
+  margin: 0 0 0.2rem;
+  line-height: 1.2;
+}
+
+/* Price: remove browser p margin; keep only a small bottom gap */
+.product-detail-page .layout-split > article:last-child .price {
+  margin: 0 0 0.45rem;
+}
+
+/* In-stock / stock text paragraphs: tighten browser p margins */
+.product-detail-page .layout-split > article:last-child > p {
+  margin: 0.1rem 0 0.35rem;
+}
+
+/* Size/colour selectors: slightly tighter than the global 0.85rem */
+.product-detail-page .layout-split > article:last-child .form-group {
+  margin-bottom: 0.6rem;
+}
+
+/* Mobile: also reduce the vertical gap between stacked gallery and info cards */
+@media (max-width: 980px) {
+  .product-detail-page .layout-split {
+    gap: 0.35rem;
+  }
+}
+
 /* Sticky CTA bar — hidden on desktop, shown on mobile */
 .sticky-cta {
   display: none;

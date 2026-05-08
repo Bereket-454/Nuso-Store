@@ -125,7 +125,7 @@ export function ProductDetailsPage() {
           </div>
           {/* Thumbnail strip — only shown when there are multiple images */}
           {product.images.length > 1 && (
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', padding: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', padding: '0.5rem 0.5rem 0.35rem' }}>
               {product.images.map((image, index) => (
                 <button
                   key={image}
