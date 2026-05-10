@@ -165,8 +165,9 @@ function reducer(state, action) {
 
     case 'AUTH_CHANGED': {
       if (!action.payload) {
-        // Sign-out: clear user, cart, and wallet.
-        return { ...state, user: null, cart: [], wallet: null }
+        // Sign-out: clear user, cart, wallet, and addresses so the next
+        // user never sees a previous user's delivery details at checkout.
+        return { ...state, user: null, cart: [], wallet: null, addresses: [] }
       }
       // Sign-in: restore the user's saved cart, but validate it immediately if
       // products are already loaded. This handles the race where CATALOGUE_LOADED
@@ -184,7 +185,7 @@ function reducer(state, action) {
           '| after:', cleanCart.map((i) => i.productId),
           '| items removed:', itemsRemoved,
         )
-        return { ...state, user: action.payload.user, cart: cleanCart, cartPurged: itemsRemoved }
+        return { ...state, user: action.payload.user, cart: cleanCart, cartPurged: itemsRemoved, addresses: [] }
       }
       // Products not loaded yet — restore the cart as-is. CATALOGUE_LOADED will
       // purge any stale items when it fires.
@@ -192,7 +193,7 @@ function reducer(state, action) {
         '[AUTH_CHANGED] products not yet loaded — deferring purge to CATALOGUE_LOADED.',
         'cart items:', restoredCart.length,
       )
-      return { ...state, user: action.payload.user, cart: restoredCart }
+      return { ...state, user: action.payload.user, cart: restoredCart, addresses: [] }
     }
     default:
       return state
