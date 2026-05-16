@@ -156,6 +156,8 @@ export const translations = {
     checkout: {
       emptyCart: 'Your cart is empty',
       shopNow: 'Shop now',
+      signInRequired: 'Sign in to complete your order',
+      signInRequiredHint: 'Your cart is saved. Sign in or create a free account to place your order.',
       title: 'Checkout',
       stepAuth: '1) Sign in / Sign up (optional before payment)',
       guestCheckout: 'Guest checkout',
@@ -667,6 +669,8 @@ export const translations = {
     checkout: {
       emptyCart: 'ጋሪ ባዶ ነው',
       shopNow: 'አሁን ይግዙ',
+      signInRequired: 'ትዕዛዙን ለማጠናቀቅ ይግቡ',
+      signInRequiredHint: 'ጋሪዎ ተቀምጧል። ለመዝዘዝ ይግቡ ወይም ነፃ መለያ ይፍጠሩ።',
       title: 'ክፍያ',
       stepAuth: '1) መግባት / መመዝገብ (ከክፍያ በፊት አማራጭ)',
       guestCheckout: 'እንደ እንግዳ',

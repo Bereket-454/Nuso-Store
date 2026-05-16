@@ -525,8 +525,9 @@ function VerifyEmailNotice({ t }) {
 function AuthCard({ t }) {
   const [searchParams] = useSearchParams()
   const prefillRef = searchParams.get('ref') || ''
-  // If a referral code is in the URL, open the sign-up tab directly.
-  const [tab, setTab] = useState(prefillRef ? 'signup' : 'signin')
+  const tabParam = searchParams.get('tab')
+  // Open signup tab if explicitly requested via ?tab=signup or when a referral code is present.
+  const [tab, setTab] = useState(tabParam === 'signup' || prefillRef ? 'signup' : 'signin')
   const [verificationSent, setVerificationSent] = useState(false)
 
   if (verificationSent) return <VerifyEmailNotice t={t} />
@@ -855,7 +856,16 @@ function ProfileCard({ user, t, state, dispatch }) {
 export function AccountPage() {
   const { t } = useTranslation()
   const { state, dispatch } = useStore()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   usePageMeta(t('meta.account.title'), t('meta.account.desc'))
+
+  useEffect(() => {
+    const returnTo = searchParams.get('returnTo')
+    if (state.user && returnTo) {
+      navigate(returnTo, { replace: true })
+    }
+  }, [state.user, searchParams, navigate])
 
   return (
     <div style={{ maxWidth: '660px', margin: '1.5rem auto' }}>

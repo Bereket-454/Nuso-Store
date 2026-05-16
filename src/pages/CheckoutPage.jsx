@@ -159,6 +159,33 @@ export function CheckoutPage() {
     )
   }
 
+  if (!state.user) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', padding: '1rem' }}>
+        <article className="card card-body" style={{ maxWidth: '420px', width: '100%', textAlign: 'center' }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ margin: '0 auto 1rem' }}>
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <h2 style={{ margin: '0 0 0.4rem', fontSize: '1.2rem', fontWeight: 700 }}>
+            {t('checkout.signInRequired')}
+          </h2>
+          <p className="muted" style={{ margin: '0 0 1.5rem', fontSize: '0.93rem', lineHeight: 1.5 }}>
+            {t('checkout.signInRequiredHint')}
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/account?returnTo=/checkout" className="btn btn-primary" style={{ minWidth: '130px' }}>
+              {t('auth.signInButton')}
+            </Link>
+            <Link to="/account?returnTo=/checkout&tab=signup" className="btn btn-secondary" style={{ minWidth: '130px' }}>
+              {t('auth.createAccount')}
+            </Link>
+          </div>
+        </article>
+      </div>
+    )
+  }
+
   const validateShipping = () => {
     const nextErrors = {}
     if (!shipping.fullName.trim()) nextErrors.fullName = 'checkout.validation.fullName'
