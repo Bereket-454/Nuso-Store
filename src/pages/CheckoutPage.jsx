@@ -199,6 +199,11 @@ export function CheckoutPage() {
   }
 
   const handlePlaceOrder = async () => {
+    // Auth guard — must be signed in; cart is preserved during redirect
+    if (!state.user) {
+      navigate('/account?returnTo=/checkout')
+      return
+    }
     if (!validateShipping()) {
       setStatus({ loading: false, msgKey: 'checkout.msg.fillAddress', variant: 'error' })
       return
@@ -222,24 +227,19 @@ export function CheckoutPage() {
         }
       }
 
-      // Resolve user identity
+      // Resolve user identity — auth guard above ensures a signed-in user exists
       const orderId = `ORD-${Date.now()}`
       const { data: { session: activeSession } } = await supabase.auth.getSession()
-      let userId, userEmail
-      if (activeSession?.user?.id) {
-        userId    = activeSession.user.id
-        userEmail = activeSession.user.email || null
-      } else if (state.user?.id) {
-        userId    = state.user.id
-        userEmail = state.user.email || null
-      } else {
-        userId    = null
-        userEmail = null
+      const userId    = activeSession?.user?.id    ?? state.user.id
+      const userEmail = activeSession?.user?.email ?? state.user.email ?? null
+
+      // Second-layer defence: if somehow we reach here without a valid session, abort
+      if (!userId) {
+        navigate('/account?returnTo=/checkout')
+        return
       }
 
-      const customer = userId
-        ? { id: userId, phone: state.user?.phone, name: state.user?.name || shipping.fullName }
-        : { name: shipping.fullName, phone: shipping.phone }
+      const customer = { id: userId, phone: state.user.phone, name: state.user.name || shipping.fullName }
 
       const payment = {
         method: paymentMethod,
