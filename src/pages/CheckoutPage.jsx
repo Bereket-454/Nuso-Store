@@ -456,6 +456,7 @@ export function CheckoutPage() {
 
               {/* Pay now — account details + screenshot */}
               {payWhen === 'now' && (
+                <>
                 <div className="chk-pay-now">
                   <div className="chk-pay-now__account">
                     <span className="chk-pay-now__account-label">
@@ -509,6 +510,7 @@ export function CheckoutPage() {
                 <p style={{ margin: '0.35rem 0 0', fontSize: '0.8rem', color: 'var(--muted)' }}>
                   {t('checkout.uploadOptionalHint')}
                 </p>
+                </>
               )}
             </div>
           )}
