@@ -137,6 +137,30 @@ export function TrackingPage() {
         {error && <p className="error-text" style={{ marginTop: '0.5rem' }}>{error}</p>}
       </section>
 
+      {/* Support */}
+      <div className="support-box support-box--compact">
+        <p className="support-box__title">{t('support.havingIssue')}</p>
+        <div className="support-box__links">
+          <a
+            href="https://t.me/nusostore"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="support-box__link support-box__link--tg"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.6l-2.94-.918c-.64-.203-.654-.64.135-.954l11.57-4.461c.537-.194 1.006.131.96.954z"/>
+            </svg>
+            {t('support.chatTelegram')}
+          </a>
+          <a href="tel:0987312250" className="support-box__link support-box__link--phone">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C9.61 21 3 14.39 3 6.5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z"/>
+            </svg>
+            0987312250
+          </a>
+        </div>
+      </div>
+
       {/* Result */}
       {result && (
         <section className="card card-body tracking-result">

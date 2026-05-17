@@ -5053,3 +5053,92 @@ textarea {
     border-left: 1px solid var(--border);
   }
 }
+
+/* ── Support box ──────────────────────────────────────────────────────────── */
+.support-box {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.support-box--compact {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  text-align: left;
+  padding: 0.85rem 1rem;
+}
+
+.support-box__title {
+  margin: 0 0 0.65rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.support-box__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.support-box--compact .support-box__links {
+  justify-content: flex-start;
+}
+
+.support-box__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  border-radius: 20px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.support-box__link:hover {
+  opacity: 0.82;
+}
+
+.support-box__link--tg {
+  background: #229ED9;
+  color: #fff;
+}
+
+.support-box__link--phone {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.support-box__note {
+  margin: 0.65rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── Order card support link ──────────────────────────────────────────────── */
+.dash-order__support-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: 14px;
+  border: 1px solid #229ED9;
+  background: color-mix(in srgb, #229ED9 10%, transparent);
+  color: #229ED9;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.dash-order__support-link:hover {
+  background: color-mix(in srgb, #229ED9 18%, transparent);
+}

@@ -508,6 +508,13 @@ export const translations = {
       packed:           'Preparing',
       'out-for-delivery': 'Out for Delivery',
     },
+    support: {
+      needHelp:      'Need help with your order?',
+      havingIssue:   'Having an issue?',
+      chatTelegram:  'Chat on Telegram',
+      contactSupport: 'Contact Support',
+      replyTime:     'We usually reply within 30 minutes',
+    },
     tracker: {
       title:         'Track Your Order',
       orderIdLabel:  'Order ID',
@@ -1063,6 +1070,13 @@ export const translations = {
       cancelled:        'ተሰርዟል',
       packed:           'እየተዘጋጀ ነው',
       'out-for-delivery': 'ወደ እርስዎ ሲሄድ',
+    },
+    support: {
+      needHelp:      'ትዕዛዝዎ ላይ እርዳታ ይፈልጋሉ?',
+      havingIssue:   'ችግር አጋጥሞዎት?',
+      chatTelegram:  'በቴሌግራም ያነጋግሩን',
+      contactSupport: 'ድጋፍ ያግኙ',
+      replyTime:     'በ30 ደቂቃ ውስጥ ምላሽ እንሰጣለን',
     },
     tracker: {
       title:         'ትዕዛዝዎን ይከታተሉ',
