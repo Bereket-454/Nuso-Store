@@ -141,6 +141,39 @@ export async function signOut() {
 }
 
 /**
+ * Soft-delete a user account:
+ *   1. Anonymizes the profiles row (clears name, phone, email, sets deleted_at).
+ *   2. Replaces shipping data on all the user's orders with a placeholder so
+ *      financial records are preserved but personal details are removed.
+ *   3. Signs the user out (the auth.users row can be hard-deleted via the
+ *      Supabase dashboard or a SECURITY DEFINER RPC if needed later).
+ * Returns { error }.
+ */
+export async function deleteAccount(userId) {
+  const { error: profileErr } = await supabase
+    .from('profiles')
+    .update({
+      name:             'Deleted User',
+      phone:            null,
+      email:            null,
+      default_shipping: null,
+      deleted_at:       new Date().toISOString(),
+    })
+    .eq('id', userId)
+
+  if (profileErr) return { error: profileErr }
+
+  // Best-effort: anonymize shipping details on orders (totals / items kept for accounting)
+  await supabase
+    .from('orders')
+    .update({ shipping: { fullName: 'Deleted User', phone: '—', city: '—', area: '—' } })
+    .eq('user_id', userId)
+
+  const { error: signOutErr } = await supabase.auth.signOut()
+  return { error: signOutErr ?? null }
+}
+
+/**
  * Send a password-reset email. Always resolves without throwing — callers
  * should show a generic success message regardless of whether the email exists.
  */

@@ -5,7 +5,7 @@ import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
-import { checkEmailExists, checkPhoneExists, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
+import { checkEmailExists, checkPhoneExists, deleteAccount, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
 import { cancelOrder, CUSTOMER_CANCEL_STATUSES } from '../services/ordersService'
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
 import { supabase } from '../lib/supabase'
@@ -679,9 +679,28 @@ function ProfileCard({ user, t, state, dispatch }) {
   const walletBal    = state.wallet?.balance ?? 0
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const prefersReduced = useReducedMotion()
 
+  async function handleDeleteAccount() {
+    if (deleteConfirmText !== 'DELETE') return
+    setDeleting(true)
+    setDeleteError('')
+    const { error } = await deleteAccount(user.id)
+    if (error) {
+      setDeleting(false)
+      setDeleteError(t('account.deleteError'))
+      return
+    }
+    dispatch({ type: 'AUTH_CHANGED', payload: null })
+    navigate('/')
+  }
+
   return (
+    <>
     <div className="dash-page">
 
       {/* ── Welcome card ────────────────────────────────────────────── */}
@@ -1071,11 +1090,92 @@ function ProfileCard({ user, t, state, dispatch }) {
                 onClose={() => setEditing(false)}
               />
             )}
+
+            {/* ── Danger zone ──────────────────────────────────── */}
+            <div className="danger-zone">
+              <div>
+                <p className="danger-zone__title">{t('account.deleteAccountBtn')}</p>
+                <p className="danger-zone__desc">{t('account.deleteAccountDesc')}</p>
+              </div>
+              <button
+                type="button"
+                className="danger-zone__btn"
+                onClick={() => { setDeleteModalOpen(true); setDeleteConfirmText(''); setDeleteError('') }}
+              >
+                {t('account.deleteAccountBtn')}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-    </div>
+    </div>{/* end dash-page */}
+
+    {/* ── Delete account modal ────────────────────────────────────── */}
+    {deleteModalOpen && (
+      <div
+        className="delete-modal-backdrop"
+        onClick={() => { if (!deleting) { setDeleteModalOpen(false) } }}
+      >
+        <div
+          className="delete-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-modal-title"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="delete-modal__icon" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <h2 id="delete-modal-title" className="delete-modal__title">{t('account.deleteModalTitle')}</h2>
+          <p className="delete-modal__warning">{t('account.deleteModalWarning')}</p>
+          <ul className="delete-modal__list">
+            <li>{t('account.deleteWhatProfile')}</li>
+            <li>{t('account.deleteWhatData')}</li>
+            <li>{t('account.deleteWhatOrders')}</li>
+          </ul>
+          <p className="delete-modal__confirm-label">
+            {t('account.deleteTypePrompt')} <strong>DELETE</strong>
+          </p>
+          <input
+            type="text"
+            className="delete-modal__input"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="DELETE"
+            disabled={deleting}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {deleteError && (
+            <p className="error-text" style={{ marginTop: '0.5rem', fontSize: '0.82rem' }}>{deleteError}</p>
+          )}
+          <div className="delete-modal__actions">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={deleting}
+            >
+              {t('account.deleteCancelBtn')}
+            </button>
+            <button
+              type="button"
+              className="delete-modal__confirm-btn"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== 'DELETE' || deleting}
+            >
+              {deleting ? '…' : t('account.deleteConfirmBtn')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 
