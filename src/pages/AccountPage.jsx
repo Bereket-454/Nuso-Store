@@ -7,6 +7,7 @@ import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { checkEmailExists, checkPhoneExists, deleteAccount, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
 import { cancelOrder, CUSTOMER_CANCEL_STATUSES } from '../services/ordersService'
+import { RETURN_REASONS, fetchReturnRequestsForUser, submitReturnRequest } from '../services/returnsService'
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
 import { supabase } from '../lib/supabase'
 import { EmptyState } from '../components/EmptyState'
@@ -614,18 +615,21 @@ function ProfileCard({ user, t, state, dispatch }) {
   async function fetchOrders() {
     setOrdersLoading(true)
     setOrdersError(false)
-    const { data, error } = await supabase
-      .from('orders')
-      .select('id, total, status, payment_status, refund_reason, refund_reference, refunded_at, created_at, payment, shipping, items, cancelled_at, cancellation_reason')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-    if (error) {
+    const [ordersRes, returnsRes] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('id, total, status, payment_status, refund_reason, refund_reference, refunded_at, created_at, payment, shipping, items, cancelled_at, cancellation_reason')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+      fetchReturnRequestsForUser(user.id),
+    ])
+    if (ordersRes.error) {
       setOrdersError(true)
       setOrdersLoading(false)
       return
     }
     setDbOrders(
-      (data ?? []).map((row) => ({
+      (ordersRes.data ?? []).map((row) => ({
         id:                 row.id,
         total:              row.total,
         status:             row.status,
@@ -641,6 +645,11 @@ function ProfileCard({ user, t, state, dispatch }) {
         cancellationReason: row.cancellation_reason ?? '',
       })),
     )
+    if (!returnsRes.error && returnsRes.data.length > 0) {
+      const map = {}
+      returnsRes.data.forEach((r) => { map[r.order_id] = r })
+      setReturnRequests(map)
+    }
     setOrdersLoading(false)
   }
 
@@ -678,6 +687,13 @@ function ProfileCard({ user, t, state, dispatch }) {
   })()
   const walletBal    = state.wallet?.balance ?? 0
 
+  const [returnRequests, setReturnRequests]       = useState({})
+  const [returningOrderId, setReturningOrderId]   = useState(null)
+  const [returnReason, setReturnReason]           = useState('')
+  const [returnDescription, setReturnDescription] = useState('')
+  const [returnLoading, setReturnLoading]         = useState(false)
+  const [returnError, setReturnError]             = useState('')
+
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
@@ -705,6 +721,19 @@ function ProfileCard({ user, t, state, dispatch }) {
     }
     dispatch({ type: 'AUTH_CHANGED', payload: null })
     navigate('/')
+  }
+
+  async function handleSubmitReturn(order) {
+    if (!returnReason) { setReturnError(t('returns.selectReason')); return }
+    setReturnLoading(true)
+    setReturnError('')
+    const { data, error } = await submitReturnRequest(order.id, user.id, returnReason, returnDescription)
+    setReturnLoading(false)
+    if (error) { setReturnError(t('returns.submitError')); return }
+    setReturnRequests((prev) => ({ ...prev, [order.id]: data }))
+    setReturningOrderId(null)
+    setReturnReason('')
+    setReturnDescription('')
   }
 
   return (
@@ -996,6 +1025,78 @@ function ProfileCard({ user, t, state, dispatch }) {
                             )}
                           </div>
                         )}
+
+                        {/* Return request — delivered orders only */}
+                        {order.status === 'delivered' && (() => {
+                          const req = returnRequests[order.id]
+                          if (req) {
+                            return (
+                              <div className={`dash-order__return-status return-status--${req.status}`}>
+                                {req.status === 'pending'  && t('returns.pending')}
+                                {req.status === 'approved' && t('returns.approved')}
+                                {req.status === 'rejected' && t('returns.rejected')}
+                                {req.admin_note && (
+                                  <span className="return-status__note"> · {req.admin_note}</span>
+                                )}
+                              </div>
+                            )
+                          }
+                          if (returningOrderId === order.id) {
+                            return (
+                              <div className="dash-order__return-form">
+                                <select
+                                  value={returnReason}
+                                  onChange={(e) => setReturnReason(e.target.value)}
+                                  disabled={returnLoading}
+                                >
+                                  <option value="">{t('returns.selectReasonPlaceholder')}</option>
+                                  {RETURN_REASONS.map((r) => (
+                                    <option key={r.value} value={r.value}>{r.label}</option>
+                                  ))}
+                                </select>
+                                <textarea
+                                  value={returnDescription}
+                                  onChange={(e) => setReturnDescription(e.target.value)}
+                                  placeholder={t('returns.descriptionPlaceholder')}
+                                  disabled={returnLoading}
+                                  rows={2}
+                                />
+                                {returnError && (
+                                  <p className="error-text" style={{ margin: 0, fontSize: '0.82rem' }}>{returnError}</p>
+                                )}
+                                <div className="dash-order__return-actions">
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                                    onClick={() => handleSubmitReturn(order)}
+                                    disabled={returnLoading || !returnReason}
+                                  >
+                                    {returnLoading ? '…' : t('returns.submitBtn')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                                    onClick={() => { setReturningOrderId(null); setReturnReason(''); setReturnDescription(''); setReturnError('') }}
+                                    disabled={returnLoading}
+                                  >
+                                    {t('returns.cancelBtn')}
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          }
+                          return (
+                            <button
+                              type="button"
+                              className="dash-order__return-btn"
+                              onClick={() => { setReturningOrderId(order.id); setReturnReason(''); setReturnDescription(''); setReturnError('') }}
+                            >
+                              {t('returns.requestReturn')}
+                            </button>
+                          )
+                        })()}
                       </div>
                     )
                   })}

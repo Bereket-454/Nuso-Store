@@ -84,7 +84,28 @@ export function RefundPolicyPage() {
       </div>
 
       <div className="legal-section">
-        <h2>5. Exchanges</h2>
+        <h2>5. Returns</h2>
+        <p>
+          We accept return requests submitted within <strong>7 days of delivery</strong>. To be eligible:
+        </p>
+        <ul>
+          <li>The item must be unused and in its original condition.</li>
+          <li>You must have a valid reason (wrong item, damaged, or not as described).</li>
+          <li>Your return request must be submitted through your account under My Orders.</li>
+        </ul>
+        <p>
+          Once we review and approve your request, we will arrange collection or instruct you on
+          how to return the item. Return shipping costs may apply for "Changed my mind" requests.
+        </p>
+        <p>
+          Return requests submitted after 7 days of delivery will not be accepted unless the item
+          is defective or significantly different from what was described.
+        </p>
+      </div>
+
+      <div className="legal-section">
+        <h2>6. Exchanges</h2>
+
         <p>
           We don't currently offer direct exchanges through the app. If you received the wrong
           item or size, contact us immediately. We'll arrange a replacement delivery or refund
@@ -93,7 +114,7 @@ export function RefundPolicyPage() {
       </div>
 
       <div className="legal-section">
-        <h2>6. Non-Refundable Situations</h2>
+        <h2>7. Non-Refundable Situations</h2>
         <ul>
           <li>Orders cancelled after they are out for delivery (unless item is unavailable).</li>
           <li>Items that have been used, washed, or damaged by the customer.</li>

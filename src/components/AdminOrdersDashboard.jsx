@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase'
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
 import { insertAuditLog } from '../services/auditService'
 import { archiveOrder, unarchiveOrder } from '../services/ordersService'
+import { fetchAllReturnRequests, updateReturnStatus, RETURN_REASON_LABELS, RETURN_STATUS_LABELS } from '../services/returnsService'
 
 // ── Role + step constants ─────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ const TABS = [
   { id: 'completed',  label: 'Completed' },
   { id: 'cancelled',  label: 'Cancelled' },
   { id: 'refunds',    label: 'Refunds' },
+  { id: 'returns',    label: 'Returns' },
   { id: 'archived',   label: 'Archived' },
 ]
 
@@ -387,6 +389,103 @@ function OrderCard({ order, onView, onUpdated, onArchive, onUnarchive }) {
   )
 }
 
+// ── Returns Panel ─────────────────────────────────────────────────────────────
+
+function ReturnsPanel({ returnRequests, orders, onUpdate }) {
+  const orderMap = useMemo(
+    () => Object.fromEntries(orders.map((o) => [o.id, o])),
+    [orders],
+  )
+  const [notes,    setNotes]    = useState({})
+  const [updating, setUpdating] = useState(null)
+
+  async function handleDecision(req, status) {
+    setUpdating(req.id)
+    const { data, error } = await updateReturnStatus(req.id, status, notes[req.id] ?? '')
+    setUpdating(null)
+    if (!error && data) onUpdate(req.id, data)
+  }
+
+  if (returnRequests.length === 0) {
+    return (
+      <p className="muted" style={{ padding: '2rem 0', textAlign: 'center' }}>No return requests yet.</p>
+    )
+  }
+
+  return (
+    <div className="aod-returns">
+      {returnRequests.map((req) => {
+        const order      = orderMap[req.order_id]
+        const isUpdating = updating === req.id
+        const customer   = order?.shipping?.fullName || order?.customer_name || '—'
+        return (
+          <div key={req.id} className={`aod-return-card aod-return-card--${req.status}`}>
+            <div className="aod-return-card__header">
+              <div>
+                <p className="aod-return-card__order-id">{req.order_id}</p>
+                <p className="aod-return-card__customer">
+                  {customer}
+                  {order && <span> · {birr(order.total)}</span>}
+                </p>
+              </div>
+              <span className={`aod-return-badge aod-return-badge--${req.status}`}>
+                {RETURN_STATUS_LABELS[req.status] ?? req.status}
+              </span>
+            </div>
+
+            <p className="aod-return-card__reason">
+              {RETURN_REASON_LABELS[req.reason] ?? req.reason}
+            </p>
+            {req.description && (
+              <p className="aod-return-card__desc">{req.description}</p>
+            )}
+            <p className="aod-return-card__date">
+              {new Date(req.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+            </p>
+
+            {req.admin_note && (
+              <p className="aod-return-card__admin-note">
+                <strong>Note:</strong> {req.admin_note}
+              </p>
+            )}
+
+            {req.status === 'pending' && (
+              <div className="aod-return-card__actions">
+                <input
+                  type="text"
+                  className="aod-return-card__note-input"
+                  placeholder="Add a note (optional)…"
+                  value={notes[req.id] ?? ''}
+                  onChange={(e) => setNotes((prev) => ({ ...prev, [req.id]: e.target.value }))}
+                  disabled={isUpdating}
+                />
+                <div className="aod-return-card__btns">
+                  <button
+                    type="button"
+                    className="aod-return-card__btn aod-return-card__btn--approve"
+                    onClick={() => handleDecision(req, 'approved')}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? '…' : 'Approve'}
+                  </button>
+                  <button
+                    type="button"
+                    className="aod-return-card__btn aod-return-card__btn--reject"
+                    onClick={() => handleDecision(req, 'rejected')}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? '…' : 'Reject'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Summary Card ──────────────────────────────────────────────────────────────
 
 function SummaryCard({ label, count, active, onClick, accent }) {
@@ -411,9 +510,19 @@ function SummaryCard({ label, count, active, onClick, accent }) {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
-  const [activeTab, setActiveTab]     = useState('all')
-  const [search, setSearch]           = useState('')
-  const [detailOrder, setDetailOrder] = useState(null)
+  const [activeTab, setActiveTab]         = useState('all')
+  const [search, setSearch]               = useState('')
+  const [detailOrder, setDetailOrder]     = useState(null)
+  const [returnRequests, setReturnRequests] = useState([])
+  const [returnsLoading, setReturnsLoading] = useState(false)
+
+  useEffect(() => {
+    setReturnsLoading(true)
+    fetchAllReturnRequests().then(({ data }) => {
+      setReturnRequests(data)
+      setReturnsLoading(false)
+    })
+  }, [])
 
   // Split orders into two pools so archived orders never leak into active views
   const activePool   = useMemo(() => orders.filter((o) => !o.is_archived), [orders])
@@ -435,10 +544,14 @@ export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
     return list
   }, [activePool, archivedPool, activeTab, search])
 
-  const tabCount = (id) =>
-    id === 'archived'
-      ? archivedPool.length
-      : activePool.filter(TAB_FILTERS[id] ?? (() => true)).length
+  const tabCount = (id) => {
+    if (id === 'archived') return archivedPool.length
+    if (id === 'returns')  return returnRequests.length
+    return activePool.filter(TAB_FILTERS[id] ?? (() => true)).length
+  }
+
+  const handleReturnUpdate = (reqId, updated) =>
+    setReturnRequests((prev) => prev.map((r) => (r.id === reqId ? updated : r)))
 
   const handleUpdate = (orderId, update) => {
     if (detailOrder?.id === orderId) {
@@ -492,8 +605,18 @@ export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
         </div>
       </div>
 
-      {/* Cards */}
-      {filtered.length === 0 ? (
+      {/* Returns panel or order cards */}
+      {activeTab === 'returns' ? (
+        returnsLoading ? (
+          <p className="muted" style={{ padding: '1.5rem 0', textAlign: 'center' }}>Loading…</p>
+        ) : (
+          <ReturnsPanel
+            returnRequests={returnRequests}
+            orders={orders}
+            onUpdate={handleReturnUpdate}
+          />
+        )
+      ) : filtered.length === 0 ? (
         <p className="muted" style={{ padding: '1.5rem 0', textAlign: 'center' }}>
           {search ? 'No orders match your search.' : 'No orders in this category.'}
         </p>
