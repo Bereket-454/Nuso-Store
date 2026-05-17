@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
-import { recalculateBestSellers } from '../services/productsService'
+import { fetchCategories, fetchProducts, fetchSubcategories, recalculateBestSellers } from '../services/productsService'
 import { completeReferralReward } from '../services/referral'
 import { useWalletCredit } from '../services/wallet'
 import { useTranslation } from '../i18n'
@@ -309,16 +309,39 @@ export function CheckoutPage() {
         return
       }
 
-      // Decrement stock for each ordered item using the validated levels
-      const stockDecrements = cartItems.map((item) =>
-        supabase
-          .from('products')
-          .update({ stock: Math.max(0, (stockMap[item.productId]?.stock ?? 0) - item.quantity) })
-          .eq('id', item.productId),
+      // Decrement stock for each ordered item — awaited so UI reflects new levels
+      const stockDecrements = await Promise.all(
+        cartItems.map((item) =>
+          supabase
+            .from('products')
+            .update({ stock: Math.max(0, (stockMap[item.productId]?.stock ?? 0) - item.quantity) })
+            .eq('id', item.productId)
+            .select('id, stock'),
+        ),
       )
-      Promise.all(stockDecrements).catch((err) =>
-        console.error('[Checkout] stock decrement error:', err),
-      )
+      let anyDecrementFailed = false
+      for (const { data, error } of stockDecrements) {
+        if (error) {
+          anyDecrementFailed = true
+          console.error(
+            '[Checkout] stock decrement failed — check Supabase RLS:',
+            error.message,
+            error,
+            '\nRequired policy: authenticated users must be able to UPDATE the products table (or use a service-role edge function).',
+          )
+        } else {
+          console.log('[Checkout] stock decremented:', data)
+        }
+      }
+
+      // Refetch full catalogue so the store and all UI reflect the new stock levels
+      if (!anyDecrementFailed) {
+        Promise.all([fetchProducts(), fetchCategories(), fetchSubcategories()]).then(
+          ([products, categories, subcategories]) => {
+            dispatch({ type: 'CATALOGUE_LOADED', payload: { products, categories, subcategories } })
+          },
+        )
+      }
 
       // Post-order rewards (fire-and-forget)
       if (userId) {
