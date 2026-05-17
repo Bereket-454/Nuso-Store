@@ -131,3 +131,34 @@ export async function updatePaymentStatus({ orderId, paymentStatus, refundReason
   if (error) console.error('[updatePaymentStatus] failed:', error.message, error)
   return { error }
 }
+
+/**
+ * Soft-archive a completed/cancelled order so it disappears from the active list.
+ * The row is never deleted — is_archived is just set to true.
+ *
+ * @param {string} orderId
+ * @returns {{ error }}
+ */
+export async function archiveOrder(orderId) {
+  const { error } = await supabase
+    .from('orders')
+    .update({ is_archived: true })
+    .eq('id', orderId)
+  if (error) console.error('[archiveOrder] failed:', error.message, error)
+  return { error }
+}
+
+/**
+ * Restore a previously archived order back to the active list.
+ *
+ * @param {string} orderId
+ * @returns {{ error }}
+ */
+export async function unarchiveOrder(orderId) {
+  const { error } = await supabase
+    .from('orders')
+    .update({ is_archived: false })
+    .eq('id', orderId)
+  if (error) console.error('[unarchiveOrder] failed:', error.message, error)
+  return { error }
+}

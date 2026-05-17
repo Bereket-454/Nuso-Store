@@ -9,6 +9,7 @@ import { isSuperAdmin, isOrderManager, isDeliveryManager } from '../utils/auth'
 import { supabase } from '../lib/supabase'
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
 import { insertAuditLog } from '../services/auditService'
+import { archiveOrder, unarchiveOrder } from '../services/ordersService'
 
 // ── Role + step constants ─────────────────────────────────────────────────────
 
@@ -53,7 +54,12 @@ const TABS = [
   { id: 'completed',  label: 'Completed' },
   { id: 'cancelled',  label: 'Cancelled' },
   { id: 'refunds',    label: 'Refunds' },
+  { id: 'archived',   label: 'Archived' },
 ]
+
+const ARCHIVABLE_STATUSES = new Set(['delivered', 'cancelled'])
+const isArchivable = (o) =>
+  !o.is_archived && (ARCHIVABLE_STATUSES.has(o.status) || o.payment_status === 'refunded')
 
 const SUMMARY_GROUPS = [
   { key: 'new',       label: 'New',           tab: 'new',        accent: '#2563eb', filter: (o) => o.status === 'order_received' },
@@ -256,10 +262,11 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
 
 // ── Order Card ────────────────────────────────────────────────────────────────
 
-function OrderCard({ order, onView, onUpdated }) {
+function OrderCard({ order, onView, onUpdated, onArchive, onUnarchive }) {
   const { state } = useStore()
   const { t }     = useTranslation()
   const [advancing, setAdvancing] = useState(false)
+  const [archiving, setArchiving] = useState(false)
 
   const resolved     = resolveStatus(order.status)
   const currentIndex = statusIndex(resolved)
@@ -341,7 +348,7 @@ function OrderCard({ order, onView, onUpdated }) {
       </div>
 
       <div className="aod-card__actions">
-        {allowedNext ? (
+        {allowedNext && !order.is_archived ? (
           <button
             type="button"
             className="aod-card__advance"
@@ -351,11 +358,30 @@ function OrderCard({ order, onView, onUpdated }) {
             {advancing ? '…' : `→ ${ACTION_LABELS[allowedNext.id] ?? allowedNext.id}`}
           </button>
         ) : (
-          <span />
+          <span style={{ flex: 1 }} />
         )}
         <button type="button" className="aod-card__view" onClick={onView}>
           View Details
         </button>
+        {order.is_archived ? (
+          <button
+            type="button"
+            className="aod-card__archive aod-card__archive--undo"
+            disabled={archiving}
+            onClick={async () => { setArchiving(true); await onUnarchive(); setArchiving(false) }}
+          >
+            {archiving ? '…' : 'Unarchive'}
+          </button>
+        ) : isArchivable(order) ? (
+          <button
+            type="button"
+            className="aod-card__archive"
+            disabled={archiving}
+            onClick={async () => { setArchiving(true); await onArchive(); setArchiving(false) }}
+          >
+            {archiving ? '…' : 'Archive'}
+          </button>
+        ) : null}
       </div>
     </div>
   )
@@ -389,19 +415,30 @@ export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
   const [search, setSearch]           = useState('')
   const [detailOrder, setDetailOrder] = useState(null)
 
+  // Split orders into two pools so archived orders never leak into active views
+  const activePool   = useMemo(() => orders.filter((o) => !o.is_archived), [orders])
+  const archivedPool = useMemo(() => orders.filter((o) => o.is_archived === true), [orders])
+
+  const matchesSearch = (o, q) =>
+    (o.id               ?? '').toLowerCase().includes(q) ||
+    (o.customer_name    ?? '').toLowerCase().includes(q) ||
+    (o.shipping?.phone  ?? o.customer_phone ?? '').toLowerCase().includes(q) ||
+    (o.payment_status   ?? 'pending').toLowerCase().includes(q)
+
   const filtered = useMemo(() => {
-    let list = orders.filter(TAB_FILTERS[activeTab] ?? (() => true))
+    const pool = activeTab === 'archived' ? archivedPool : activePool
+    let list = activeTab === 'archived'
+      ? pool
+      : pool.filter(TAB_FILTERS[activeTab] ?? (() => true))
     const q = search.trim().toLowerCase()
-    if (q) {
-      list = list.filter((o) =>
-        (o.id               ?? '').toLowerCase().includes(q) ||
-        (o.customer_name    ?? '').toLowerCase().includes(q) ||
-        (o.shipping?.phone  ?? o.customer_phone ?? '').toLowerCase().includes(q) ||
-        (o.payment_status   ?? 'pending').toLowerCase().includes(q)
-      )
-    }
+    if (q) list = list.filter((o) => matchesSearch(o, q))
     return list
-  }, [orders, activeTab, search])
+  }, [activePool, archivedPool, activeTab, search])
+
+  const tabCount = (id) =>
+    id === 'archived'
+      ? archivedPool.length
+      : activePool.filter(TAB_FILTERS[id] ?? (() => true)).length
 
   const handleUpdate = (orderId, update) => {
     if (detailOrder?.id === orderId) {
@@ -412,13 +449,13 @@ export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
 
   return (
     <div className="aod">
-      {/* Summary cards */}
+      {/* Summary cards — counts from active pool only */}
       <div className="aod-summary">
         {SUMMARY_GROUPS.map(({ key, label, tab, accent, filter }) => (
           <SummaryCard
             key={key}
             label={label}
-            count={orders.filter(filter).length}
+            count={activePool.filter(filter).length}
             active={activeTab === tab}
             onClick={() => { setActiveTab(tab); setSearch('') }}
             accent={accent}
@@ -436,23 +473,22 @@ export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
           onChange={(e) => { setSearch(e.target.value); setActiveTab('all') }}
         />
         <div className="aod-tabs" role="tablist">
-          {TABS.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === id}
-              className={`aod-tab${activeTab === id ? ' aod-tab--active' : ''}`}
-              onClick={() => { setActiveTab(id); setSearch('') }}
-            >
-              {label}
-              {orders.filter(TAB_FILTERS[id]).length > 0 && (
-                <span className="aod-tab__badge">
-                  {orders.filter(TAB_FILTERS[id]).length}
-                </span>
-              )}
-            </button>
-          ))}
+          {TABS.map(({ id, label }) => {
+            const count = tabCount(id)
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === id}
+                className={`aod-tab${activeTab === id ? ' aod-tab--active' : ''}`}
+                onClick={() => { setActiveTab(id); setSearch('') }}
+              >
+                {label}
+                {count > 0 && <span className="aod-tab__badge">{count}</span>}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -469,6 +505,14 @@ export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
               order={order}
               onView={() => setDetailOrder(order)}
               onUpdated={(update) => handleUpdate(order.id, update)}
+              onArchive={async () => {
+                const { error } = await archiveOrder(order.id)
+                if (!error) handleUpdate(order.id, { is_archived: true })
+              }}
+              onUnarchive={async () => {
+                const { error } = await unarchiveOrder(order.id)
+                if (!error) handleUpdate(order.id, { is_archived: false })
+              }}
             />
           ))}
         </div>
