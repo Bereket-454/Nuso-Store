@@ -6,6 +6,7 @@ import { ProductCardSkeleton } from '../components/ProductCardSkeleton'
 import { RequestBanner } from '../components/RequestBanner'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
+import { EmptyState } from '../components/EmptyState'
 
 const PAGE_SIZE = 6
 
@@ -18,7 +19,18 @@ export function ProductsPage() {
   const [subcategory, setSubcategory] = useState('all')
   const [sort, setSort] = useState('featured')
   const [page, setPage] = useState(1)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
   const sentinelRef = useRef(null)
+
+  useEffect(() => {
+    const update = () => setIsOnline(navigator.onLine)
+    window.addEventListener('online', update)
+    window.addEventListener('offline', update)
+    return () => {
+      window.removeEventListener('online', update)
+      window.removeEventListener('offline', update)
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     const text = search.trim().toLowerCase()
@@ -130,13 +142,38 @@ export function ProductsPage() {
         <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
           {Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
         </div>
+      ) : !state.productsLoading && state.products.length === 0 ? (
+        // Catalogue failed to load — distinguish offline vs generic error
+        <article className="card card-body" style={{ marginTop: '1rem' }}>
+          {isOnline ? (
+            <EmptyState
+              icon="alert-circle"
+              title={t('error.fetchFailed')}
+              hint={t('error.fetchFailedHint')}
+              ctaLabel={t('error.tryAgain')}
+              ctaOnClick={() => window.location.reload()}
+              danger
+            />
+          ) : (
+            <EmptyState
+              icon="wifi-off"
+              title={t('error.noInternet')}
+              hint={t('error.noInternetHint')}
+              ctaLabel={t('error.checkConnection')}
+              ctaOnClick={() => window.location.reload()}
+              danger
+            />
+          )}
+        </article>
       ) : filtered.length === 0 ? (
         <article className="card card-body" style={{ marginTop: '1rem' }}>
-          <h3>{t('products.noResults')}</h3>
-          <p className="muted">{t('products.noResultsHint')}</p>
-          <Link to="/request" className="btn btn-primary" style={{ marginTop: '0.75rem', display: 'inline-block' }}>
-            {t('products.noResultsRequest')}
-          </Link>
+          <EmptyState
+            icon="search-x"
+            title={t('products.noResults')}
+            hint={t('products.noResultsHint')}
+            ctaLabel={t('products.noResultsRequest')}
+            ctaTo="/request"
+          />
         </article>
       ) : (
         <>

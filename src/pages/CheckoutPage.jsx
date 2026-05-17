@@ -72,6 +72,7 @@ export function CheckoutPage() {
   const [payWhen, setPayWhen] = useState('after')           // 'after' | 'now'
   const [screenshot, setScreenshot] = useState(null)
   const [screenshotPreview, setScreenshotPreview] = useState('')
+  const [screenshotUploadError, setScreenshotUploadError] = useState(false)
   const screenshotRef = useRef(null)
 
   // Referral & wallet state
@@ -256,6 +257,7 @@ export function CheckoutPage() {
           screenshotUrl = urlData.publicUrl
         } else {
           console.warn('[Checkout] screenshot upload failed (non-blocking):', uploadErr.message)
+          setScreenshotUploadError(true)
         }
       }
 
@@ -575,10 +577,17 @@ export function CheckoutPage() {
                       if (!file) return
                       setScreenshot(file)
                       setScreenshotPreview(URL.createObjectURL(file))
+                      setScreenshotUploadError(false)
                     }}
                     style={{ display: 'none' }}
                   />
                 </div>
+                {screenshotUploadError && (
+                  <p style={{ margin: '0.4rem 0 0', fontSize: '0.82rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    {t('checkout.uploadFailed')}
+                  </p>
+                )}
                 <p style={{ margin: '0.35rem 0 0', fontSize: '0.8rem', color: 'var(--muted)' }}>
                   {t('checkout.uploadOptionalHint')}
                 </p>

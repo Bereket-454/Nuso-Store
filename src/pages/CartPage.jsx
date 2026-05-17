@@ -3,6 +3,7 @@ import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
+import { EmptyState } from '../components/EmptyState'
 
 function PurgeNotice({ onDismiss, t }) {
   return (
@@ -62,11 +63,13 @@ export function CartPage() {
   if (items.length === 0 && !showPurgeNotice) {
     return (
       <article className="card card-body">
-        <h2>{t('cart.emptyTitle')}</h2>
-        <p className="muted">{t('cart.emptyHint')}</p>
-        <Link className="btn btn-primary" to="/products">
-          {t('cart.browse')}
-        </Link>
+        <EmptyState
+          icon="cart"
+          title={t('cart.emptyTitle')}
+          hint={t('cart.emptyHint')}
+          ctaLabel={t('cart.browse')}
+          ctaTo="/products"
+        />
       </article>
     )
   }
@@ -76,11 +79,13 @@ export function CartPage() {
     return (
       <article className="card card-body">
         <PurgeNotice onDismiss={dismiss} t={t} />
-        <h2>{t('cart.emptyTitle')}</h2>
-        <p className="muted">{t('cart.emptyHint')}</p>
-        <Link className="btn btn-primary" to="/products">
-          {t('cart.browse')}
-        </Link>
+        <EmptyState
+          icon="cart"
+          title={t('cart.emptyTitle')}
+          hint={t('cart.emptyHint')}
+          ctaLabel={t('cart.browse')}
+          ctaTo="/products"
+        />
       </article>
     )
   }

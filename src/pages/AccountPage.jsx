@@ -8,6 +8,7 @@ import { useTranslation } from '../i18n'
 import { checkEmailExists, checkPhoneExists, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
 import { cancelOrder, CUSTOMER_CANCEL_STATUSES } from '../services/ordersService'
 import { supabase } from '../lib/supabase'
+import { EmptyState } from '../components/EmptyState'
 
 export function getFirstName(fullName) {
   if (!fullName || !fullName.trim()) return 'User'
@@ -568,6 +569,7 @@ function ProfileCard({ user, t, state, dispatch }) {
 
   const [dbOrders, setDbOrders] = useState(null)
   const [ordersLoading, setOrdersLoading] = useState(false)
+  const [ordersError, setOrdersError] = useState(false)
   const [cancellingId, setCancellingId]   = useState(null)
   const [cancelReason, setCancelReason]   = useState('')
   const [cancelLoading, setCancelLoading] = useState(false)
@@ -596,11 +598,17 @@ function ProfileCard({ user, t, state, dispatch }) {
 
   async function fetchOrders() {
     setOrdersLoading(true)
-    const { data } = await supabase
+    setOrdersError(false)
+    const { data, error } = await supabase
       .from('orders')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
+    if (error) {
+      setOrdersError(true)
+      setOrdersLoading(false)
+      return
+    }
     setDbOrders(
       (data ?? []).map((row) => ({
         id:                 row.id,
@@ -739,6 +747,15 @@ function ProfileCard({ user, t, state, dispatch }) {
         <div className="dash-section__body">
           {ordersLoading && dbOrders === null ? (
             <p className="muted" style={{ textAlign: 'center', padding: '1.5rem 0' }}>...</p>
+          ) : ordersError ? (
+            <EmptyState
+              icon="alert-circle"
+              title={t('account.ordersError')}
+              hint={t('account.ordersErrorHint')}
+              ctaLabel={t('error.tryAgain')}
+              ctaOnClick={fetchOrders}
+              danger
+            />
           ) : orders.length === 0 ? (
             <div className="dash-empty">
               <span className="dash-empty__icon" aria-hidden="true">

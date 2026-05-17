@@ -200,6 +200,7 @@ export const translations = {
       uploadScreenshotHint: 'Take a screenshot of your transfer receipt and upload it.',
       uploadOptionalHint: 'Optional — upload to speed up your order confirmation',
       changeScreenshot: 'Change Screenshot',
+      uploadFailed:     'Upload failed — tap to try again',
       trustNoUpfront: 'No upfront payment required',
       trustConfirm: 'We confirm every order before delivery',
       msg: {
@@ -278,6 +279,8 @@ export const translations = {
       addressesDesc: 'Your saved delivery addresses',
       noAddressesHint: 'Addresses are saved automatically at checkout.',
       settingsDesc: 'Update your name, phone, and password',
+      ordersError:     'Could not load your orders',
+      ordersErrorHint: 'Please check your connection and try again.',
       validation: {
         nameRequired: 'Name is required.',
         emailRequired: 'Email is required.',
@@ -515,9 +518,18 @@ export const translations = {
     notif: {
       title: 'Notifications',
       empty: 'No notifications yet',
+      emptyHint: "You're all caught up! We'll notify you when your orders update.",
       markAllRead: 'Mark all as read',
       bellLabel: '{{count}} unread notifications',
       bellLabelEmpty: 'Notifications',
+    },
+    error: {
+      fetchFailed:       'Failed to load data',
+      fetchFailedHint:   'Something went wrong. Please try again.',
+      tryAgain:          'Try Again',
+      noInternet:        'No internet connection',
+      noInternetHint:    'Check your connection and try again.',
+      checkConnection:   'Retry',
     },
     referral: {
       pageTitle: 'Referrals & Rewards',
@@ -748,6 +760,7 @@ export const translations = {
       applyWallet: 'የዋሌት ክሬዲት ተጠቀም ({{amount}})',
       referralMinNote: 'የሪፈራል ቅናሽ ቢያንስ {{min}} ትዕዛዝ ይፈልጋል',
       referralApplied: '10% የሪፈራል ቅናሽ ተተግብሯል (−{{amount}})',
+      uploadFailed: 'መጫን አልተሳካም — እንደገና ለመሞከር ይጫኑ',
     },
     payment: {
       mock: 'የሙከራ ሁኔታ — ክፍያዎች ምስሉ ናቸው።',
@@ -803,6 +816,8 @@ export const translations = {
       addressesDesc: 'የተቀመጡ የማድረሻ አድራሻዎች',
       noAddressesHint: 'አድራሻዎች ቅድሚያ ክፍያ ጊዜ ይቀመጣሉ።',
       settingsDesc: 'ስም፣ ስልክ እና የይለፍ ቃልዎን ያዘምኑ',
+      ordersError:     'ትዕዛዞችዎን ማምጣት አልተሳካም',
+      ordersErrorHint: 'ግንኙነቱን ያረጋግጡ እና እንደገና ይሞክሩ።',
       validation: {
         nameRequired: 'ስም ያስፈልጋል።',
         emailRequired: 'ኢሜይል ያስፈልጋል።',
@@ -1031,9 +1046,18 @@ export const translations = {
     notif: {
       title: 'ማሳወቂያዎች',
       empty: 'እስካሁን ምንም ማሳወቂያ የለም',
+      emptyHint: 'ሁሉም ተዘምኗል! ትዕዛዝዎ ሲዘምን እናሳውቅዎታለን።',
       markAllRead: 'ሁሉንም እንደተነበበ ምልክት አድርግ',
       bellLabel: '{{count}}ያልተነበቡ ማሳወቂያዎች',
       bellLabelEmpty: 'ማሳወቂያዎች',
+    },
+    error: {
+      fetchFailed:     'ዳታ መጫን አልተሳካም',
+      fetchFailedHint: 'ችግር ተፈጥሯል። እንደገና ይሞክሩ።',
+      tryAgain:        'እንደገና ሞክር',
+      noInternet:      'ኢንተርኔት ግንኙነት የለም',
+      noInternetHint:  'ግንኙነቱን ያረጋግጡ እና እንደገና ይሞክሩ።',
+      checkConnection: 'እንደገና ሞክር',
     },
     referral: {
       pageTitle: 'ሪፈራልና ሽልማቶች',

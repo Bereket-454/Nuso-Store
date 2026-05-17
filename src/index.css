@@ -943,9 +943,10 @@ textarea {
 }
 
 .notif-dropdown__empty {
-  padding: 1.25rem 1rem;
-  font-size: 0.88rem;
-  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem;
   text-align: center;
   margin: 0;
 }
@@ -2196,6 +2197,47 @@ textarea {
 .dash-empty__cta:hover {
   background: #e05c00;
   transform: translateY(-1px);
+}
+
+/* ── Generic empty / error state (used across all pages) ─────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.75rem 1.5rem;
+  gap: 0.55rem;
+}
+
+.empty-state__icon {
+  color: var(--muted);
+  opacity: 0.5;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state--danger .empty-state__icon {
+  color: var(--danger);
+  opacity: 0.75;
+}
+
+.empty-state__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.empty-state__hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  max-width: 300px;
+  line-height: 1.55;
+}
+
+.empty-state__cta {
+  margin-top: 0.75rem;
 }
 
 /* ── Mobile ───────────────────────────────────────────────────────────────── */
