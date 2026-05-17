@@ -65,6 +65,7 @@ export function CheckoutPage() {
   })
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState({ loading: false, msgKey: null, variant: 'muted' })
+  const [stockErrors, setStockErrors] = useState([])
 
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState('cod') // 'cod' | 'telebirr' | 'cbe'
@@ -211,6 +212,36 @@ export function CheckoutPage() {
     setStatus({ loading: true, msgKey: 'checkout.msg.placingOrder', variant: 'muted' })
 
     try {
+      // ── Stock validation ───────────────────────────────────────────────────
+      const productIds = [...new Set(cartItems.map((i) => i.productId))]
+      const { data: stockRows, error: stockFetchErr } = await supabase
+        .from('products')
+        .select('id, name, stock')
+        .in('id', productIds)
+
+      if (stockFetchErr) {
+        console.error('[Checkout] stock fetch error:', stockFetchErr.message)
+        setStatus({ loading: false, msgKey: 'checkout.msg.orderFailed', variant: 'error' })
+        return
+      }
+
+      const stockMap = Object.fromEntries((stockRows || []).map((p) => [p.id, p]))
+      const newStockErrors = []
+      for (const item of cartItems) {
+        const live = stockMap[item.productId]
+        if (!live || live.stock <= 0) {
+          newStockErrors.push(t('checkout.stock.outOfStock', { name: item.product?.name ?? item.productId }))
+        } else if (item.quantity > live.stock) {
+          newStockErrors.push(t('checkout.stock.insufficient', { name: item.product?.name ?? item.productId, n: live.stock }))
+        }
+      }
+      if (newStockErrors.length > 0) {
+        setStockErrors(newStockErrors)
+        setStatus({ loading: false, msgKey: null, variant: 'muted' })
+        return
+      }
+      setStockErrors([])
+
       // Upload screenshot if user chose "pay now"
       let screenshotUrl = null
       if (paymentMethod !== 'cod' && payWhen === 'now' && screenshot) {
@@ -247,6 +278,12 @@ export function CheckoutPage() {
         screenshotUrl,
       }
 
+      // Attach stock snapshot to each order item so fulfilment has a clear record
+      const itemsWithStock = cartItems.map((item) => ({
+        ...item,
+        stockAtOrder: stockMap[item.productId]?.stock ?? null,
+      }))
+
       // Insert order — payment_status is 'pending'; admin confirms before delivery
       const { error: insertError } = await supabase.from('orders').insert({
         id:                 orderId,
@@ -254,7 +291,7 @@ export function CheckoutPage() {
         customer_name:      customer.name,
         customer_phone:     customer.phone || null,
         customer_email:     userEmail,
-        items:              cartItems,
+        items:              itemsWithStock,
         shipping,
         payment,
         subtotal,
@@ -271,6 +308,17 @@ export function CheckoutPage() {
         setStatus({ loading: false, msgKey: 'checkout.msg.orderFailed', variant: 'error' })
         return
       }
+
+      // Decrement stock for each ordered item using the validated levels
+      const stockDecrements = cartItems.map((item) =>
+        supabase
+          .from('products')
+          .update({ stock: Math.max(0, (stockMap[item.productId]?.stock ?? 0) - item.quantity) })
+          .eq('id', item.productId),
+      )
+      Promise.all(stockDecrements).catch((err) =>
+        console.error('[Checkout] stock decrement error:', err),
+      )
 
       // Post-order rewards (fire-and-forget)
       if (userId) {
@@ -584,6 +632,14 @@ export function CheckoutPage() {
 
         {status.msgKey && (
           <p className={statusClass} style={{ margin: '0.5rem 0 0.75rem' }}>{t(status.msgKey)}</p>
+        )}
+
+        {stockErrors.length > 0 && (
+          <ul style={{ margin: '0.5rem 0 0.75rem', padding: '0.75rem 1rem', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+            {stockErrors.map((msg, i) => (
+              <li key={i} className="error-text" style={{ margin: 0, fontSize: '0.9rem' }}>{msg}</li>
+            ))}
+          </ul>
         )}
 
         <button
