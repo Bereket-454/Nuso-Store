@@ -141,15 +141,17 @@ export async function signOut() {
 }
 
 /**
- * Soft-delete a user account:
+ * Permanently delete a user account:
  *   1. Anonymizes the profiles row (clears name, phone, email, sets deleted_at).
- *   2. Replaces shipping data on all the user's orders with a placeholder so
- *      financial records are preserved but personal details are removed.
- *   3. Signs the user out (the auth.users row can be hard-deleted via the
- *      Supabase dashboard or a SECURITY DEFINER RPC if needed later).
+ *   2. Replaces all personal data in orders with 'Deleted User' placeholders —
+ *      order totals, items, payment records, and audit logs are left intact.
+ *   3. Calls the delete_user() SECURITY DEFINER RPC to remove the auth.users
+ *      row so the email address can be reused for a new account.
+ *   4. Signs the client session out.
  * Returns { error }.
  */
 export async function deleteAccount(userId) {
+  // 1. Anonymize the profile row
   const { error: profileErr } = await supabase
     .from('profiles')
     .update({
@@ -163,14 +165,26 @@ export async function deleteAccount(userId) {
 
   if (profileErr) return { error: profileErr }
 
-  // Best-effort: anonymize shipping details on orders (totals / items kept for accounting)
+  // 2. Anonymize personal data in all orders for this user
+  //    Shipping JSONB gets a placeholder; top-level contact columns are cleared.
   await supabase
     .from('orders')
-    .update({ shipping: { fullName: 'Deleted User', phone: '—', city: '—', area: '—' } })
+    .update({
+      shipping:        { fullName: 'Deleted User', phone: '—', city: '—', area: '—' },
+      customer_name:   'Deleted User',
+      customer_email:  null,
+      customer_phone:  null,
+    })
     .eq('user_id', userId)
 
-  const { error: signOutErr } = await supabase.auth.signOut()
-  return { error: signOutErr ?? null }
+  // 3. Hard-delete the auth.users row via SECURITY DEFINER RPC
+  const { error: rpcErr } = await supabase.rpc('delete_user')
+  if (rpcErr) console.error('[deleteAccount] delete_user RPC failed:', rpcErr.message)
+
+  // 4. Sign out the client session (best-effort after RPC)
+  await supabase.auth.signOut()
+
+  return { error: rpcErr ?? null }
 }
 
 /**

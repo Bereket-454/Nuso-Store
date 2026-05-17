@@ -310,7 +310,8 @@ export const translations = {
       deleteTypePrompt:   'To confirm, type',
       deleteCancelBtn:    'Keep my account',
       deleteConfirmBtn:   'Delete my account',
-      deleteError:        'Something went wrong. Please try again or contact support.',
+      deleteError:          'Something went wrong. Please try again or contact support.',
+      deleteBlockedByOrders: 'You have active orders. Please wait for them to be delivered or cancel them before deleting your account.',
       validation: {
         nameRequired: 'Name is required.',
         emailRequired: 'Email is required.',
@@ -893,7 +894,8 @@ export const translations = {
       deleteTypePrompt:   'ለማረጋገጥ ይፃፉ',
       deleteCancelBtn:    'መለያዬን አቆይ',
       deleteConfirmBtn:   'መለያዬን ሰርዝ',
-      deleteError:        'ስህተት ተፈጥሯል። እንደገና ይሞክሩ ወይም ድጋፍ ያግኙ።',
+      deleteError:          'ስህተት ተፈጥሯል። እንደገና ይሞክሩ ወይም ድጋፍ ያግኙ።',
+      deleteBlockedByOrders: 'ንቁ ትዕዛዞች አሉዎት። ከሰረዙ በፊት እስኪደርሱ ይጠብቁ ወይም ይሰርዟቸው።',
       validation: {
         nameRequired: 'ስም ያስፈልጋል።',
         emailRequired: 'ኢሜይል ያስፈልጋል።',

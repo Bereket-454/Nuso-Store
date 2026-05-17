@@ -687,6 +687,14 @@ function ProfileCard({ user, t, state, dispatch }) {
 
   async function handleDeleteAccount() {
     if (deleteConfirmText !== 'DELETE') return
+
+    // Block deletion if the user has any in-flight orders
+    const hasActiveOrders = orders.some((o) => ACTIVE_ORDER_STATUSES.has(o.status))
+    if (hasActiveOrders) {
+      setDeleteError(t('account.deleteBlockedByOrders'))
+      return
+    }
+
     setDeleting(true)
     setDeleteError('')
     const { error } = await deleteAccount(user.id)
