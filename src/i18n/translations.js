@@ -539,6 +539,7 @@ export const translations = {
       approved:               'Return Approved',
       rejected:               'Return Rejected',
       adminNote:              'Note',
+      windowClosed:           'Return window closed',
     },
     tracker: {
       title:         'Track Your Order',
@@ -1127,6 +1128,7 @@ export const translations = {
       approved:                'ተቀባይነት አግኝቷል',
       rejected:                'ተቀባይነት አላገኘም',
       adminNote:               'ማስታወሻ',
+      windowClosed:            'የተመላሽ ጊዜ አልፏል',
     },
     tracker: {
       title:         'ትዕዛዝዎን ይከታተሉ',

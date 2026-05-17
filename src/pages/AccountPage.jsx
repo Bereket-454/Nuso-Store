@@ -618,7 +618,7 @@ function ProfileCard({ user, t, state, dispatch }) {
     const [ordersRes, returnsRes] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, total, status, payment_status, refund_reason, refund_reference, refunded_at, created_at, payment, shipping, items, cancelled_at, cancellation_reason')
+        .select('id, total, status, payment_status, refund_reason, refund_reference, refunded_at, created_at, updated_at, payment, shipping, items, cancelled_at, cancellation_reason')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
       fetchReturnRequestsForUser(user.id),
@@ -638,6 +638,7 @@ function ProfileCard({ user, t, state, dispatch }) {
         refundReference:    row.refund_reference ?? null,
         refundedAt:         row.refunded_at ?? null,
         createdAt:          row.created_at,
+        updatedAt:          row.updated_at,
         payment:            row.payment,
         shipping:           row.shipping,
         items:              row.items ?? [],
@@ -1085,6 +1086,14 @@ function ProfileCard({ user, t, state, dispatch }) {
                                   </button>
                                 </div>
                               </div>
+                            )
+                          }
+                          const withinWindow = order.updatedAt
+                            ? (Date.now() - new Date(order.updatedAt).getTime()) < 72 * 60 * 60 * 1000
+                            : false
+                          if (!withinWindow) {
+                            return (
+                              <p className="return-window-closed">{t('returns.windowClosed')}</p>
                             )
                           }
                           return (

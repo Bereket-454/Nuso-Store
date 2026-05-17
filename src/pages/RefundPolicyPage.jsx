@@ -86,7 +86,7 @@ export function RefundPolicyPage() {
       <div className="legal-section">
         <h2>5. Returns</h2>
         <p>
-          We accept return requests submitted within <strong>7 days of delivery</strong>. To be eligible:
+          We accept return requests submitted within <strong>3 days of delivery</strong>. To be eligible:
         </p>
         <ul>
           <li>The item must be unused and in its original condition.</li>
@@ -98,7 +98,7 @@ export function RefundPolicyPage() {
           how to return the item. Return shipping costs may apply for "Changed my mind" requests.
         </p>
         <p>
-          Return requests submitted after 7 days of delivery will not be accepted unless the item
+          Return requests submitted after 3 days of delivery will not be accepted unless the item
           is defective or significantly different from what was described.
         </p>
       </div>

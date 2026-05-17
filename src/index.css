@@ -5457,6 +5457,13 @@ textarea {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
+.return-window-closed {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .dash-order__return-form {
   width: 100%;
   margin-top: 0.65rem;
