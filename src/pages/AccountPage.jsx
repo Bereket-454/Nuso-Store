@@ -609,7 +609,7 @@ function ProfileCard({ user, t, state, dispatch }) {
     setOrdersError(false)
     const { data, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('id, total, status, payment_status, refund_reason, refund_reference, refunded_at, created_at, payment, shipping, items, cancelled_at, cancellation_reason')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     if (error) {
@@ -643,7 +643,7 @@ function ProfileCard({ user, t, state, dispatch }) {
   function toggleTab(tab) {
     const next = openTab === tab ? null : tab
     setOpenTab(next)
-    if (next === 'orders') fetchOrders()
+    if (tab === 'orders' && next === 'orders') fetchOrders()
   }
 
   const orders       = dbOrders ?? []
