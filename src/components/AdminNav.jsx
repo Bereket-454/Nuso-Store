@@ -33,13 +33,22 @@ export function AdminNav() {
     close()
     const doScroll = () => {
       const el = document.getElementById(sectionId)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } else {
+        // Retry once — section may still be rendering
+        setTimeout(() => {
+          document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 400)
+      }
     }
     if (location.pathname === '/admin') {
-      doScroll()
+      // Small delay so any re-render triggered by close() settles first
+      setTimeout(doScroll, 80)
     } else {
       navigate('/admin')
-      setTimeout(doScroll, 200)
+      // Wait for AdminDashboardPage to mount and render all conditional sections
+      setTimeout(doScroll, 700)
     }
   }
 
