@@ -5,6 +5,7 @@ import { insertNotification, sendOrderEmail } from '../services/notificationsSer
 import { ORDER_STEPS, resolveStatus, statusIndex } from './OrderTracker'
 import { isSuperAdmin, isOrderManager, isDeliveryManager } from '../utils/auth'
 import { cancelOrder, ADMIN_CANCEL_STATUSES } from '../services/ordersService'
+import { insertAuditLog } from '../services/auditService'
 
 // What the admin button says for each target status
 const ACTION_LABELS = {
@@ -55,6 +56,15 @@ export function AdminOrderActions({ order, onUpdated }) {
       setCancelLoading(false)
       return
     }
+    insertAuditLog({
+      adminUserId: state.user?.id,
+      adminEmail:  state.user?.email,
+      action:      'order_cancelled',
+      targetType:  'order',
+      targetId:    order.id,
+      oldValue:    { status: order.status },
+      newValue:    { status: 'cancelled', cancellation_reason: cancelReason.trim() || null },
+    })
     setShowCancel(false)
     setCancelReason('')
     setCancelLoading(false)
@@ -92,6 +102,17 @@ export function AdminOrderActions({ order, onUpdated }) {
         setLoading(false)
         return
       }
+
+      // Audit log (non-blocking)
+      insertAuditLog({
+        adminUserId: state.user?.id,
+        adminEmail:  state.user?.email,
+        action:      `order_status_changed_to_${targetStatus}`,
+        targetType:  'order',
+        targetId:    order.id,
+        oldValue:    { status: order.status },
+        newValue:    { status: targetStatus },
+      })
 
       // Fire notifications (non-blocking)
       const notif = buildNotif(targetStatus, order.id)

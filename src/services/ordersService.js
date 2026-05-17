@@ -18,20 +18,51 @@ export const ADMIN_CANCEL_STATUSES = new Set([
  * @returns {{ error }}
  */
 export async function cancelOrder({ orderId, reason, items }) {
-  // 1. Mark order cancelled in Supabase
-  const { error: updateErr } = await supabase
+  const payload = {
+    status:              'cancelled',
+    cancelled_at:        new Date().toISOString(),
+    cancellation_reason: (reason || '').trim(),
+  }
+
+  console.log('[cancelOrder] STEP 1 — about to update order in Supabase')
+  console.log('[cancelOrder] orderId:', orderId)
+  console.log('[cancelOrder] payload:', payload)
+  console.log('[cancelOrder] query: UPDATE orders SET', payload, 'WHERE id =', orderId)
+
+  const { data: updateData, error: updateErr } = await supabase
     .from('orders')
-    .update({
-      status:               'cancelled',
-      cancelled_at:         new Date().toISOString(),
-      cancellation_reason:  (reason || '').trim(),
-    })
+    .update(payload)
     .eq('id', orderId)
+    .select('id, status, cancelled_at, cancellation_reason')
+
+  console.log('[cancelOrder] STEP 2 — Supabase update result:')
+  console.log('  data :', updateData)
+  console.log('  error:', updateErr)
 
   if (updateErr) {
-    console.error('[cancelOrder] order update failed:', updateErr.message, updateErr)
+    console.error('[cancelOrder] order update FAILED with error:', updateErr.message, updateErr)
     return { error: updateErr }
   }
+
+  if (!updateData || updateData.length === 0) {
+    const rlsMsg = `[cancelOrder] order update returned 0 rows — order "${orderId}" was NOT changed in the database.`
+      + '\n  This is almost always an RLS (Row Level Security) policy blocking the UPDATE.'
+      + '\n  Fix: run this SQL in your Supabase dashboard → SQL editor:'
+      + '\n\n  -- Allow authenticated users to cancel their own orders:'
+      + '\n  CREATE POLICY "Users can update own orders" ON orders'
+      + '\n  FOR UPDATE TO authenticated'
+      + '\n  USING  (auth.uid() = user_id)'
+      + '\n  WITH CHECK (auth.uid() = user_id);'
+      + '\n\n  -- Allow admin roles to update any order:'
+      + '\n  CREATE POLICY "Admins can update any order" ON orders'
+      + '\n  FOR UPDATE TO authenticated'
+      + '\n  USING  (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN (\'super_admin\',\'order_manager\',\'delivery_manager\')))'
+      + '\n  WITH CHECK (true);'
+    console.error(rlsMsg)
+    return { error: new Error('Order not updated — RLS policy likely blocking write. See console for required SQL.') }
+  }
+
+  console.log('[cancelOrder] STEP 3 — order row updated successfully:', updateData)
 
   // 2. Restore stock for every item in the order
   if (!items || items.length === 0) return { error: null }

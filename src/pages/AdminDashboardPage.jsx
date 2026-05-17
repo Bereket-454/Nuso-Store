@@ -5,6 +5,7 @@ import { birr } from '../utils/format'
 import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
 import { upsertProduct, deleteProduct, fetchProducts } from '../services/productsService'
+import { insertAuditLog, fetchAuditLogs } from '../services/auditService'
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
 import { PRODUCT_COLORS, COLOR_MAP } from '../utils/colors'
 import { AdminOrderActions } from '../components/AdminOrderActions'
@@ -80,6 +81,8 @@ export function AdminDashboardPage() {
   const [invSearch, setInvSearch] = useState('')
   const [invSort, setInvSort] = useState('newest')
   const [invStatusFilter, setInvStatusFilter] = useState('all')
+  const [auditLogs, setAuditLogs] = useState([])
+  const [auditLoading, setAuditLoading] = useState(false)
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
 
   useEffect(() => {
@@ -135,7 +138,9 @@ export function AdminDashboardPage() {
       .not('added_by_email', 'is', null)
       .order('created_at', { ascending: false })
       .then(({ data }) => { if (data) setStaffProducts(data) })
-  }, [])
+
+    loadAuditLogs()
+  }, [loadAuditLogs])
 
   const updateRequestStatus = async (id, status) => {
     const { error } = await supabase
@@ -235,6 +240,13 @@ export function AdminDashboardPage() {
     dispatch({ type: 'CATALOGUE_LOADED', payload: { products, categories: state.categories, subcategories: state.subcategories } })
   }
 
+  const loadAuditLogs = useCallback(async () => {
+    setAuditLoading(true)
+    const logs = await fetchAuditLogs({ limit: 100 })
+    setAuditLogs(logs)
+    setAuditLoading(false)
+  }, [])
+
   const reloadStaffActivity = async () => {
     const { data } = await supabase
       .from('products')
@@ -313,12 +325,23 @@ export function AdminDashboardPage() {
         }
       }
 
+      const isEdit = Boolean(editingName)
+      insertAuditLog({
+        adminUserId: state.user?.id,
+        adminEmail:  state.user?.email,
+        action:      isEdit ? 'product_edited' : 'product_added',
+        targetType:  'product',
+        targetId:    savedId,
+        oldValue:    isEdit ? { name: editingName } : null,
+        newValue:    { name: productForm.name, price: Number(productForm.price), stock: Number(productForm.stock) },
+      })
       setProductForm(defaultProduct)
       setEditingName('')
       setUploadError('')
       await reloadProducts()
       await reloadStaffActivity()
       await refreshMyCount()
+      loadAuditLogs()
       showToast('Product saved successfully')
     } finally {
       setSaveLoading(false)
@@ -1316,7 +1339,17 @@ export function AdminDashboardPage() {
                               if (error) {
                                 console.error('[AdminDashboard] deleteProduct error:', error.message)
                               } else {
+                                insertAuditLog({
+                                  adminUserId: state.user?.id,
+                                  adminEmail:  state.user?.email,
+                                  action:      'product_deleted',
+                                  targetType:  'product',
+                                  targetId:    product.id,
+                                  oldValue:    { name: product.name, price: product.price },
+                                  newValue:    null,
+                                })
                                 await reloadProducts()
+                                loadAuditLogs()
                                 showToast('Product deleted')
                               }
                             }}
@@ -1333,6 +1366,82 @@ export function AdminDashboardPage() {
           </>
         )}
       </section>}
+
+      {/* ── Admin Audit Log — super_admin only ───────────────────────────────── */}
+      {isSuperAdmin(state.user) && (
+        <section className="card card-body" style={{ marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0 }}>Admin Activity Log</h3>
+            <button
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.3rem 0.85rem' }}
+              onClick={loadAuditLogs}
+              disabled={auditLoading}
+            >
+              {auditLoading ? '…' : 'Refresh'}
+            </button>
+          </div>
+
+          {auditLoading && auditLogs.length === 0 ? (
+            <p className="muted" style={{ fontSize: '0.9rem' }}>Loading…</p>
+          ) : auditLogs.length === 0 ? (
+            <p className="muted" style={{ fontSize: '0.9rem' }}>No admin actions recorded yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              {auditLogs.map((log) => {
+                const actionLabel = {
+                  product_added:                    '+ Product added',
+                  product_edited:                   '✎ Product edited',
+                  product_deleted:                  '✕ Product deleted',
+                  order_cancelled:                  '✕ Order cancelled',
+                }[log.action] ?? log.action.replace(/_/g, ' ')
+
+                const newVal = log.new_value ? (() => { try { return JSON.parse(log.new_value) } catch { return null } })() : null
+                const oldVal = log.old_value ? (() => { try { return JSON.parse(log.old_value) } catch { return null } })() : null
+
+                let detail = ''
+                if (log.target_type === 'product') {
+                  detail = newVal?.name || oldVal?.name || log.target_id
+                } else if (log.target_type === 'order') {
+                  const newStatus = newVal?.status ?? ''
+                  const oldStatus = oldVal?.status ?? ''
+                  detail = `Order ${log.target_id.slice(0, 8)}…${oldStatus && newStatus ? ` (${oldStatus} → ${newStatus})` : ''}`
+                } else {
+                  detail = log.target_id
+                }
+
+                return (
+                  <div key={log.id} style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto auto',
+                    alignItems: 'baseline',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0.75rem',
+                    background: 'var(--surface)',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--border)',
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{actionLabel}</span>
+                      {detail && (
+                        <span className="muted" style={{ fontSize: '0.82rem', marginLeft: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          — {detail}
+                        </span>
+                      )}
+                    </div>
+                    <span className="muted" style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
+                      {log.admin_email}
+                    </span>
+                    <span className="muted" style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
+                      {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Staff Activity — admin only ──────────────────────────────────────── */}
       {canViewStaffActivity && (
