@@ -334,7 +334,12 @@ function SignInForm({ t, onSwitchToSignUp }) {
             <input id="signin-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
           </div>
           <div className="form-group">
-            <label htmlFor="signin-password">{t('auth.passwordLabel')}</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.35rem' }}>
+              <label htmlFor="signin-password" style={{ margin: 0 }}>{t('auth.passwordLabel')}</label>
+              <Link to="/forgot-password" style={{ fontSize: '0.82rem', color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
+                {t('auth.forgotPassword')}
+              </Link>
+            </div>
             <PasswordInput id="signin-password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
           </div>
           {errorType === 'emailRequired' && (

@@ -13,6 +13,8 @@ import { TrackingPage } from '../pages/TrackingPage'
 import { AdminDashboardPage } from '../pages/AdminDashboardPage'
 import { RequestProductPage } from '../pages/RequestProductPage'
 import { ReferralPage } from '../pages/ReferralPage'
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
+import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
 export function AppRouter() {
@@ -27,6 +29,8 @@ export function AppRouter() {
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="order-confirmation/:id" element={<OrderConfirmationPage />} />
         <Route path="account" element={<AccountPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="tracking" element={<TrackingPage />} />
         <Route path="request" element={<RequestProductPage />} />
         <Route path="referral" element={<ReferralPage />} />

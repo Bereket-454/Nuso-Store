@@ -141,6 +141,26 @@ export async function signOut() {
 }
 
 /**
+ * Send a password-reset email. Always resolves without throwing — callers
+ * should show a generic success message regardless of whether the email exists.
+ */
+export async function sendPasswordReset(email) {
+  return supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  })
+}
+
+/**
+ * Update the signed-in user's password. Called from the reset-password page
+ * after Supabase has verified the recovery token from the email link.
+ * Returns { error }.
+ */
+export async function updatePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  return { error }
+}
+
+/**
  * Fetch the user's saved default shipping address from their profile row.
  * Returns the parsed shipping object, or null on any error (including when
  * the default_shipping column doesn't yet exist in the table).
