@@ -7,6 +7,7 @@ import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { checkEmailExists, checkPhoneExists, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
 import { cancelOrder, CUSTOMER_CANCEL_STATUSES } from '../services/ordersService'
+import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
 import { supabase } from '../lib/supabase'
 import { EmptyState } from '../components/EmptyState'
 
@@ -578,16 +579,23 @@ function ProfileCard({ user, t, state, dispatch }) {
   async function handleCancelOrder(order) {
     setCancelLoading(true)
     setCancelError('')
-    const { error } = await cancelOrder({ orderId: order.id, reason: cancelReason, items: order.items })
+    const { error } = await cancelOrder({ orderId: order.id, reason: cancelReason, items: order.items, payment: order.payment })
     if (error) {
       setCancelError(t('cancel.error'))
       setCancelLoading(false)
       return
     }
+    const paidOnline = order.payment?.method !== 'cod' && order.payment?.when === 'now'
     setDbOrders((prev) =>
       prev.map((o) =>
         o.id === order.id
-          ? { ...o, status: 'cancelled', cancelledAt: new Date().toISOString(), cancellationReason: cancelReason }
+          ? {
+              ...o,
+              status:             'cancelled',
+              cancelledAt:        new Date().toISOString(),
+              cancellationReason: cancelReason,
+              ...(paidOnline ? { paymentStatus: 'refund_needed' } : {}),
+            }
           : o,
       ),
     )
@@ -615,6 +623,9 @@ function ProfileCard({ user, t, state, dispatch }) {
         total:              row.total,
         status:             row.status,
         paymentStatus:      row.payment_status,
+        refundReason:       row.refund_reason ?? null,
+        refundReference:    row.refund_reference ?? null,
+        refundedAt:         row.refunded_at ?? null,
         createdAt:          row.created_at,
         payment:            row.payment,
         shipping:           row.shipping,
@@ -785,8 +796,9 @@ function ProfileCard({ user, t, state, dispatch }) {
                     <div className="dash-order__left">
                       <p className="dash-order__id">{order.id}</p>
                       <p className="dash-order__total">{birr(order.total)}</p>
-                      <p className="dash-order__payment">
-                        {t('account.paymentLabel')}: {order.paymentStatus}
+                      <p className="dash-order__payment" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        <span className="muted" style={{ fontSize: '0.8rem' }}>{t('account.paymentLabel')}:</span>
+                        <PaymentStatusBadge status={order.paymentStatus || 'pending'} />
                       </p>
                     </div>
                     <div className="dash-order__right">
@@ -802,6 +814,25 @@ function ProfileCard({ user, t, state, dispatch }) {
                     {order.status === 'cancelled' && order.cancellationReason && (
                       <p className="dash-order__cancel-reason">
                         {t('tracker.cancelReason')}: {order.cancellationReason}
+                      </p>
+                    )}
+
+                    {/* Refund pending info */}
+                    {order.paymentStatus === 'refund_needed' && (
+                      <p className="dash-order__refund-info">
+                        {t('account.refundPending')}
+                      </p>
+                    )}
+
+                    {/* Refunded info */}
+                    {order.paymentStatus === 'refunded' && (
+                      <p className="dash-order__refund-info dash-order__refund-info--done">
+                        {t('account.refundDone', { date: order.refundedAt ? new Date(order.refundedAt).toLocaleDateString() : '—' })}
+                        {order.refundReference && (
+                          <span style={{ marginLeft: '0.5rem', opacity: 0.75 }}>
+                            · {t('account.refundRef')}: {order.refundReference}
+                          </span>
+                        )}
                       </p>
                     )}
 

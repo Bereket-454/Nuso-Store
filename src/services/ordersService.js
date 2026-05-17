@@ -13,15 +13,21 @@ export const ADMIN_CANCEL_STATUSES = new Set([
  * Works for both customer self-service and admin cancellation.
  *
  * @param {string} orderId
- * @param {string} reason  - free-text cancellation reason
- * @param {Array}  items   - order items array (each needs .productId and .quantity)
+ * @param {string} reason   - free-text cancellation reason
+ * @param {Array}  items    - order items array (each needs .productId and .quantity)
+ * @param {object} payment  - order payment object ({ method, when }) — used to auto-set refund_needed
  * @returns {{ error }}
  */
-export async function cancelOrder({ orderId, reason, items }) {
+export async function cancelOrder({ orderId, reason, items, payment }) {
   const payload = {
     status:              'cancelled',
     cancelled_at:        new Date().toISOString(),
     cancellation_reason: (reason || '').trim(),
+  }
+
+  // If the customer already paid online (not COD, paid now), flag for refund
+  if (payment && payment.method !== 'cod' && payment.when === 'now') {
+    payload.payment_status = 'refund_needed'
   }
 
   console.log('[cancelOrder] STEP 1 — about to update order in Supabase')
@@ -100,4 +106,28 @@ export async function cancelOrder({ orderId, reason, items }) {
   })
 
   return { error: null }
+}
+
+/**
+ * Update the payment status of an order (admin only).
+ *
+ * @param {string} orderId
+ * @param {string} paymentStatus  - one of: pending | under_review | paid | failed | refund_needed | refunded
+ * @param {string} refundReason   - optional note for refund_needed / refunded
+ * @param {string} refundReference - optional reference / transaction ID
+ * @returns {{ error }}
+ */
+export async function updatePaymentStatus({ orderId, paymentStatus, refundReason, refundReference }) {
+  const payload = { payment_status: paymentStatus }
+  if (paymentStatus === 'refunded') {
+    payload.refunded_at = new Date().toISOString()
+    if (refundReason    != null) payload.refund_reason    = refundReason.trim()
+    if (refundReference != null) payload.refund_reference = refundReference.trim()
+  } else if (paymentStatus === 'refund_needed') {
+    if (refundReason    != null) payload.refund_reason    = refundReason.trim()
+  }
+
+  const { error } = await supabase.from('orders').update(payload).eq('id', orderId)
+  if (error) console.error('[updatePaymentStatus] failed:', error.message, error)
+  return { error }
 }

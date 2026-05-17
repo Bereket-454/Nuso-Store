@@ -4,6 +4,7 @@ import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
+import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
 
 const paymentMethodLabel = (payment, t) => {
   if (!payment?.method || payment.method === 'cod') return t('orderConfirm.paymentCod')
@@ -90,6 +91,10 @@ export function OrderConfirmationPage() {
         <div className="ord-confirm__row">
           <span className="muted">{t('orderConfirm.paymentMethod')}</span>
           <span style={{ fontWeight: 600 }}>{paymentMethodLabel(order.payment, t)}</span>
+        </div>
+        <div className="ord-confirm__row">
+          <span className="muted">{t('orderConfirm.paymentStatus')}</span>
+          <PaymentStatusBadge status={order.paymentStatus || 'pending'} />
         </div>
       </div>
 

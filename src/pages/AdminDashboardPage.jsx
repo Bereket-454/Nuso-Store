@@ -10,6 +10,7 @@ import { insertNotification, sendOrderEmail } from '../services/notificationsSer
 import { PRODUCT_COLORS, COLOR_MAP } from '../utils/colors'
 import { AdminOrderActions } from '../components/AdminOrderActions'
 import { resolveStatus } from '../components/OrderTracker'
+import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
 import { isSuperAdmin, isProductOperator, isOrderManager, isDeliveryManager, isAnyAdmin } from '../utils/auth'
 
 const SUBCATEGORY_ICONS = {
@@ -983,8 +984,8 @@ export function AdminDashboardPage() {
                     {order.customer_name}
                   </span>
                 </p>
-                <p className="muted" style={{ margin: '0 0 0.1rem', fontSize: '0.85rem' }}>
-                  {t('admin.payment')}: <strong>{order.payment_status}</strong>
+                <p className="muted" style={{ margin: '0 0 0.1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  <PaymentStatusBadge status={order.payment_status || 'pending'} />
                   {' · '}{t('admin.total')}: <strong>{birr(order.total)}</strong>
                 </p>
                 <p className="muted" style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
@@ -997,11 +998,13 @@ export function AdminDashboardPage() {
                 </p>
                 <AdminOrderActions
                   order={order}
-                  onUpdated={(newStatus) =>
+                  onUpdated={(update) =>
                     setAdminOrders((prev) =>
                       prev.map((o) =>
                         o.id === order.id
-                          ? { ...o, status: newStatus, updated_at: new Date().toISOString() }
+                          ? typeof update === 'string'
+                            ? { ...o, status: update, updated_at: new Date().toISOString() }
+                            : { ...o, ...update, updated_at: new Date().toISOString() }
                           : o,
                       ),
                     )

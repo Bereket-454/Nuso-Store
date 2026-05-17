@@ -2083,6 +2083,87 @@ textarea {
   text-decoration: line-through;
 }
 
+/* ── Payment status badges ────────────────────────────────────────────────── */
+/* Separate from order-status badges — never mix the two */
+.pay-status {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 0.22rem 0.65rem;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.pay-status--pending       { background: #fff8e1; color: #92600a; }
+.pay-status--under_review  { background: #e8f0fe; color: #1a56db; }
+.pay-status--paid          { background: #dcfce7; color: #15803d; }
+.pay-status--failed        { background: #fdecea; color: #b91c1c; }
+.pay-status--refund_needed { background: #fff3e0; color: #c45100; }
+.pay-status--refunded      { background: #e8f5e9; color: #2e7d32; }
+
+/* Refund info block shown in customer My Orders */
+.dash-order__refund-info {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: #fff8e1;
+  border: 1px solid #f0c040;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #7f5a00;
+  line-height: 1.5;
+}
+
+.dash-order__refund-info--done {
+  background: #f0faf4;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.dash-order__pay-section {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.dash-order__pay-section__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.4rem;
+}
+
+.dash-order__pay-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.pay-action-btn {
+  font-size: 0.72rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pay-action-btn:hover  { background: var(--border); }
+.pay-action-btn--active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .dash-order__cancel {
   margin-top: 0.6rem;
   padding-top: 0.5rem;

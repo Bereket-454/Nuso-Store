@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../app/store'
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
-import { ORDER_STEPS, resolveStatus, statusIndex } from './OrderTracker'
+import { ORDER_STEPS, statusIndex } from './OrderTracker'
 import { isSuperAdmin, isOrderManager, isDeliveryManager } from '../utils/auth'
-import { cancelOrder, ADMIN_CANCEL_STATUSES } from '../services/ordersService'
+import { cancelOrder, updatePaymentStatus, ADMIN_CANCEL_STATUSES } from '../services/ordersService'
 import { insertAuditLog } from '../services/auditService'
+import { PaymentStatusBadge } from './PaymentStatusBadge'
+import { useTranslation } from '../i18n'
 
-// What the admin button says for each target status
 const ACTION_LABELS = {
   confirming:       'Start Confirming',
   confirmed:        'Confirm Order',
@@ -16,11 +17,11 @@ const ACTION_LABELS = {
   delivered:        'Mark Delivered',
 }
 
-// Role-based step access — which statuses each role may advance an order to
 const ORDER_MANAGER_STEPS  = new Set(['confirming', 'confirmed'])
 const DELIVERY_STEPS       = new Set(['preparing', 'out_for_delivery', 'delivered'])
 
-// Notification copy sent to the customer when admin advances the order
+const PAYMENT_ACTIONS = ['paid', 'failed', 'refund_needed', 'refunded']
+
 function buildNotif(targetStatus, orderId) {
   const map = {
     confirming:       { en: `⏳ We received your order ${orderId} and are verifying it`,    am: `⏳ ትዕዛዝዎ ${orderId} ደርሶናል፣ እናረጋግጣለን` },
@@ -32,25 +33,39 @@ function buildNotif(targetStatus, orderId) {
   return map[targetStatus] ?? null
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
-
 export function AdminOrderActions({ order, onUpdated }) {
-  const [loading, setLoading]         = useState(false)
-  const [showMore, setShowMore]       = useState(false)
-  const [advError, setAdvError]       = useState('')
-  const [showCancel, setShowCancel]   = useState(false)
-  const [cancelReason, setCancelReason] = useState('')
-  const [cancelLoading, setCancelLoading] = useState(false)
-  const [cancelError, setCancelError] = useState('')
+  const { t } = useTranslation()
   const { state } = useStore()
 
-  const canAdminCancel = (isSuperAdmin(state.user) || isOrderManager(state.user))
-    && ADMIN_CANCEL_STATUSES.has(order.status)
+  // Order status state
+  const [loading, setLoading]           = useState(false)
+  const [showMore, setShowMore]         = useState(false)
+  const [advError, setAdvError]         = useState('')
+  const [showCancel, setShowCancel]     = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelError, setCancelError]   = useState('')
+
+  // Payment status state
+  const [paymentSel, setPaymentSel]       = useState('')
+  const [refundReason, setRefundReason]   = useState('')
+  const [refundRef, setRefundRef]         = useState('')
+  const [payUpdating, setPayUpdating]     = useState(false)
+  const [payUpdated, setPayUpdated]       = useState(false)
+  const [payError, setPayError]           = useState('')
+
+  const canAdminManage = isSuperAdmin(state.user) || isOrderManager(state.user)
+  const canAdminCancel = canAdminManage && ADMIN_CANCEL_STATUSES.has(order.status)
 
   async function handleAdminCancel() {
     setCancelLoading(true)
     setCancelError('')
-    const { error } = await cancelOrder({ orderId: order.id, reason: cancelReason, items: order.items ?? [] })
+    const { error } = await cancelOrder({
+      orderId: order.id,
+      reason:  cancelReason,
+      items:   order.items ?? [],
+      payment: order.payment,
+    })
     if (error) {
       setCancelError(`Cancel failed: ${error.message}`)
       setCancelLoading(false)
@@ -68,13 +83,54 @@ export function AdminOrderActions({ order, onUpdated }) {
     setShowCancel(false)
     setCancelReason('')
     setCancelLoading(false)
-    onUpdated?.('cancelled')
+    // If payment was online-now, local state should also reflect refund_needed
+    const paymentUpdate = (order.payment?.method !== 'cod' && order.payment?.when === 'now')
+      ? { payment_status: 'refund_needed' }
+      : {}
+    onUpdated?.({ status: 'cancelled', ...paymentUpdate })
   }
 
-  const currentIndex = statusIndex(order.status)
-  const nextStep     = ORDER_STEPS[currentIndex + 1] ?? null
-  // All forward steps beyond the immediate next (for skip/edge-case use)
-  const futureSteps  = ORDER_STEPS.slice(currentIndex + 2)
+  async function handlePaymentUpdate() {
+    if (!paymentSel) return
+    setPayUpdating(true)
+    setPayUpdated(false)
+    setPayError('')
+    const { error } = await updatePaymentStatus({
+      orderId:         order.id,
+      paymentStatus:   paymentSel,
+      refundReason:    refundReason,
+      refundReference: refundRef,
+    })
+    if (error) {
+      setPayError(`Failed: ${error.message}`)
+      setPayUpdating(false)
+      return
+    }
+    insertAuditLog({
+      adminUserId: state.user?.id,
+      adminEmail:  state.user?.email,
+      action:      `payment_status_changed_to_${paymentSel}`,
+      targetType:  'order',
+      targetId:    order.id,
+      oldValue:    { payment_status: order.payment_status ?? 'pending' },
+      newValue:    { payment_status: paymentSel },
+    })
+    setPayUpdating(false)
+    setPayUpdated(true)
+    setPaymentSel('')
+    onUpdated?.({
+      payment_status:   paymentSel,
+      refund_reason:    paymentSel === 'refunded' || paymentSel === 'refund_needed' ? refundReason : undefined,
+      refund_reference: paymentSel === 'refunded' ? refundRef : undefined,
+      refunded_at:      paymentSel === 'refunded' ? new Date().toISOString() : undefined,
+    })
+  }
+
+  const currentIndex     = statusIndex(order.status)
+  const nextStep         = ORDER_STEPS[currentIndex + 1] ?? null
+  const futureSteps      = ORDER_STEPS.slice(currentIndex + 2)
+  const isCancelled      = order.status === 'cancelled'
+  const isDelivered      = !isCancelled && currentIndex >= ORDER_STEPS.length - 1
 
   const canAdvanceTo = (targetStatus) => {
     if (isSuperAdmin(state.user))      return true
@@ -83,27 +139,22 @@ export function AdminOrderActions({ order, onUpdated }) {
     return false
   }
 
-  const allowedNextStep    = nextStep   && canAdvanceTo(nextStep.id)  ? nextStep  : null
-  const allowedFutureSteps = futureSteps.filter(s => canAdvanceTo(s.id))
+  const allowedNextStep    = nextStep    && canAdvanceTo(nextStep.id)  ? nextStep  : null
+  const allowedFutureSteps = futureSteps.filter((s) => canAdvanceTo(s.id))
 
   const advance = async (targetStatus) => {
     setLoading(true)
     setAdvError('')
-
     try {
       const { error } = await supabase
         .from('orders')
         .update({ status: targetStatus, updated_at: new Date().toISOString() })
         .eq('id', order.id)
-
       if (error) {
-        console.error('[AdminOrderActions] status update failed:', error.message)
         setAdvError(`Failed: ${error.message}`)
         setLoading(false)
         return
       }
-
-      // Audit log (non-blocking)
       insertAuditLog({
         adminUserId: state.user?.id,
         adminEmail:  state.user?.email,
@@ -113,32 +164,27 @@ export function AdminOrderActions({ order, onUpdated }) {
         oldValue:    { status: order.status },
         newValue:    { status: targetStatus },
       })
-
-      // Fire notifications (non-blocking)
       const notif = buildNotif(targetStatus, order.id)
       if (notif && order.user_id) {
         insertNotification({
-          userId: order.user_id,
-          type: `order_${targetStatus}`,
-          message: notif.en,
+          userId:    order.user_id,
+          type:      `order_${targetStatus}`,
+          message:   notif.en,
           messageAm: notif.am,
-          link: '/account',
+          link:      '/account',
         })
       }
-
-      // Email on key milestones
       if ((targetStatus === 'confirmed' || targetStatus === 'delivered') && notif) {
         sendOrderEmail({
           toEmail: order.customer_email,
-          toName: order.customer_name,
+          toName:  order.customer_name,
           message: notif.en,
           orderId: order.id,
         })
       }
-
       setLoading(false)
       setShowMore(false)
-      onUpdated?.(targetStatus)
+      onUpdated?.({ status: targetStatus })
     } catch (err) {
       console.error('[AdminOrderActions] unexpected error:', err)
       setAdvError('Unexpected error — please try again.')
@@ -146,80 +192,71 @@ export function AdminOrderActions({ order, onUpdated }) {
     }
   }
 
-  // Already cancelled — nothing to do
-  if (order.status === 'cancelled') {
-    return (
-      <p style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 600, margin: 0 }}>
-        ✗ Cancelled{order.cancellation_reason ? ` — ${order.cancellation_reason}` : ''}
-      </p>
-    )
-  }
-
-  // Order is fully delivered — nothing left to advance; cancel not allowed
-  if (currentIndex >= ORDER_STEPS.length - 1) {
-    return (
-      <p style={{ fontSize: '0.82rem', color: 'var(--success)', fontWeight: 600, margin: 0 }}>
-        ✓ Delivered
-      </p>
-    )
-  }
-
-  // No allowed actions for this user at this order stage
-  if (!allowedNextStep && allowedFutureSteps.length === 0 && !canAdminCancel) return null
-
   return (
     <div className="admin-order-actions">
-      {/* Primary: advance to next allowed step */}
-      {allowedNextStep && (
-        <button
-          type="button"
-          className="btn btn-primary admin-order-actions__primary"
-          onClick={() => advance(allowedNextStep.id)}
-          disabled={loading || cancelLoading}
-        >
-          {loading ? '…' : `→ ${ACTION_LABELS[allowedNextStep.id] ?? allowedNextStep.id}`}
-        </button>
-      )}
+      {/* ── Order status controls ─────────────────────────────── */}
+      {!isCancelled && !isDelivered && (
+        <>
+          {allowedNextStep && (
+            <button
+              type="button"
+              className="btn btn-primary admin-order-actions__primary"
+              onClick={() => advance(allowedNextStep.id)}
+              disabled={loading || cancelLoading}
+            >
+              {loading ? '…' : `→ ${ACTION_LABELS[allowedNextStep.id] ?? allowedNextStep.id}`}
+            </button>
+          )}
 
-      {/* Secondary: jump to an allowed step further ahead */}
-      {allowedFutureSteps.length > 0 && (
-        <div style={{ position: 'relative' }}>
-          <button
-            type="button"
-            className="btn btn-secondary admin-order-actions__more"
-            onClick={() => setShowMore((v) => !v)}
-            aria-expanded={showMore}
-            disabled={loading || cancelLoading}
-          >
-            ⋯
-          </button>
-          {showMore && (
-            <div className="admin-order-actions__menu">
-              {allowedFutureSteps.map((step) => (
-                <button
-                  key={step.id}
-                  type="button"
-                  className="admin-order-actions__menu-item"
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    advance(step.id)
-                  }}
-                >
-                  {ACTION_LABELS[step.id] ?? step.id}
-                </button>
-              ))}
+          {allowedFutureSteps.length > 0 && (
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="btn btn-secondary admin-order-actions__more"
+                onClick={() => setShowMore((v) => !v)}
+                aria-expanded={showMore}
+                disabled={loading || cancelLoading}
+              >
+                ⋯
+              </button>
+              {showMore && (
+                <div className="admin-order-actions__menu">
+                  {allowedFutureSteps.map((step) => (
+                    <button
+                      key={step.id}
+                      type="button"
+                      className="admin-order-actions__menu-item"
+                      onMouseDown={(e) => { e.preventDefault(); advance(step.id) }}
+                    >
+                      {ACTION_LABELS[step.id] ?? step.id}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </div>
+
+          {advError && (
+            <p style={{ color: 'var(--danger)', fontSize: '0.78rem', margin: '0.25rem 0 0', width: '100%' }}>
+              {advError}
+            </p>
+          )}
+        </>
       )}
 
-      {advError && (
-        <p style={{ color: 'var(--danger)', fontSize: '0.78rem', margin: '0.25rem 0 0', width: '100%' }}>
-          {advError}
+      {isCancelled && (
+        <p style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 600, margin: 0 }}>
+          ✗ Cancelled{order.cancellation_reason ? ` — ${order.cancellation_reason}` : ''}
         </p>
       )}
 
-      {/* Cancel order — super_admin and order_manager only, before delivered */}
+      {isDelivered && (
+        <p style={{ fontSize: '0.82rem', color: 'var(--success)', fontWeight: 600, margin: 0 }}>
+          ✓ Delivered
+        </p>
+      )}
+
+      {/* ── Cancel order ─────────────────────────────────────── */}
       {canAdminCancel && (
         <div style={{ marginTop: '0.4rem', width: '100%' }}>
           {showCancel ? (
@@ -269,6 +306,69 @@ export function AdminOrderActions({ order, onUpdated }) {
             >
               ✕ Cancel Order
             </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Payment status management (super_admin + order_manager) ── */}
+      {canAdminManage && (
+        <div className="dash-order__pay-section">
+          <p className="dash-order__pay-section__label">{t('admin.paymentSection')}</p>
+          <PaymentStatusBadge status={order.payment_status || 'pending'} />
+          <div className="dash-order__pay-actions">
+            {PAYMENT_ACTIONS.map((ps) => (
+              <button
+                key={ps}
+                type="button"
+                className={`pay-action-btn${paymentSel === ps ? ' pay-action-btn--active' : ''}`}
+                onClick={() => { setPaymentSel((prev) => prev === ps ? '' : ps); setPayUpdated(false); setPayError('') }}
+              >
+                {t(`admin.mark${ps.charAt(0).toUpperCase() + ps.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase())}`)}
+              </button>
+            ))}
+          </div>
+
+          {(paymentSel === 'refund_needed' || paymentSel === 'refunded') && (
+            <input
+              type="text"
+              className="form-input"
+              placeholder={t('admin.refundReason')}
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              style={{ fontSize: '0.82rem', marginTop: '0.4rem' }}
+            />
+          )}
+          {paymentSel === 'refunded' && (
+            <input
+              type="text"
+              className="form-input"
+              placeholder={t('admin.refundReference')}
+              value={refundRef}
+              onChange={(e) => setRefundRef(e.target.value)}
+              style={{ fontSize: '0.82rem', marginTop: '0.3rem' }}
+            />
+          )}
+
+          {paymentSel && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ fontSize: '0.8rem', padding: '0.3rem 0.85rem', marginTop: '0.4rem' }}
+              onClick={handlePaymentUpdate}
+              disabled={payUpdating}
+            >
+              {payUpdating ? '…' : t('admin.updatePayment')}
+            </button>
+          )}
+          {payUpdated && (
+            <p style={{ color: 'var(--success)', fontSize: '0.8rem', margin: '0.25rem 0 0' }}>
+              {t('admin.paymentUpdated')}
+            </p>
+          )}
+          {payError && (
+            <p style={{ color: 'var(--danger)', fontSize: '0.78rem', margin: '0.25rem 0 0' }}>
+              {payError}
+            </p>
           )}
         </div>
       )}
