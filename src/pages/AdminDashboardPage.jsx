@@ -101,6 +101,13 @@ export function AdminDashboardPage() {
     })
   }, [state.user?.id])
 
+  const loadAuditLogs = useCallback(async () => {
+    setAuditLoading(true)
+    const logs = await fetchAuditLogs({ limit: 100 })
+    setAuditLogs(logs)
+    setAuditLoading(false)
+  }, [])
+
   // Load orders, product requests, and business info on mount.
   useEffect(() => {
     supabase
@@ -239,13 +246,6 @@ export function AdminDashboardPage() {
     console.log('[Admin reloadProducts] fetchProducts returned', products.length, 'products AFTER fetch (was', state.products.length, 'in store)')
     dispatch({ type: 'CATALOGUE_LOADED', payload: { products, categories: state.categories, subcategories: state.subcategories } })
   }
-
-  const loadAuditLogs = useCallback(async () => {
-    setAuditLoading(true)
-    const logs = await fetchAuditLogs({ limit: 100 })
-    setAuditLogs(logs)
-    setAuditLoading(false)
-  }, [])
 
   const reloadStaffActivity = async () => {
     const { data } = await supabase
