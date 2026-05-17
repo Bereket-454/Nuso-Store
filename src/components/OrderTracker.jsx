@@ -105,10 +105,42 @@ function Checkmark({ prefersReduced, delay = 0 }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export function OrderTracker({ status, updatedAt, orderId }) {
+export function OrderTracker({ status, updatedAt, orderId, cancelledAt, cancellationReason }) {
   const { t } = useTranslation()
   const prefersReduced = useReducedMotion()
   const currentIndex = statusIndex(status)
+
+  if (status === 'cancelled') {
+    return (
+      <div className="order-tracker">
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: '0.65rem',
+          background: '#fef2f2', border: '1px solid #fca5a5',
+          borderRadius: '10px', padding: '0.9rem 1rem',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, marginTop: '1px' }}>
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <div>
+            <p style={{ margin: '0 0 0.2rem', fontWeight: 700, color: '#b91c1c', fontSize: '0.95rem' }}>
+              {t('tracker.cancelled')}
+            </p>
+            {cancellationReason && (
+              <p style={{ margin: '0 0 0.15rem', fontSize: '0.83rem', color: '#6b7280' }}>
+                {t('tracker.cancelReason')}: {cancellationReason}
+              </p>
+            )}
+            {cancelledAt && (
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#9ca3af' }}>
+                {t('tracker.cancelledAt')}: {new Date(cancelledAt).toLocaleString()}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Fill % of the progress track: goes from left-center of step 0 to right-center of last step
   const fillPct = (currentIndex / (ORDER_STEPS.length - 1)) * 100

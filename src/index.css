@@ -2076,6 +2076,51 @@ textarea {
   color: #15803d;
 }
 
+.dash-status--cancelled {
+  background: #f5f5f5;
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+.dash-order__cancel {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  width: 100%;
+}
+
+.dash-order__cancel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dash-order__cancel-form textarea {
+  width: 100%;
+  min-height: 56px;
+  resize: vertical;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.dash-order__cancel-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dash-order__cancel-reason {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0.2rem 0 0;
+  font-style: italic;
+}
+
 .dash-order__date {
   font-size: 0.72rem;
   color: var(--muted);

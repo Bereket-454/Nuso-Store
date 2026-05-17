@@ -6,6 +6,7 @@ import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { checkEmailExists, checkPhoneExists, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
+import { cancelOrder, CUSTOMER_CANCEL_STATUSES } from '../services/ordersService'
 import { supabase } from '../lib/supabase'
 
 export function getFirstName(fullName) {
@@ -36,6 +37,7 @@ function orderStatusClass(status) {
     'packed': 'dash-status--packed',
     'out-for-delivery': 'dash-status--on-the-way',
     'delivered': 'dash-status--delivered',
+    'cancelled': 'dash-status--cancelled',
   }
   return map[status] || 'dash-status--confirmed'
 }
@@ -566,6 +568,31 @@ function ProfileCard({ user, t, state, dispatch }) {
 
   const [dbOrders, setDbOrders] = useState(null)
   const [ordersLoading, setOrdersLoading] = useState(false)
+  const [cancellingId, setCancellingId]   = useState(null)
+  const [cancelReason, setCancelReason]   = useState('')
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelError, setCancelError]     = useState('')
+
+  async function handleCancelOrder(order) {
+    setCancelLoading(true)
+    setCancelError('')
+    const { error } = await cancelOrder({ orderId: order.id, reason: cancelReason, items: order.items })
+    if (error) {
+      setCancelError(t('cancel.error'))
+      setCancelLoading(false)
+      return
+    }
+    setDbOrders((prev) =>
+      prev.map((o) =>
+        o.id === order.id
+          ? { ...o, status: 'cancelled', cancelledAt: new Date().toISOString(), cancellationReason: cancelReason }
+          : o,
+      ),
+    )
+    setCancellingId(null)
+    setCancelReason('')
+    setCancelLoading(false)
+  }
 
   async function fetchOrders() {
     setOrdersLoading(true)
@@ -576,13 +603,16 @@ function ProfileCard({ user, t, state, dispatch }) {
       .order('created_at', { ascending: false })
     setDbOrders(
       (data ?? []).map((row) => ({
-        id: row.id,
-        total: row.total,
-        status: row.status,
-        paymentStatus: row.payment_status,
-        createdAt: row.created_at,
-        payment: row.payment,
-        shipping: row.shipping,
+        id:                 row.id,
+        total:              row.total,
+        status:             row.status,
+        paymentStatus:      row.payment_status,
+        createdAt:          row.created_at,
+        payment:            row.payment,
+        shipping:           row.shipping,
+        items:              row.items ?? [],
+        cancelledAt:        row.cancelled_at ?? null,
+        cancellationReason: row.cancellation_reason ?? '',
       })),
     )
     setOrdersLoading(false)
@@ -730,27 +760,84 @@ function ProfileCard({ user, t, state, dispatch }) {
             </div>
           ) : (
             <div className="dash-orders">
-              {orders.map((order) => (
-                <div key={order.id} className="dash-order">
-                  <div className="dash-order__left">
-                    <p className="dash-order__id">{order.id}</p>
-                    <p className="dash-order__total">{birr(order.total)}</p>
-                    <p className="dash-order__payment">
-                      {t('account.paymentLabel')}: {order.paymentStatus}
-                    </p>
-                  </div>
-                  <div className="dash-order__right">
-                    <span className={`dash-status ${orderStatusClass(order.status)}`}>
-                      {t(`orderStatus.${order.status}`)}
-                    </span>
-                    {order.createdAt ? (
-                      <span className="dash-order__date">
-                        {daysAgo(order.createdAt, t)}
+              {orders.map((order) => {
+                const isCancellable = CUSTOMER_CANCEL_STATUSES.has(order.status)
+                const isCancelling  = cancellingId === order.id
+                return (
+                  <div key={order.id} className="dash-order" style={{ flexWrap: 'wrap' }}>
+                    <div className="dash-order__left">
+                      <p className="dash-order__id">{order.id}</p>
+                      <p className="dash-order__total">{birr(order.total)}</p>
+                      <p className="dash-order__payment">
+                        {t('account.paymentLabel')}: {order.paymentStatus}
+                      </p>
+                    </div>
+                    <div className="dash-order__right">
+                      <span className={`dash-status ${orderStatusClass(order.status)}`}>
+                        {t(`orderStatus.${order.status}`)}
                       </span>
-                    ) : null}
+                      {order.createdAt ? (
+                        <span className="dash-order__date">{daysAgo(order.createdAt, t)}</span>
+                      ) : null}
+                    </div>
+
+                    {/* Cancellation reason — shown on cancelled orders */}
+                    {order.status === 'cancelled' && order.cancellationReason && (
+                      <p className="dash-order__cancel-reason">
+                        {t('tracker.cancelReason')}: {order.cancellationReason}
+                      </p>
+                    )}
+
+                    {/* Cancel button / inline form — shown on cancellable orders */}
+                    {isCancellable && (
+                      <div className="dash-order__cancel">
+                        {isCancelling ? (
+                          <div className="dash-order__cancel-form">
+                            <textarea
+                              value={cancelReason}
+                              onChange={(e) => setCancelReason(e.target.value)}
+                              placeholder={t('cancel.reasonPlaceholder')}
+                              disabled={cancelLoading}
+                            />
+                            {cancelError && (
+                              <p className="error-text" style={{ margin: 0, fontSize: '0.82rem' }}>{cancelError}</p>
+                            )}
+                            <div className="dash-order__cancel-actions">
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                style={{ background: 'var(--danger)', borderColor: 'var(--danger)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                                onClick={() => handleCancelOrder(order)}
+                                disabled={cancelLoading}
+                              >
+                                {cancelLoading ? '…' : t('cancel.confirmBtn')}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                                onClick={() => { setCancellingId(null); setCancelReason(''); setCancelError('') }}
+                                disabled={cancelLoading}
+                              >
+                                {t('cancel.abortBtn')}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.8rem', padding: '0.3rem 0.85rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                            onClick={() => { setCancellingId(order.id); setCancelReason(''); setCancelError('') }}
+                          >
+                            {t('cancel.requestBtn')}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

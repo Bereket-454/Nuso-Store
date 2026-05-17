@@ -4,6 +4,7 @@ import { useStore } from '../app/store'
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
 import { ORDER_STEPS, resolveStatus, statusIndex } from './OrderTracker'
 import { isSuperAdmin, isOrderManager, isDeliveryManager } from '../utils/auth'
+import { cancelOrder, ADMIN_CANCEL_STATUSES } from '../services/ordersService'
 
 // What the admin button says for each target status
 const ACTION_LABELS = {
@@ -33,10 +34,32 @@ function buildNotif(targetStatus, orderId) {
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function AdminOrderActions({ order, onUpdated }) {
-  const [loading, setLoading] = useState(false)
-  const [showMore, setShowMore] = useState(false)
-  const [advError, setAdvError] = useState('')
+  const [loading, setLoading]         = useState(false)
+  const [showMore, setShowMore]       = useState(false)
+  const [advError, setAdvError]       = useState('')
+  const [showCancel, setShowCancel]   = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelError, setCancelError] = useState('')
   const { state } = useStore()
+
+  const canAdminCancel = (isSuperAdmin(state.user) || isOrderManager(state.user))
+    && ADMIN_CANCEL_STATUSES.has(order.status)
+
+  async function handleAdminCancel() {
+    setCancelLoading(true)
+    setCancelError('')
+    const { error } = await cancelOrder({ orderId: order.id, reason: cancelReason, items: order.items ?? [] })
+    if (error) {
+      setCancelError(`Cancel failed: ${error.message}`)
+      setCancelLoading(false)
+      return
+    }
+    setShowCancel(false)
+    setCancelReason('')
+    setCancelLoading(false)
+    onUpdated?.('cancelled')
+  }
 
   const currentIndex = statusIndex(order.status)
   const nextStep     = ORDER_STEPS[currentIndex + 1] ?? null
@@ -102,7 +125,16 @@ export function AdminOrderActions({ order, onUpdated }) {
     }
   }
 
-  // Order is fully delivered — nothing left to do
+  // Already cancelled — nothing to do
+  if (order.status === 'cancelled') {
+    return (
+      <p style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 600, margin: 0 }}>
+        ✗ Cancelled{order.cancellation_reason ? ` — ${order.cancellation_reason}` : ''}
+      </p>
+    )
+  }
+
+  // Order is fully delivered — nothing left to advance; cancel not allowed
   if (currentIndex >= ORDER_STEPS.length - 1) {
     return (
       <p style={{ fontSize: '0.82rem', color: 'var(--success)', fontWeight: 600, margin: 0 }}>
@@ -112,7 +144,7 @@ export function AdminOrderActions({ order, onUpdated }) {
   }
 
   // No allowed actions for this user at this order stage
-  if (!allowedNextStep && allowedFutureSteps.length === 0) return null
+  if (!allowedNextStep && allowedFutureSteps.length === 0 && !canAdminCancel) return null
 
   return (
     <div className="admin-order-actions">
@@ -122,7 +154,7 @@ export function AdminOrderActions({ order, onUpdated }) {
           type="button"
           className="btn btn-primary admin-order-actions__primary"
           onClick={() => advance(allowedNextStep.id)}
-          disabled={loading}
+          disabled={loading || cancelLoading}
         >
           {loading ? '…' : `→ ${ACTION_LABELS[allowedNextStep.id] ?? allowedNextStep.id}`}
         </button>
@@ -136,7 +168,7 @@ export function AdminOrderActions({ order, onUpdated }) {
             className="btn btn-secondary admin-order-actions__more"
             onClick={() => setShowMore((v) => !v)}
             aria-expanded={showMore}
-            disabled={loading}
+            disabled={loading || cancelLoading}
           >
             ⋯
           </button>
@@ -164,6 +196,60 @@ export function AdminOrderActions({ order, onUpdated }) {
         <p style={{ color: 'var(--danger)', fontSize: '0.78rem', margin: '0.25rem 0 0', width: '100%' }}>
           {advError}
         </p>
+      )}
+
+      {/* Cancel order — super_admin and order_manager only, before delivered */}
+      {canAdminCancel && (
+        <div style={{ marginTop: '0.4rem', width: '100%' }}>
+          {showCancel ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Cancellation reason (optional)"
+                disabled={cancelLoading}
+                style={{
+                  width: '100%', minHeight: '52px', resize: 'vertical', fontSize: '0.82rem',
+                  padding: '0.35rem 0.5rem', border: '1px solid var(--border)',
+                  borderRadius: '6px', fontFamily: 'inherit', color: 'var(--text)', background: 'var(--surface)',
+                }}
+              />
+              {cancelError && (
+                <p style={{ color: 'var(--danger)', fontSize: '0.78rem', margin: 0 }}>{cancelError}</p>
+              )}
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.8rem', padding: '0.3rem 0.85rem', background: 'var(--danger)', borderColor: 'var(--danger)' }}
+                  onClick={handleAdminCancel}
+                  disabled={cancelLoading}
+                >
+                  {cancelLoading ? '…' : 'Confirm Cancel'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.8rem', padding: '0.3rem 0.85rem' }}
+                  onClick={() => { setShowCancel(false); setCancelReason(''); setCancelError('') }}
+                  disabled={cancelLoading}
+                >
+                  Keep
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ fontSize: '0.78rem', padding: '0.25rem 0.7rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+              onClick={() => { setShowCancel(true); setCancelError('') }}
+              disabled={loading}
+            >
+              ✕ Cancel Order
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
