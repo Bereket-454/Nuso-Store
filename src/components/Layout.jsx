@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
 import { isAdminUser } from '../utils/auth'
@@ -351,7 +351,14 @@ export function Layout() {
       </main>
 
       <footer className="footer">
-        <div className="container muted">{t('layout.footer')}</div>
+        <div className="container footer-inner">
+          <p className="footer-tagline muted">{t('layout.footer')}</p>
+          <nav className="footer-legal" aria-label="Legal pages">
+            <Link to="/terms">Terms of Service</Link>
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/refund-policy">Refund Policy</Link>
+          </nav>
+        </div>
       </footer>
 
       {/* Bottom tab bar — mobile only, hidden when admin nav is active */}

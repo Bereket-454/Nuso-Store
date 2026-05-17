@@ -16,6 +16,9 @@ import { ReferralPage } from '../pages/ReferralPage'
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { TermsPage } from '../pages/TermsPage'
+import { PrivacyPage } from '../pages/PrivacyPage'
+import { RefundPolicyPage } from '../pages/RefundPolicyPage'
 
 export function AppRouter() {
   return (
@@ -37,6 +40,9 @@ export function AppRouter() {
         <Route element={<AdminRoute />}>
           <Route path="admin" element={<AdminDashboardPage />} />
         </Route>
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="refund-policy" element={<RefundPolicyPage />} />
         <Route path="home" element={<Navigate replace to="/" />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
