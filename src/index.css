@@ -2203,6 +2203,75 @@ textarea {
   font-style: italic;
 }
 
+.dash-order__cancel-note {
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border-left: 3px solid var(--danger);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.dash-order__cancel-note strong {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ── My Orders filter tabs ────────────────────────────────────────────────── */
+.my-orders-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.my-orders-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.my-orders-tab:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.my-orders-tab--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.my-orders-tab__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.3rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.25);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.my-orders-tab:not(.my-orders-tab--active) .my-orders-tab__badge {
+  background: var(--border);
+  color: var(--text);
+}
+
 .dash-order__date {
   font-size: 0.72rem;
   color: var(--muted);

@@ -44,6 +44,12 @@ function orderStatusClass(status) {
   return map[status] || 'dash-status--confirmed'
 }
 
+// Orders that are still in-flight (not yet delivered or cancelled)
+const ACTIVE_ORDER_STATUSES = new Set([
+  'order_received', 'confirming', 'confirmed', 'preparing', 'out_for_delivery',
+])
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 function EyeIcon() {
@@ -575,6 +581,7 @@ function ProfileCard({ user, t, state, dispatch }) {
   const [cancelReason, setCancelReason]   = useState('')
   const [cancelLoading, setCancelLoading] = useState(false)
   const [cancelError, setCancelError]     = useState('')
+  const [ordersFilter, setOrdersFilter]   = useState('active')
 
   async function handleCancelOrder(order) {
     setCancelLoading(true)
@@ -650,6 +657,25 @@ function ProfileCard({ user, t, state, dispatch }) {
   const orderCount   = orders.length
   const addressCount = state.addresses.length
   const lastOrderAgo = orders[0]?.createdAt ? daysAgo(orders[0].createdAt, t) : null
+
+  const cutoff = Date.now() - THIRTY_DAYS_MS
+  const isRecentDelivered = (o) => o.status === 'delivered' && new Date(o.createdAt).getTime() > cutoff
+
+  const filterCounts = {
+    active:    orders.filter((o) => ACTIVE_ORDER_STATUSES.has(o.status) || isRecentDelivered(o)).length,
+    delivered: orders.filter((o) => o.status === 'delivered').length,
+    cancelled: orders.filter((o) => o.status === 'cancelled' || o.paymentStatus === 'refunded').length,
+    all:       orders.length,
+  }
+
+  const filteredOrders = (() => {
+    switch (ordersFilter) {
+      case 'active':    return orders.filter((o) => ACTIVE_ORDER_STATUSES.has(o.status) || isRecentDelivered(o))
+      case 'delivered': return orders.filter((o) => o.status === 'delivered')
+      case 'cancelled': return orders.filter((o) => o.status === 'cancelled' || o.paymentStatus === 'refunded')
+      default:          return orders
+    }
+  })()
   const walletBal    = state.wallet?.balance ?? 0
 
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -787,106 +813,153 @@ function ProfileCard({ user, t, state, dispatch }) {
               </Link>
             </div>
           ) : (
-            <div className="dash-orders">
-              {orders.map((order) => {
-                const isCancellable = CUSTOMER_CANCEL_STATUSES.has(order.status)
-                const isCancelling  = cancellingId === order.id
-                return (
-                  <div key={order.id} className="dash-order" style={{ flexWrap: 'wrap' }}>
-                    <div className="dash-order__left">
-                      <p className="dash-order__id">{order.id}</p>
-                      <p className="dash-order__total">{birr(order.total)}</p>
-                      <p className="dash-order__payment" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-                        <span className="muted" style={{ fontSize: '0.8rem' }}>{t('account.paymentLabel')}:</span>
-                        <PaymentStatusBadge status={order.paymentStatus || 'pending'} />
-                      </p>
-                    </div>
-                    <div className="dash-order__right">
-                      <span className={`dash-status ${orderStatusClass(order.status)}`}>
-                        {t(`orderStatus.${order.status}`)}
-                      </span>
-                      {order.createdAt ? (
-                        <span className="dash-order__date">{daysAgo(order.createdAt, t)}</span>
-                      ) : null}
-                    </div>
-
-                    {/* Cancellation reason — shown on cancelled orders */}
-                    {order.status === 'cancelled' && order.cancellationReason && (
-                      <p className="dash-order__cancel-reason">
-                        {t('tracker.cancelReason')}: {order.cancellationReason}
-                      </p>
+            <>
+              {/* ── Filter tabs ───────────────────────────────────────── */}
+              <div className="my-orders-tabs" role="tablist">
+                {[
+                  { id: 'active',    label: t('account.filterActive') },
+                  { id: 'delivered', label: t('account.filterDelivered') },
+                  { id: 'cancelled', label: t('account.filterCancelled') },
+                  { id: 'all',       label: t('account.filterAll') },
+                ].map(({ id, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={ordersFilter === id}
+                    className={`my-orders-tab${ordersFilter === id ? ' my-orders-tab--active' : ''}`}
+                    onClick={() => setOrdersFilter(id)}
+                  >
+                    {label}
+                    {filterCounts[id] > 0 && (
+                      <span className="my-orders-tab__badge">{filterCounts[id]}</span>
                     )}
+                  </button>
+                ))}
+              </div>
 
-                    {/* Refund pending info */}
-                    {order.paymentStatus === 'refund_needed' && (
-                      <p className="dash-order__refund-info">
-                        {t('account.refundPending')}
-                      </p>
-                    )}
-
-                    {/* Refunded info */}
-                    {order.paymentStatus === 'refunded' && (
-                      <p className="dash-order__refund-info dash-order__refund-info--done">
-                        {t('account.refundDone', { date: order.refundedAt ? new Date(order.refundedAt).toLocaleDateString() : '—' })}
-                        {order.refundReference && (
-                          <span style={{ marginLeft: '0.5rem', opacity: 0.75 }}>
-                            · {t('account.refundRef')}: {order.refundReference}
+              {/* ── Filtered order list ───────────────────────────────── */}
+              {filteredOrders.length === 0 ? (
+                <div className="dash-empty">
+                  <span className="dash-empty__icon" aria-hidden="true">📦</span>
+                  <p className="dash-empty__msg">
+                    {ordersFilter === 'active'    && t('account.noActiveOrders')}
+                    {ordersFilter === 'delivered' && t('account.noDeliveredOrders')}
+                    {ordersFilter === 'cancelled' && t('account.noCancelledOrders')}
+                    {ordersFilter === 'all'       && t('account.noOrders')}
+                  </p>
+                  {ordersFilter !== 'cancelled' && (
+                    <Link to="/products" className="btn btn-primary dash-empty__cta">
+                      {t('account.startShopping')}
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="dash-orders">
+                  {filteredOrders.map((order) => {
+                    const isCancellable = CUSTOMER_CANCEL_STATUSES.has(order.status)
+                    const isCancelling  = cancellingId === order.id
+                    return (
+                      <div key={order.id} className="dash-order" style={{ flexWrap: 'wrap' }}>
+                        <div className="dash-order__left">
+                          <p className="dash-order__id">{order.id}</p>
+                          <p className="dash-order__total">{birr(order.total)}</p>
+                          <p className="dash-order__payment" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                            <span className="muted" style={{ fontSize: '0.8rem' }}>{t('account.paymentLabel')}:</span>
+                            <PaymentStatusBadge status={order.paymentStatus || 'pending'} />
+                          </p>
+                        </div>
+                        <div className="dash-order__right">
+                          <span className={`dash-status ${orderStatusClass(order.status)}`}>
+                            {t(`orderStatus.${order.status}`)}
                           </span>
-                        )}
-                      </p>
-                    )}
+                          {order.createdAt ? (
+                            <span className="dash-order__date">{daysAgo(order.createdAt, t)}</span>
+                          ) : null}
+                        </div>
 
-                    {/* Cancel button / inline form — shown on cancellable orders */}
-                    {isCancellable && (
-                      <div className="dash-order__cancel">
-                        {isCancelling ? (
-                          <div className="dash-order__cancel-form">
-                            <textarea
-                              value={cancelReason}
-                              onChange={(e) => setCancelReason(e.target.value)}
-                              placeholder={t('cancel.reasonPlaceholder')}
-                              disabled={cancelLoading}
-                            />
-                            {cancelError && (
-                              <p className="error-text" style={{ margin: 0, fontSize: '0.82rem' }}>{cancelError}</p>
+                        {/* Cancellation info box — only in Cancelled tab */}
+                        {ordersFilter === 'cancelled' && order.status === 'cancelled' && (
+                          <div className="dash-order__cancel-note">
+                            {order.cancellationReason
+                              ? <><strong>{t('tracker.cancelReason')}:</strong> {order.cancellationReason}</>
+                              : <span className="muted">{t('cancel.success')}</span>
+                            }
+                          </div>
+                        )}
+
+                        {/* Refund pending info */}
+                        {order.paymentStatus === 'refund_needed' && (
+                          <p className="dash-order__refund-info">
+                            {t('account.refundPending')}
+                          </p>
+                        )}
+
+                        {/* Refunded info */}
+                        {order.paymentStatus === 'refunded' && (
+                          <p className="dash-order__refund-info dash-order__refund-info--done">
+                            {t('account.refundDone', { date: order.refundedAt ? new Date(order.refundedAt).toLocaleDateString() : '—' })}
+                            {order.refundReference && (
+                              <span style={{ marginLeft: '0.5rem', opacity: 0.75 }}>
+                                · {t('account.refundRef')}: {order.refundReference}
+                              </span>
                             )}
-                            <div className="dash-order__cancel-actions">
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                style={{ background: 'var(--danger)', borderColor: 'var(--danger)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
-                                onClick={() => handleCancelOrder(order)}
-                                disabled={cancelLoading}
-                              >
-                                {cancelLoading ? '…' : t('cancel.confirmBtn')}
-                              </button>
+                          </p>
+                        )}
+
+                        {/* Cancel button / inline form */}
+                        {isCancellable && (
+                          <div className="dash-order__cancel">
+                            {isCancelling ? (
+                              <div className="dash-order__cancel-form">
+                                <textarea
+                                  value={cancelReason}
+                                  onChange={(e) => setCancelReason(e.target.value)}
+                                  placeholder={t('cancel.reasonPlaceholder')}
+                                  disabled={cancelLoading}
+                                />
+                                {cancelError && (
+                                  <p className="error-text" style={{ margin: 0, fontSize: '0.82rem' }}>{cancelError}</p>
+                                )}
+                                <div className="dash-order__cancel-actions">
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    style={{ background: 'var(--danger)', borderColor: 'var(--danger)', fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                                    onClick={() => handleCancelOrder(order)}
+                                    disabled={cancelLoading}
+                                  >
+                                    {cancelLoading ? '…' : t('cancel.confirmBtn')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+                                    onClick={() => { setCancellingId(null); setCancelReason(''); setCancelError('') }}
+                                    disabled={cancelLoading}
+                                  >
+                                    {t('cancel.abortBtn')}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
                               <button
                                 type="button"
                                 className="btn btn-secondary"
-                                style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
-                                onClick={() => { setCancellingId(null); setCancelReason(''); setCancelError('') }}
-                                disabled={cancelLoading}
+                                style={{ fontSize: '0.8rem', padding: '0.3rem 0.85rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                                onClick={() => { setCancellingId(order.id); setCancelReason(''); setCancelError('') }}
                               >
-                                {t('cancel.abortBtn')}
+                                {t('cancel.requestBtn')}
                               </button>
-                            </div>
+                            )}
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.8rem', padding: '0.3rem 0.85rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                            onClick={() => { setCancellingId(order.id); setCancelReason(''); setCancelError('') }}
-                          >
-                            {t('cancel.requestBtn')}
-                          </button>
                         )}
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
