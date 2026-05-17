@@ -93,13 +93,14 @@ export function CheckoutPage() {
       landmark: prev.landmark || local.landmark || '',
     }))
     // Then try Supabase for cross-device sync — overwrites only still-empty fields.
+    // DB stores { name, phone, city, subCity, landmark }; map back to form field names.
     fetchDefaultShipping(state.user.id).then((remote) => {
       if (!remote) return
       setShipping((prev) => ({
-        fullName: prev.fullName || remote.fullName || '',
-        phone:    prev.phone    || remote.phone    || '',
-        city:     prev.city     || remote.city     || '',
-        area:     prev.area     || remote.area     || '',
+        fullName: prev.fullName || remote.name    || '',
+        phone:    prev.phone    || remote.phone   || '',
+        city:     prev.city     || remote.city    || '',
+        area:     prev.area     || remote.subCity || '',
         landmark: prev.landmark || remote.landmark || '',
       }))
     })

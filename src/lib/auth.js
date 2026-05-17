@@ -162,12 +162,20 @@ export async function fetchDefaultShipping(userId) {
 /**
  * Persist the user's delivery details back to their profile row so future
  * checkouts can be pre-filled. Fire-and-forget — never blocks order placement.
+ * Saves with canonical DB field names: { name, phone, city, subCity, landmark }.
  */
 export async function saveDefaultShipping(userId, shipping) {
   try {
+    const payload = {
+      name:     (shipping.fullName || '').trim(),
+      phone:    shipping.phone    || '',
+      city:     shipping.city     || '',
+      subCity:  shipping.area     || '',
+      landmark: shipping.landmark || '',
+    }
     await supabase
       .from('profiles')
-      .update({ default_shipping: shipping })
+      .update({ default_shipping: payload })
       .eq('id', userId)
   } catch {
     // Non-blocking: the order is already placed; localStorage already has it.
