@@ -8,9 +8,7 @@ import { upsertProduct, deleteProduct, fetchProducts } from '../services/product
 import { insertAuditLog, fetchAuditLogs } from '../services/auditService'
 import { insertNotification, sendOrderEmail } from '../services/notificationsService'
 import { PRODUCT_COLORS, COLOR_MAP } from '../utils/colors'
-import { AdminOrderActions } from '../components/AdminOrderActions'
-import { resolveStatus } from '../components/OrderTracker'
-import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
+import { AdminOrdersDashboard } from '../components/AdminOrdersDashboard'
 import { isSuperAdmin, isProductOperator, isOrderManager, isDeliveryManager, isAnyAdmin } from '../utils/auth'
 
 const SUBCATEGORY_ICONS = {
@@ -976,42 +974,16 @@ export function AdminDashboardPage() {
           {adminOrders.length === 0 ? (
             <p className="muted">{t('admin.noOrders')}</p>
           ) : (
-            adminOrders.map((order) => (
-              <div key={order.id} style={{ borderBottom: '1px solid var(--border)', padding: '0.7rem 0' }}>
-                <p style={{ margin: '0 0 0.2rem' }}>
-                  <strong>{order.id}</strong>
-                  <span className="muted" style={{ marginLeft: '0.5rem', fontWeight: 400 }}>
-                    {order.customer_name}
-                  </span>
-                </p>
-                <p className="muted" style={{ margin: '0 0 0.1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                  <PaymentStatusBadge status={order.payment_status || 'pending'} />
-                  {' · '}{t('admin.total')}: <strong>{birr(order.total)}</strong>
-                </p>
-                <p className="muted" style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
-                  Status: <strong>{t(`orderStatus.${resolveStatus(order.status)}`)}</strong>
-                  {order.created_at && (
-                    <span style={{ marginLeft: '0.5rem' }}>
-                      · {formatRequestDate(order.created_at)}
-                    </span>
-                  )}
-                </p>
-                <AdminOrderActions
-                  order={order}
-                  onUpdated={(update) =>
-                    setAdminOrders((prev) =>
-                      prev.map((o) =>
-                        o.id === order.id
-                          ? typeof update === 'string'
-                            ? { ...o, status: update, updated_at: new Date().toISOString() }
-                            : { ...o, ...update, updated_at: new Date().toISOString() }
-                          : o,
-                      ),
-                    )
-                  }
-                />
-              </div>
-            ))
+            <AdminOrdersDashboard
+              orders={adminOrders}
+              onOrderUpdated={(id, update) =>
+                setAdminOrders((prev) =>
+                  prev.map((o) =>
+                    o.id === id ? { ...o, ...update, updated_at: new Date().toISOString() } : o,
+                  ),
+                )
+              }
+            />
           )}
         </article>}
       </section>
