@@ -4313,6 +4313,9 @@ textarea {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .inv-category-card__stat {
@@ -4495,6 +4498,35 @@ textarea {
 
   .inv-category-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .inv-category-card {
+    padding: 0.7rem 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .inv-category-card__icon {
+    width: 34px;
+    height: 34px;
+    font-size: 1.45rem;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .inv-category-card__name {
+    font-size: 0.8rem;
+    margin-bottom: 0.18rem;
+  }
+
+  .inv-category-card__stat {
+    font-size: 0.64rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inv-category-card__arrow {
+    display: none;
   }
 
   .inv-product-card {
