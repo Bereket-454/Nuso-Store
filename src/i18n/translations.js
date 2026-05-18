@@ -41,8 +41,7 @@ export const translations = {
       notifications: 'Notifications',
     },
     layout: {
-      topNote:
-        'We deliver straight to your door — no pickup needed. Delivery fee shown before you pay.',
+      topNote: 'Free delivery on all orders',
       footer:
         'Nuso Store — fast delivery in Wolaita Sodo. Clothes, shoes, perfumes and more delivered to your door.',
     },
@@ -663,8 +662,7 @@ export const translations = {
       notifications: 'ማሳወቂያዎች',
     },
     layout: {
-      topNote:
-        'የማድረሻ ብቻ። መሰብሰቢያ የለም። የማድረሻ ክፍያ ከክፍያ በፊት ይታያል።',
+      topNote: 'ለሁሉም ትዕዛዞች ነፃ ማድረሻ',
       footer:
         'ኑሶ ስቶር — በወላይታ ሶዶ ፈጣን ዲሊቨሪ። ልብስ፣ ጫማ፣ ሽቶ እና ሌሎችም ወደ በሩዎ ይደርሳሉ።',
     },
