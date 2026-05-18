@@ -132,9 +132,4 @@ export const PROMOTIONS = [
     title: 'Weekend Flash Sale',
     details: 'Up to 25% off selected shoes and perfumes.',
   },
-  {
-    id: 'promo-2',
-    title: 'Free Delivery Threshold',
-    details: 'Delivery fee waived on orders above ETB 12,000.',
-  },
 ]

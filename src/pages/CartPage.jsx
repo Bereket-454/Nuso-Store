@@ -56,7 +56,7 @@ export function CartPage() {
   const dismiss = () => dispatch({ type: 'CART_PURGE_DISMISS' })
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-  const deliveryFee = subtotal > 12000 ? 0 : state.deliveryFee
+  const deliveryFee = 0
   const total = subtotal + deliveryFee
 
   // Truly empty cart — no purge involved.

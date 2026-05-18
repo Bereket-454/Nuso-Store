@@ -88,10 +88,6 @@ export const translations = {
         title: 'Weekend Flash Sale',
         details: 'Up to 25% off selected shoes and perfumes.',
       },
-      'promo-2': {
-        title: 'Free Delivery Threshold',
-        details: 'Delivery fee waived on orders above ETB 12,000.',
-      },
     },
     products: {
       title: 'All Products',
@@ -708,10 +704,6 @@ export const translations = {
       'promo-1': {
         title: 'የሳምንት መጨረሻ ቅናሽ',
         details: 'እስከ 25% ቅናሽ በተመረጡ ጫማ እና ሽቶ ላይ።',
-      },
-      'promo-2': {
-        title: 'ነጻ ማድረሻ',
-        details: 'ከ 12,000 ብር በላይ ትዕዛዞች ላይ የማድረሻ ክፍያ ነፃ።',
       },
     },
     products: {
