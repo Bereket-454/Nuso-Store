@@ -139,7 +139,7 @@ export function CheckoutPage() {
     .filter((item) => item.product && item.product.price > 0)
 
   const subtotal    = cartItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
-  const deliveryFee = subtotal > 12000 ? 0 : state.deliveryFee
+  const deliveryFee = 0
 
   // Referral discount
   const referralDiscount = useMemo(() => {
