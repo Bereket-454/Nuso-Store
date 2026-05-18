@@ -82,6 +82,8 @@ export function AdminDashboardPage() {
   const [invStatusFilter, setInvStatusFilter] = useState('all')
   const [auditLogs, setAuditLogs] = useState([])
   const [auditLoading, setAuditLoading] = useState(false)
+  const [auditLogsVisible, setAuditLogsVisible] = useState(10)
+  const [expandedStaff, setExpandedStaff] = useState(new Set())
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
 
   useEffect(() => {
@@ -1362,58 +1364,59 @@ export function AdminDashboardPage() {
           ) : auditLogs.length === 0 ? (
             <p className="muted" style={{ fontSize: '0.9rem' }}>No admin actions recorded yet.</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              {auditLogs.map((log) => {
-                const actionLabel = {
-                  product_added:                    '+ Product added',
-                  product_edited:                   '✎ Product edited',
-                  product_deleted:                  '✕ Product deleted',
-                  order_cancelled:                  '✕ Order cancelled',
-                }[log.action] ?? log.action.replace(/_/g, ' ')
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                {auditLogs.slice(0, auditLogsVisible).map((log) => {
+                  const actionLabel = {
+                    product_added:   '+ Product added',
+                    product_edited:  '✎ Product edited',
+                    product_deleted: '✕ Product deleted',
+                    order_cancelled: '✕ Order cancelled',
+                  }[log.action] ?? log.action.replace(/_/g, ' ')
 
-                const newVal = log.new_value ? (() => { try { return JSON.parse(log.new_value) } catch { return null } })() : null
-                const oldVal = log.old_value ? (() => { try { return JSON.parse(log.old_value) } catch { return null } })() : null
+                  const newVal = log.new_value ? (() => { try { return JSON.parse(log.new_value) } catch { return null } })() : null
+                  const oldVal = log.old_value ? (() => { try { return JSON.parse(log.old_value) } catch { return null } })() : null
 
-                let detail = ''
-                if (log.target_type === 'product') {
-                  detail = newVal?.name || oldVal?.name || log.target_id
-                } else if (log.target_type === 'order') {
-                  const newStatus = newVal?.status ?? ''
-                  const oldStatus = oldVal?.status ?? ''
-                  detail = `Order ${log.target_id.slice(0, 8)}…${oldStatus && newStatus ? ` (${oldStatus} → ${newStatus})` : ''}`
-                } else {
-                  detail = log.target_id
-                }
+                  let detail = ''
+                  if (log.target_type === 'product') {
+                    detail = newVal?.name || oldVal?.name || log.target_id
+                  } else if (log.target_type === 'order') {
+                    const newStatus = newVal?.status ?? ''
+                    const oldStatus = oldVal?.status ?? ''
+                    detail = `Order ${log.target_id.slice(0, 8)}…${oldStatus && newStatus ? ` (${oldStatus} → ${newStatus})` : ''}`
+                  } else {
+                    detail = log.target_id
+                  }
 
-                return (
-                  <div key={log.id} style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto auto',
-                    alignItems: 'baseline',
-                    gap: '0.75rem',
-                    padding: '0.5rem 0.75rem',
-                    background: 'var(--surface)',
-                    borderRadius: 'var(--radius)',
-                    border: '1px solid var(--border)',
-                  }}>
-                    <div style={{ minWidth: 0 }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{actionLabel}</span>
-                      {detail && (
-                        <span className="muted" style={{ fontSize: '0.82rem', marginLeft: '0.5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          — {detail}
-                        </span>
-                      )}
+                  return (
+                    <div key={log.id} className="audit-log-card">
+                      <div className="audit-log-card__action">
+                        <span className="audit-log-card__label">{actionLabel}</span>
+                        {detail && (
+                          <span className="audit-log-card__detail muted">— {detail}</span>
+                        )}
+                      </div>
+                      <span className="audit-log-card__meta muted">{log.admin_email}</span>
+                      <span className="audit-log-card__meta muted">
+                        {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </span>
                     </div>
-                    <span className="muted" style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
-                      {log.admin_email}
-                    </span>
-                    <span className="muted" style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
-                      {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+              {auditLogs.length > 10 && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ marginTop: '0.65rem', fontSize: '0.8rem', padding: '0.3rem 0.85rem' }}
+                  onClick={() => setAuditLogsVisible((v) => v === 10 ? auditLogs.length : 10)}
+                >
+                  {auditLogsVisible === 10
+                    ? `Show ${auditLogs.length - 10} more`
+                    : 'Show less'}
+                </button>
+              )}
+            </>
           )}
         </section>
       )}
@@ -1443,51 +1446,53 @@ export function AdminDashboardPage() {
             ))}
           </div>
 
-          {/* Per-staff groups */}
+          {/* Per-staff collapsible groups */}
           {Object.keys(staffGroups).length === 0 ? (
             <p className="muted" style={{ fontSize: '0.9rem' }}>No products tracked yet — products added going forward will appear here.</p>
           ) : (
-            Object.entries(staffGroups).map(([email, products]) => (
-              <div key={email} style={{ marginBottom: '1.25rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem', paddingBottom: '0.4rem', borderBottom: '1px solid var(--border)' }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.92rem' }}>{email}</span>
-                  <span style={{
-                    background: 'var(--accent)',
-                    color: '#fff',
-                    borderRadius: '999px',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    padding: '0.15rem 0.55rem',
-                    flexShrink: 0,
-                  }}>
-                    {products.length}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                  {products.map((p) => (
-                    <div key={p.id} style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto auto',
-                      alignItems: 'baseline',
-                      gap: '0.75rem',
-                      padding: '0.45rem 0.65rem',
-                      background: 'var(--surface)',
-                      borderRadius: 'var(--radius)',
-                      border: '1px solid var(--border)',
-                    }}>
-                      <span style={{ fontWeight: 500, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                      <span className="muted" style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
-                        {(p.categories ?? [p.category]).map((c) => t(`category.${c}`)).join(', ')}
-                        {' · '}{t(`subcategory.${p.subcategory || 'apparel'}`)}
-                      </span>
-                      <span className="muted" style={{ fontSize: '0.76rem', whiteSpace: 'nowrap' }}>
-                        {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {Object.entries(staffGroups).map(([email, products]) => {
+                const isOpen = expandedStaff.has(email)
+                const toggle = () => setExpandedStaff((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(email)) next.delete(email); else next.add(email)
+                  return next
+                })
+                return (
+                  <div key={email} className="staff-group">
+                    <button type="button" className="staff-group__toggle" onClick={toggle} aria-expanded={isOpen}>
+                      <span className="staff-group__email">{email}</span>
+                      <span className="staff-group__badge">{products.length}</span>
+                      <svg
+                        className={`staff-group__chevron${isOpen ? ' staff-group__chevron--open' : ''}`}
+                        width="14" height="14" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" strokeWidth="2.5"
+                        strokeLinecap="round" strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </button>
+                    {isOpen && (
+                      <div className="staff-group__list">
+                        {products.map((p) => (
+                          <div key={p.id} className="staff-product-row">
+                            <span className="staff-product-row__name">{p.name}</span>
+                            <span className="staff-product-row__meta muted">
+                              {(p.categories ?? [p.category]).map((c) => t(`category.${c}`)).join(', ')}
+                              {' · '}{t(`subcategory.${p.subcategory || 'apparel'}`)}
+                            </span>
+                            <span className="staff-product-row__date muted">
+                              {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           )}
         </section>
       )}
