@@ -10,6 +10,37 @@ import { EmptyState } from '../components/EmptyState'
 
 const PAGE_SIZE = 6
 
+// Seeded PRNG (mulberry32) — deterministic shuffle from an integer seed.
+function mulberry32(seed) {
+  let s = seed >>> 0
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0
+    let t = Math.imul(s ^ (s >>> 15), 1 | s)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function seededShuffle(arr, seed) {
+  const rand = mulberry32(seed)
+  const result = [...arr]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
+// Same seed for the whole browser session; new tab/refresh-after-close gets a new order.
+const SHUFFLE_SEED = (() => {
+  const key = 'productsSeed'
+  const stored = sessionStorage.getItem(key)
+  if (stored !== null) return Number(stored)
+  const seed = Math.floor(Math.random() * 2 ** 32)
+  sessionStorage.setItem(key, String(seed))
+  return seed
+})()
+
 export function ProductsPage() {
   const { t } = useTranslation()
   const { state } = useStore()
@@ -17,7 +48,7 @@ export function ProductsPage() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
   const [subcategory, setSubcategory] = useState('all')
-  const [sort, setSort] = useState('featured')
+  const [sort, setSort] = useState('random')
   const [page, setPage] = useState(1)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const sentinelRef = useRef(null)
@@ -45,6 +76,7 @@ export function ProductsPage() {
       return byCategory && bySubcategory && bySearch
     })
 
+    if (sort === 'random') list = seededShuffle(list, SHUFFLE_SEED)
     if (sort === 'featured') list = list.sort((a, b) => {
       const score = (p) => (p.isBestSeller ? 2 : p.isNewArrival ? 1 : 0)
       return score(b) - score(a)

@@ -38,6 +38,10 @@ export function ProductDetailsPage() {
     setColorError('')
     setFeedback('')
     window.scrollTo({ top: 0 })
+    if (!id) return
+    const stored = JSON.parse(localStorage.getItem('recentlyViewed') || '[]')
+    const updated = [id, ...stored.filter((v) => v !== id)].slice(0, 10)
+    localStorage.setItem('recentlyViewed', JSON.stringify(updated))
   }, [id])
 
   useEffect(() => {

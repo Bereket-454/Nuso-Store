@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { PROMOTIONS } from '../data/mockData'
@@ -15,8 +16,22 @@ export function HomePage() {
   const { state } = useStore()
   usePageMeta(t('meta.home.title'), t('meta.home.desc'))
 
+  const [recentIds, setRecentIds] = useState(() =>
+    JSON.parse(localStorage.getItem('recentlyViewed') || '[]')
+  )
+
   const bestSellers = state.products.filter((item) => item.isBestSeller).slice(0, 4)
   const newArrivals = state.products.filter((item) => item.isNewArrival).slice(0, 4)
+
+  const recentProducts = recentIds
+    .map((id) => state.products.find((p) => p.id === id))
+    .filter(Boolean)
+    .slice(0, 6)
+
+  const clearRecentlyViewed = () => {
+    localStorage.removeItem('recentlyViewed')
+    setRecentIds([])
+  }
 
   // Fill 4 hero image slots: best sellers first, then newest arrivals, then any remaining.
   const withImage = (p) => p.images?.[0]
@@ -100,6 +115,22 @@ export function HomePage() {
             : newArrivals.map((product, i) => <ProductCard key={product.id} product={product} index={i} />)}
         </div>
       </section>
+
+      {recentProducts.length >= 2 && (
+        <section>
+          <div className="section-title-row">
+            <h2 className="section-title">{t('home.recentlyViewed')}</h2>
+            <button type="button" className="recently-viewed-clear" onClick={clearRecentlyViewed}>
+              {t('home.recentlyViewedClear')}
+            </button>
+          </div>
+          <div className="recently-viewed-grid">
+            {recentProducts.map((product, i) => (
+              <ProductCard key={product.id} product={product} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <RequestBanner />
 

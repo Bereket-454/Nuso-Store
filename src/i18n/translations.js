@@ -82,6 +82,8 @@ export const translations = {
       newArrivals: 'New Arrivals',
       promotions: 'Promotions',
       badgePromotion: 'Promotion',
+      recentlyViewed: 'Recently Viewed',
+      recentlyViewedClear: 'Clear',
     },
     promotion: {
       'promo-1': {
@@ -742,6 +744,8 @@ export const translations = {
       newArrivals: 'አዲስ መግቢያዎች',
       promotions: 'ቅናሾች',
       badgePromotion: 'ቅናሽ',
+      recentlyViewed: 'በቅርቡ የተመለከቱ',
+      recentlyViewedClear: 'አጽዳ',
     },
     promotion: {
       'promo-1': {
