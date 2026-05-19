@@ -47,16 +47,45 @@ export async function submitStudentVerification(userId, { schoolName, studentIdN
     reviewed_at: null,
   }
 
-  console.log('[studentVerification] inserting payload:', payload)
+  console.log('[studentVerification] attempting insert with payload:', payload)
 
   const { data: insertData, error: insertErr } = await supabase
     .from('student_verifications')
-    .upsert(payload, { onConflict: 'user_id' })
+    .insert(payload)
     .select()
+    .single()
 
   console.log('[studentVerification] insert result:', { insertData, insertErr })
 
-  return { error: insertErr }
+  // Postgres duplicate key violation — row already exists for this user_id, update it instead
+  if (insertErr) {
+    const isDuplicate = insertErr.code === '23505' || insertErr.message?.includes('duplicate key')
+    if (!isDuplicate) {
+      console.error('[studentVerification] insert failed (not a duplicate):', insertErr)
+      return { error: insertErr }
+    }
+
+    console.log('[studentVerification] duplicate detected — falling back to update for user_id:', userId)
+
+    const { data: updateData, error: updateErr } = await supabase
+      .from('student_verifications')
+      .update({
+        school_name: schoolName,
+        student_id_number: studentIdNumber,
+        id_image_path: storedPath,
+        status: 'pending',
+        reviewer_note: null,
+        reviewed_at: null,
+      })
+      .eq('user_id', userId)
+      .select()
+      .single()
+
+    console.log('[studentVerification] update result:', { updateData, updateErr })
+    return { error: updateErr }
+  }
+
+  return { error: null }
 }
 
 export async function getMyVerification(userId) {
