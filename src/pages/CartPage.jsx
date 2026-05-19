@@ -92,84 +92,90 @@ export function CartPage() {
 
   // Cart has valid items — notice at top if some items were purged.
   return (
-    <div className="layout-split">
-      <section className="card card-body">
-        <h1>{t('cart.title')}</h1>
-        {showPurgeNotice && <PurgeNotice onDismiss={dismiss} t={t} />}
-        <Link className="btn btn-primary" to="/checkout" style={{ display: 'block', textAlign: 'center', marginBottom: '1rem' }}>
+    <div className="cart-page">
+      <div className="layout-split">
+        <section className="card card-body cart-items">
+          <h1>{t('cart.title')}</h1>
+          {showPurgeNotice && <PurgeNotice onDismiss={dismiss} t={t} />}
+          {items.map((item) => (
+            <article
+              key={item.key}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid var(--border)',
+                padding: '0.8rem 0',
+                gap: '0.8rem',
+              }}
+            >
+              <div>
+                <strong>{item.product.name}</strong>
+                <p className="muted">
+                  {item.size} / {item.color}
+                </p>
+                <p>{birr(item.product.price * item.quantity)}</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() =>
+                    dispatch({
+                      type: 'CART_UPDATE',
+                      payload: { key: item.key, quantity: item.quantity - 1 },
+                    })
+                  }
+                >
+                  -
+                </button>
+                <span>{item.quantity}</span>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() =>
+                    dispatch({
+                      type: 'CART_UPDATE',
+                      payload: { key: item.key, quantity: item.quantity + 1 },
+                    })
+                  }
+                >
+                  +
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={() => dispatch({ type: 'CART_REMOVE', payload: { key: item.key } })}
+                >
+                  {t('cart.remove')}
+                </button>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        {/* Desktop sticky order summary */}
+        <aside className="card card-body cart-summary">
+          <h3>{t('cart.summary')}</h3>
+          <p>{t('cart.subtotal')}: {birr(subtotal)}</p>
+          <p>{t('cart.deliveryFee')}: {deliveryFee === 0 ? t('cart.free') : birr(deliveryFee)}</p>
+          <p>
+            <strong>{t('cart.total')}: {birr(total)}</strong>
+          </p>
+          <p className="muted">{t('cart.deliveryOnly')}</p>
+          <Link className="btn btn-primary" to="/checkout">
+            {t('cart.checkout')}
+          </Link>
+        </aside>
+      </div>
+
+      {/* Mobile sticky checkout bar — hidden on desktop via CSS */}
+      <div className="cart-sticky-bar" aria-label={t('cart.summary')}>
+        <div className="cart-sticky-bar__total">
+          <span className="cart-sticky-bar__label">{t('cart.total')}</span>
+          <strong className="cart-sticky-bar__amount">{birr(total)}</strong>
+        </div>
+        <Link className="btn btn-primary cart-sticky-bar__btn" to="/checkout">
           {t('cart.checkout')}
         </Link>
-        {items.map((item) => (
-          <article
-            key={item.key}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderBottom: '1px solid var(--border)',
-              padding: '0.8rem 0',
-              gap: '0.8rem',
-            }}
-          >
-            <div>
-              <strong>{item.product.name}</strong>
-              <p className="muted">
-                {item.size} / {item.color}
-              </p>
-              <p>{birr(item.product.price * item.quantity)}</p>
-            </div>
-            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-              <button
-                className="btn btn-secondary"
-                onClick={() =>
-                  dispatch({
-                    type: 'CART_UPDATE',
-                    payload: { key: item.key, quantity: item.quantity - 1 },
-                  })
-                }
-              >
-                -
-              </button>
-              <span>{item.quantity}</span>
-              <button
-                className="btn btn-secondary"
-                onClick={() =>
-                  dispatch({
-                    type: 'CART_UPDATE',
-                    payload: { key: item.key, quantity: item.quantity + 1 },
-                  })
-                }
-              >
-                +
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={() => dispatch({ type: 'CART_REMOVE', payload: { key: item.key } })}
-              >
-                {t('cart.remove')}
-              </button>
-            </div>
-          </article>
-        ))}
-      </section>
-      <aside className="card card-body">
-        <h3>{t('cart.summary')}</h3>
-        <p>
-          {t('cart.subtotal')}: {birr(subtotal)}
-        </p>
-        <p>
-          {t('cart.deliveryFee')}: {deliveryFee === 0 ? t('cart.free') : birr(deliveryFee)}
-        </p>
-        <p>
-          <strong>
-            {t('cart.total')}: {birr(total)}
-          </strong>
-        </p>
-        <p className="muted">{t('cart.deliveryOnly')}</p>
-        <Link className="btn btn-primary" to="/checkout">
-          {t('cart.checkout')}
-        </Link>
-      </aside>
+      </div>
     </div>
   )
 }

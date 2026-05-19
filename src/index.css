@@ -6180,3 +6180,82 @@ textarea {
     gap: 1rem;
   }
 }
+
+/* ── Cart page — sticky summary + mobile checkout bar ────────────────────── */
+
+/* Desktop: sticky order summary panel */
+.cart-summary {
+  position: sticky;
+  top: 5rem;
+  align-self: start;
+}
+
+/* Mobile sticky checkout bar — hidden on desktop */
+.cart-sticky-bar {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  /* Hide the desktop aside — mobile bar takes over */
+  .cart-summary {
+    display: none;
+  }
+
+  /* Give the items section breathing room so the sticky bar doesn't cover
+     the last item. Height of bar (~68px) + bottom nav gap. */
+  .cart-items {
+    padding-bottom: 5.5rem;
+  }
+
+  /* Sticky checkout bar */
+  .cart-sticky-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: fixed;
+    left: 0;
+    right: 0;
+    /* Sit flush at the bottom on tablet (no bottom nav) */
+    bottom: 0;
+    z-index: 45;
+    background: #fff;
+    border-top: 1.5px solid var(--border);
+    padding: 0.75rem 1.1rem;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .cart-sticky-bar__total {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+
+  .cart-sticky-bar__label {
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .cart-sticky-bar__amount {
+    font-size: 1.05rem;
+    color: #1a2340;
+  }
+
+  .cart-sticky-bar__btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  /* On mobile, push the bar above the bottom nav tab bar */
+  .cart-sticky-bar {
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Extra room at bottom so last item isn't hidden behind bar + nav */
+  .cart-items {
+    padding-bottom: 8rem;
+  }
+}
