@@ -4767,46 +4767,10 @@ textarea {
   animation: color-picker-shake 0.55s ease;
 }
 
-.sticky-cta {
-  display: none;
-}
-
 @media (max-width: 768px) {
-  /* Sticky bar — sits above the bottom tab bar */
-  .sticky-cta {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    position: fixed;
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-    left: 0;
-    right: 0;
-    z-index: 50;
-    background: #fff;
-    border-top: 1px solid var(--border);
-    padding: 0.8rem 1.25rem;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.07);
-  }
-
-  .sticky-cta__price {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--text);
-    flex-shrink: 0;
-  }
-
-  .sticky-cta__btn {
-    flex: 1;
-  }
-
-  /* Hide inline CTA on mobile — sticky bar is the primary action */
-  .product-detail-inline-cta {
-    display: none;
-  }
-
-  /* Clear both bottom tab bar (56px) and sticky CTA (~76px) */
+  /* Clear bottom tab bar so the inline CTA isn't hidden behind it */
   .product-detail-page {
-    padding-bottom: calc(56px + 80px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 }
 

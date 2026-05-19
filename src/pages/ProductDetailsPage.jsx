@@ -23,11 +23,6 @@ export function ProductDetailsPage() {
   const [feedback, setFeedback] = useState('')
   const touchStartX = useRef(null)
   const colorPickerRef = useRef(null)
-  const currentPriceRef = useRef(null)
-
-  useEffect(() => {
-    if (product) currentPriceRef.current = product.price
-  }, [product?.id])
 
   const related = useMemo(() => {
     if (!product) return []
@@ -56,10 +51,6 @@ export function ProductDetailsPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [product?.images?.length])
 
-  useEffect(() => {
-    document.body.classList.add('has-sticky-cta')
-    return () => document.body.classList.remove('has-sticky-cta')
-  }, [])
 
   usePageMeta(product?.name || t('meta.product.title'), product?.description || t('meta.product.desc'))
 
@@ -74,9 +65,6 @@ export function ProductDetailsPage() {
     )
   }
 
-  // Destructure immediately after null guard so the sticky bar price
-  // is bound to this product alone and cannot be affected by related cards.
-  const { price: currentPrice } = product
   const total = product.images.length
   const goPrev = () => setSelectedImage(i => (i - 1 + total) % total)
   const goNext = () => setSelectedImage(i => (i + 1) % total)
@@ -268,17 +256,7 @@ export function ProductDetailsPage() {
         </div>
       </section>
 
-      {/* Sticky Add to Cart bar — mobile only, controlled by CSS */}
-      <div className="sticky-cta">
-        <span className="sticky-cta__price">{birr(currentPriceRef.current ?? currentPrice)}</span>
-        <AddToCartButton
-          className="btn btn-primary sticky-cta__btn"
-          onClick={handleAddToCart}
-          disabled={product.stock <= 0}
-          label={product.stock <= 0 ? t('productDetail.outOfStock') : t('productDetail.addToCart')}
-          style={product.stock <= 0 ? { background: 'var(--muted)', cursor: 'not-allowed' } : undefined}
-        />
-      </div>
+
     </div>
   )
 }
