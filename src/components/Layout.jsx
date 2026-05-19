@@ -360,6 +360,11 @@ export function Layout() {
             <Link to="/privacy">Privacy Policy</Link>
             <Link to="/refund-policy">Refund Policy</Link>
           </nav>
+          <div className="footer-contact">
+            <a href="https://t.me/nusostore" target="_blank" rel="noopener noreferrer">Chat on Telegram</a>
+            <a href="tel:0987312250">0987312250</a>
+          </div>
+          <p className="footer-copyright">© 2026 Nuso Store · Wolaita Sodo, Ethiopia</p>
         </div>
       </footer>
 

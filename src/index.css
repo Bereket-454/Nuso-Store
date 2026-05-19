@@ -899,6 +899,32 @@ textarea {
   text-decoration: underline;
 }
 
+.footer-contact {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-contact a {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer-contact a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.footer-copyright {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
 /* ── Legal pages ──────────────────────────────────────────────────────────── */
 .legal-page {
   max-width: 720px;
