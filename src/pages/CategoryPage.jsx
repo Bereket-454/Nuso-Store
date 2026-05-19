@@ -20,17 +20,22 @@ export function CategoryPage() {
   const matchesCategory = (item, catSlug) =>
     Array.isArray(item.categories) ? item.categories.includes(catSlug) : item.category === catSlug
 
+  const featuredSort = (a, b) => {
+    const score = (p) => (p.isBestSeller ? 2 : p.isNewArrival ? 1 : 0)
+    return score(b) - score(a)
+  }
+
   const products = useMemo(() => {
     if (isPrimary) {
       let list = state.products.filter((item) => matchesCategory(item, slug))
       if (subcategoryFilter !== 'all') {
         list = list.filter((item) => item.subcategory === subcategoryFilter)
       }
-      return list
+      return list.sort(featuredSort)
     }
-    return state.products.filter(
-      (item) => item.subcategory === slug || matchesCategory(item, slug),
-    )
+    return state.products
+      .filter((item) => item.subcategory === slug || matchesCategory(item, slug))
+      .sort(featuredSort)
   }, [state.products, slug, isPrimary, subcategoryFilter])
 
   const pageTitle = isPrimary ? t(`category.${slug}`) : t(`subcategory.${slug}`)

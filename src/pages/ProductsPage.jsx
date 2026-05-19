@@ -45,6 +45,10 @@ export function ProductsPage() {
       return byCategory && bySubcategory && bySearch
     })
 
+    if (sort === 'featured') list = list.sort((a, b) => {
+      const score = (p) => (p.isBestSeller ? 2 : p.isNewArrival ? 1 : 0)
+      return score(b) - score(a)
+    })
     if (sort === 'price-asc') list = list.sort((a, b) => a.price - b.price)
     if (sort === 'price-desc') list = list.sort((a, b) => b.price - a.price)
     if (sort === 'newest') list = list.sort((a, b) => Number(b.isNewArrival) - Number(a.isNewArrival))
