@@ -354,6 +354,7 @@ export function Layout() {
         <div className="container footer-inner">
           <p className="footer-tagline muted">{t('layout.footer')}</p>
           <nav className="footer-legal" aria-label="Legal pages">
+            <Link to="/about">About</Link>
             <Link to="/terms">Terms of Service</Link>
             <Link to="/privacy">Privacy Policy</Link>
             <Link to="/refund-policy">Refund Policy</Link>
@@ -371,7 +372,7 @@ export function Layout() {
           <span>{t('nav.shop')}</span>
         </NavLink>
         <NavLink
-          to="/cart"
+          to={cartItemsCount > 0 ? '/checkout' : '/cart'}
           className={({ isActive }) => `bottom-nav__item${isActive ? ' active' : ''}`}
         >
           <span className="bottom-nav__cart-wrap">

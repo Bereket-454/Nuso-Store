@@ -96,6 +96,9 @@ export function CartPage() {
       <section className="card card-body">
         <h1>{t('cart.title')}</h1>
         {showPurgeNotice && <PurgeNotice onDismiss={dismiss} t={t} />}
+        <Link className="btn btn-primary" to="/checkout" style={{ display: 'block', textAlign: 'center', marginBottom: '1rem' }}>
+          {t('cart.checkout')}
+        </Link>
         {items.map((item) => (
           <article
             key={item.key}

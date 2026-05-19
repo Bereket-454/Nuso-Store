@@ -19,6 +19,7 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { TermsPage } from '../pages/TermsPage'
 import { PrivacyPage } from '../pages/PrivacyPage'
 import { RefundPolicyPage } from '../pages/RefundPolicyPage'
+import { AboutPage } from '../pages/AboutPage'
 
 export function AppRouter() {
   return (
@@ -40,6 +41,7 @@ export function AppRouter() {
         <Route element={<AdminRoute />}>
           <Route path="admin" element={<AdminDashboardPage />} />
         </Route>
+        <Route path="about" element={<AboutPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="refund-policy" element={<RefundPolicyPage />} />
