@@ -7,25 +7,56 @@ const BUCKET = 'student-ids'
 
 export async function submitStudentVerification(userId, { schoolName, studentIdNumber, imageFile }) {
   const ext = imageFile.name.split('.').pop().toLowerCase()
-  const path = `${userId}/${Date.now()}.${ext}`
-  const { error: uploadErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, imageFile, { upsert: true, cacheControl: '3600' })
-  if (uploadErr) return { error: uploadErr }
+  const uploadPath = `${userId}/${Date.now()}.${ext}`
 
-  const { error } = await supabase.from('student_verifications').upsert(
-    {
-      user_id: userId,
-      school_name: schoolName,
-      student_id_number: studentIdNumber,
-      id_image_path: path,
-      status: 'pending',
-      reviewer_note: null,
-      reviewed_at: null,
-    },
-    { onConflict: 'user_id' },
-  )
-  return { error }
+  console.log('[studentVerification] inputs:', {
+    userId,
+    schoolName,
+    studentIdNumber,
+    fileName: imageFile?.name,
+    fileSize: imageFile?.size,
+    fileType: imageFile?.type,
+    computedUploadPath: uploadPath,
+  })
+
+  const { data: uploadData, error: uploadErr } = await supabase.storage
+    .from(BUCKET)
+    .upload(uploadPath, imageFile, { upsert: true, cacheControl: '3600' })
+
+  console.log('[studentVerification] storage upload result:', {
+    uploadData,
+    uploadErr,
+    storagePath: uploadData?.path ?? null,
+  })
+
+  if (uploadErr) {
+    console.error('[studentVerification] upload failed — aborting insert:', uploadErr)
+    return { error: uploadErr }
+  }
+
+  // Use the path Supabase actually stored (may differ from our computed string)
+  const storedPath = uploadData?.path ?? uploadPath
+
+  const payload = {
+    user_id: userId,
+    school_name: schoolName,
+    student_id_number: studentIdNumber,
+    id_image_path: storedPath,
+    status: 'pending',
+    reviewer_note: null,
+    reviewed_at: null,
+  }
+
+  console.log('[studentVerification] inserting payload:', payload)
+
+  const { data: insertData, error: insertErr } = await supabase
+    .from('student_verifications')
+    .upsert(payload, { onConflict: 'user_id' })
+    .select()
+
+  console.log('[studentVerification] insert result:', { insertData, insertErr })
+
+  return { error: insertErr }
 }
 
 export async function getMyVerification(userId) {
