@@ -23,6 +23,11 @@ export function ProductDetailsPage() {
   const [feedback, setFeedback] = useState('')
   const touchStartX = useRef(null)
   const colorPickerRef = useRef(null)
+  const currentPriceRef = useRef(null)
+
+  useEffect(() => {
+    if (product) currentPriceRef.current = product.price
+  }, [product?.id])
 
   const related = useMemo(() => {
     if (!product) return []
@@ -265,7 +270,7 @@ export function ProductDetailsPage() {
 
       {/* Sticky Add to Cart bar — mobile only, controlled by CSS */}
       <div className="sticky-cta">
-        <span className="sticky-cta__price">{birr(currentPrice)}</span>
+        <span className="sticky-cta__price">{birr(currentPriceRef.current ?? currentPrice)}</span>
         <AddToCartButton
           className="btn btn-primary sticky-cta__btn"
           onClick={handleAddToCart}
