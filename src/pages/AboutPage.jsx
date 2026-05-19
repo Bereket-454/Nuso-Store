@@ -1,6 +1,29 @@
 import { Link } from 'react-router-dom'
 import { usePageMeta } from '../hooks/usePageMeta'
 
+const team = [
+  {
+    name: 'Bereket Demeke Korra',
+    initials: 'BK',
+    title: 'Founder & Technology Lead',
+    desc: 'Built Nuso Store from the ground up. Leads product development, the app, and the technical infrastructure that keeps every order running smoothly.',
+  },
+  {
+    name: 'Bereketab Desta Desalegn',
+    nickname: 'Beri',
+    initials: 'BD',
+    title: 'Marketing & Customer Growth',
+    desc: 'Drives awareness and customer relationships. Ensures every shopper hears about Nuso Store and keeps coming back.',
+  },
+  {
+    name: 'Abenezer Belete Balcha',
+    nickname: 'Abi',
+    photo: '/abi.jpg',
+    title: 'Operations & Delivery Lead',
+    desc: 'Manages on-the-ground logistics and delivery. Makes sure orders leave on time and reach customers at their door.',
+  },
+]
+
 const trustPoints = [
   { icon: '💳', text: 'No upfront payment required for most orders' },
   { icon: '📦', text: 'Every order is manually confirmed' },
@@ -9,46 +32,67 @@ const trustPoints = [
   { icon: '💰', text: 'Cash on Delivery, Telebirr, and CBE transfer' },
 ]
 
+function TeamCard({ member }) {
+  return (
+    <div className="about-team-card">
+      <div className="about-team-card__photo-wrap">
+        {member.photo ? (
+          <img
+            src={member.photo}
+            alt={member.name}
+            className="about-team-card__photo"
+          />
+        ) : (
+          <div className="about-team-card__photo about-team-card__photo--placeholder">
+            <span>{member.initials}</span>
+          </div>
+        )}
+      </div>
+      <div className="about-team-card__body">
+        <p className="about-team-card__name">
+          {member.name}
+          {member.nickname && (
+            <span className="about-team-card__nickname"> ({member.nickname})</span>
+          )}
+        </p>
+        <p className="about-team-card__title">{member.title}</p>
+        <p className="about-team-card__desc">{member.desc}</p>
+      </div>
+    </div>
+  )
+}
+
 export function AboutPage() {
   usePageMeta(
     'About Nuso Store | Wolaita Sodo, Ethiopia',
-    'Learn about Nuso Store, founded by Bereket Demeke Korra — bringing convenient online shopping to Wolaita Sodo.'
+    'Meet the team behind Nuso Store — bringing convenient, trustworthy online shopping to Wolaita Sodo, Ethiopia.'
   )
 
   return (
     <div className="about-page">
 
       {/* ── Hero ──────────────────────────────────────────────────── */}
-      <section className="about-hero">
-        <div className="about-hero__text">
-          <p className="about-hero__eyebrow">Our Story</p>
-          <h1 className="about-hero__title">
-            Shopping made easy for<br />
-            <span className="about-hero__title--accent">Wolaita Sodo</span>
-          </h1>
-          <p className="about-hero__body">
-            Nuso Store was founded by <strong>Bereket Demeke Korra</strong>, a Computer Science
-            student at NYU Abu Dhabi and proud native of Wolaita Sodo, Ethiopia. While studying
-            abroad, Bereket saw how easy online shopping had become in other parts of the world.
-            He wanted to bring that same convenience to students and families in Wolaita Sodo.
-          </p>
-          <p className="about-hero__body">
-            Every order is personally reviewed and confirmed to ensure customers receive exactly
-            what they expect.
-          </p>
-          <p className="about-hero__founder-label">
-            <strong>Bereket Demeke Korra</strong>
-            <span className="about-hero__founder-role">Founder &amp; CEO</span>
-          </p>
-        </div>
+      <section className="about-hero about-hero--centered">
+        <p className="about-hero__eyebrow">Our Story</p>
+        <h1 className="about-hero__title">
+          Built by a Team with a<br />
+          <span className="about-hero__title--accent">Shared Vision</span>
+        </h1>
+        <p className="about-hero__body about-hero__body--wide">
+          Nuso Store was founded by three Ethiopian entrepreneurs who believe shopping in Ethiopia
+          should be simpler, faster, and more trustworthy. What began as an idea to help students
+          and families in Wolaita Sodo access quality products online has grown into a team effort
+          combining technology, marketing, and local operations.
+        </p>
+      </section>
 
-        <div className="about-hero__photo-wrap">
-          <img
-            src="/bereket.jpg"
-            alt="Bereket Demeke Korra, Founder & CEO of Nuso Store"
-            className="about-hero__photo"
-          />
-          <div className="about-hero__photo-badge">Founder &amp; CEO</div>
+      {/* ── Team ──────────────────────────────────────────────────── */}
+      <section className="about-team">
+        <h2 className="about-section-title about-section-title--center">Meet the team</h2>
+        <div className="about-team__grid">
+          {team.map((member) => (
+            <TeamCard key={member.name} member={member} />
+          ))}
         </div>
       </section>
 
