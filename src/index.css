@@ -6259,3 +6259,114 @@ textarea {
     padding-bottom: 8rem;
   }
 }
+
+/* ── Cart add toast — desktop only ───────────────────────────────────────── */
+@keyframes cart-toast-in {
+  from { opacity: 0; transform: translateX(110%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.cart-toast {
+  position: fixed;
+  top: 5rem;
+  right: 1.25rem;
+  z-index: 60;
+  background: #1a2340;
+  color: #fff;
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1rem 1.1rem;
+  width: 300px;
+  box-shadow: 0 10px 36px rgba(26, 35, 64, 0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: cart-toast-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cart-toast__close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.65rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  border-radius: 4px;
+  transition: color 0.12s;
+}
+
+.cart-toast__close:hover {
+  color: #fff;
+}
+
+.cart-toast__content {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding-right: 1rem;
+}
+
+.cart-toast__check {
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  background: #FF6B00;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cart-toast__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cart-toast__label {
+  font-size: 0.73rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.cart-toast__name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.cart-toast__cta {
+  display: block;
+  background: #FF6B00;
+  color: #fff;
+  text-align: center;
+  padding: 0.58rem 1rem;
+  border-radius: 9px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.cart-toast__cta:hover {
+  opacity: 0.88;
+}
+
+/* Hidden on mobile — bottom nav already provides cart feedback */
+@media (max-width: 768px) {
+  .cart-toast {
+    display: none;
+  }
+}

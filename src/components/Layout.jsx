@@ -73,6 +73,12 @@ export function Layout() {
   const profileRef = useRef(null)
   const lastScrollY = useRef(0)
 
+  // Cart add toast
+  const [cartToast, setCartToast] = useState(null)
+  const prevCartRef = useRef(state.cart)
+  const toastTimerRef = useRef(null)
+  const toastRef = useRef(null)
+
   useEffect(() => {
     if (prevCartCount.current === null) {
       prevCartCount.current = cartItemsCount
@@ -153,6 +159,54 @@ export function Layout() {
       window.removeEventListener('scroll', onScroll)
       if (rafId !== null) cancelAnimationFrame(rafId)
     }
+  }, [])
+
+  // Detect CART_ADD and show toast — no store changes needed
+  useEffect(() => {
+    const prev = prevCartRef.current
+    const curr = state.cart
+    prevCartRef.current = curr
+
+    // Never show on cart or checkout pages — user already sees the cart
+    if (location.pathname === '/cart' || location.pathname.startsWith('/checkout')) return
+
+    // Skip bulk restores (sign-in with a saved cart)
+    if (prev.length === 0 && curr.length > 1) return
+
+    // Find the item that was added or had its quantity bumped
+    let changedItem = null
+    for (const item of curr) {
+      const prevItem = prev.find((p) => p.key === item.key)
+      if (!prevItem || item.quantity > prevItem.quantity) {
+        changedItem = item
+        break
+      }
+    }
+    if (!changedItem) return
+
+    const product = state.products.find((p) => p.id === changedItem.productId)
+    if (!product) return
+
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setCartToast({ name: product.name })
+    toastTimerRef.current = setTimeout(() => setCartToast(null), 4000)
+  }, [state.cart, state.products, location.pathname])
+
+  // Dismiss toast on outside click
+  useEffect(() => {
+    if (!cartToast) return
+    const handler = (e) => {
+      if (toastRef.current && !toastRef.current.contains(e.target)) {
+        setCartToast(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [cartToast])
+
+  // Clean up timer on unmount
+  useEffect(() => () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
   }, [])
 
   const adminViewStore = localStorage.getItem('adminViewStore') === 'true'
@@ -410,6 +464,34 @@ export function Layout() {
           </span>
         </NavLink>
       </nav>
+
+      {/* Cart add toast — desktop only (hidden on mobile via CSS) */}
+      {cartToast && (
+        <div className="cart-toast" ref={toastRef} role="status" aria-live="polite">
+          <button
+            type="button"
+            className="cart-toast__close"
+            aria-label="Dismiss"
+            onClick={() => setCartToast(null)}
+          >
+            ✕
+          </button>
+          <div className="cart-toast__content">
+            <span className="cart-toast__check" aria-hidden="true">✓</span>
+            <div className="cart-toast__text">
+              <span className="cart-toast__label">Added to cart</span>
+              <strong className="cart-toast__name">{cartToast.name}</strong>
+            </div>
+          </div>
+          <Link
+            className="cart-toast__cta"
+            to="/checkout"
+            onClick={() => setCartToast(null)}
+          >
+            Proceed to Checkout →
+          </Link>
+        </div>
+      )}
     </>
   )
 }
