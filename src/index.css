@@ -4750,6 +4750,23 @@ textarea {
 }
 
 /* Sticky CTA bar — hidden on desktop, shown on mobile */
+@keyframes color-picker-shake {
+  0%   { transform: translateX(0);    border-color: var(--danger); }
+  20%  { transform: translateX(-6px); border-color: var(--danger); }
+  40%  { transform: translateX(6px);  border-color: var(--danger); }
+  60%  { transform: translateX(-4px); border-color: var(--danger); }
+  80%  { transform: translateX(4px);  border-color: var(--danger); }
+  100% { transform: translateX(0);    border-color: var(--danger); }
+}
+
+.color-picker--shake {
+  border: 1.5px solid var(--danger);
+  border-radius: 8px;
+  padding: 0.5rem;
+  margin: -0.5rem;
+  animation: color-picker-shake 0.55s ease;
+}
+
 .sticky-cta {
   display: none;
 }

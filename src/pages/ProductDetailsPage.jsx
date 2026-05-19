@@ -19,8 +19,10 @@ export function ProductDetailsPage() {
   const [size, setSize] = useState(product?.sizes[0] || '')
   const [color, setColor] = useState('')
   const [colorError, setColorError] = useState('')
+  const [colorShake, setColorShake] = useState(false)
   const [feedback, setFeedback] = useState('')
   const touchStartX = useRef(null)
+  const colorPickerRef = useRef(null)
 
   const related = useMemo(() => {
     if (!product) return []
@@ -32,7 +34,7 @@ export function ProductDetailsPage() {
   useEffect(() => {
     setSelectedImage(0)
     setSize(product?.sizes[0] || '')
-    setColor('')
+    setColor(product?.colors?.length === 1 ? product.colors[0] : '')
     setColorError('')
     setFeedback('')
     window.scrollTo({ top: 0 })
@@ -67,6 +69,7 @@ export function ProductDetailsPage() {
     )
   }
 
+  const productPrice = product.price
   const total = product.images.length
   const goPrev = () => setSelectedImage(i => (i - 1 + total) % total)
   const goNext = () => setSelectedImage(i => (i + 1) % total)
@@ -81,6 +84,9 @@ export function ProductDetailsPage() {
   const handleAddToCart = () => {
     if (product.colors?.length > 0 && !color) {
       setColorError(t('productDetail.selectColor'))
+      setColorShake(true)
+      setTimeout(() => setColorShake(false), 600)
+      colorPickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return false  // tells AddToCartButton not to play the success animation
     }
     dispatch({ type: 'CART_ADD', payload: { productId: product.id, quantity: 1, size, color } })
@@ -199,7 +205,7 @@ export function ProductDetailsPage() {
             </select>
           </div>
           {product.colors?.length > 0 && (
-            <div className="form-group">
+            <div ref={colorPickerRef} className={`form-group${colorShake ? ' color-picker--shake' : ''}`}>
               <label>{t('productDetail.color')}{color ? <span style={{ fontWeight: 400, color: 'var(--muted)', marginLeft: '0.4rem' }}>— {color}</span> : null}</label>
               <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', paddingTop: '0.3rem' }}>
                 {product.colors.map((c) => {
@@ -257,7 +263,7 @@ export function ProductDetailsPage() {
 
       {/* Sticky Add to Cart bar — mobile only, controlled by CSS */}
       <div className="sticky-cta">
-        <span className="sticky-cta__price">{birr(product.price)}</span>
+        <span className="sticky-cta__price">{birr(productPrice)}</span>
         <AddToCartButton
           className="btn btn-primary sticky-cta__btn"
           onClick={handleAddToCart}
