@@ -110,6 +110,16 @@ export function AdminNav() {
             </button>
           ))}
 
+          {isSuperAdmin(user) && (
+            <NavLink
+              to="/admin/student-verifications"
+              className={({ isActive }) => `admin-nav__link${isActive ? ' admin-nav__link--active' : ''}`}
+              onClick={close}
+            >
+              Student Verifications
+            </NavLink>
+          )}
+
           {/* Mobile-only footer */}
           <div className="admin-nav__mobile-footer">
             <span className="admin-nav__user-mobile">{firstName}</span>
