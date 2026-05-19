@@ -251,13 +251,15 @@ export function StoreProvider({ children }) {
             getWalletBalance(session.user.id),
           ])
           const user = {
-            id:            session.user.id,
-            email:         session.user.email || profile?.email || '',
-            phone:         session.user.phone || profile?.phone || '',
-            name:          profile?.name || session.user.user_metadata?.name || '',
-            role:          profile?.role || 'user',
-            referral_code: profile?.referral_code || null,
-            referred_by:   profile?.referred_by   || null,
+            id:                       session.user.id,
+            email:                    session.user.email || profile?.email || '',
+            phone:                    session.user.phone || profile?.phone || '',
+            name:                     profile?.name || session.user.user_metadata?.name || '',
+            role:                     profile?.role || 'user',
+            referral_code:            profile?.referral_code            || null,
+            referred_by:              profile?.referred_by              || null,
+            student_verified:         profile?.student_verified         ?? false,
+            student_discount_enabled: profile?.student_discount_enabled ?? false,
           }
           // Restore this user's saved cart. loadUserCart returns [] if nothing saved yet.
           const cart = loadUserCart(session.user.id)

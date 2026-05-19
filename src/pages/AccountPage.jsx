@@ -8,6 +8,7 @@ import { useTranslation } from '../i18n'
 import { checkEmailExists, checkPhoneExists, deleteAccount, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
 import { cancelOrder, CUSTOMER_CANCEL_STATUSES } from '../services/ordersService'
 import { RETURN_REASONS, fetchReturnRequestsForUser, submitReturnRequest } from '../services/returnsService'
+import { getMyVerification } from '../services/studentVerificationService'
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
 import { supabase } from '../lib/supabase'
 import { EmptyState } from '../components/EmptyState'
@@ -584,6 +585,17 @@ function ProfileCard({ user, t, state, dispatch }) {
   const [cancelError, setCancelError]     = useState('')
   const [ordersFilter, setOrdersFilter]   = useState('active')
 
+  // Student verification status — seeded from profile flag, then confirmed via DB
+  const [studentStatus, setStudentStatus] = useState(
+    user.student_verified ? 'approved' : null,
+  )
+  useEffect(() => {
+    if (user.student_verified) return
+    getMyVerification(user.id).then(({ data }) => {
+      setStudentStatus(data?.status ?? 'none')
+    })
+  }, [user.id, user.student_verified])
+
   async function handleCancelOrder(order) {
     setCancelLoading(true)
     setCancelError('')
@@ -755,6 +767,11 @@ function ProfileCard({ user, t, state, dispatch }) {
           {user.role === 'admin' ? (
             <span className="dash-welcome__role">{t('nav.admin')}</span>
           ) : null}
+          {user.student_verified && (
+            <span className="dash-welcome__role" style={{ background: 'var(--success)', marginLeft: '0.35rem' }}>
+              {t('account.studentVerified')}
+            </span>
+          )}
 
           {/* Stats row */}
           {(orderCount > 0 || addressCount > 0 || walletBal > 0) ? (
@@ -822,6 +839,21 @@ function ProfileCard({ user, t, state, dispatch }) {
         <Link to="/referral" className="dash-action">
           <div className="dash-action__icon-wrap"><IconGift /></div>
           <span className="dash-action__label">{t('account.referralRewards')}</span>
+        </Link>
+        <Link to="/student-discount" className={`dash-action${studentStatus === 'approved' ? ' dash-action--student-verified' : ''}`}>
+          <div className="dash-action__icon-wrap">🎓</div>
+          <span className="dash-action__label">{t('account.studentDiscount')}</span>
+          {studentStatus && (
+            <span className={`dash-action__status${
+              studentStatus === 'approved' ? ' dash-action__status--approved'
+              : studentStatus === 'pending' ? ' dash-action__status--pending'
+              : ''
+            }`}>
+              {studentStatus === 'approved' ? t('account.svApproved')
+               : studentStatus === 'pending' ? t('account.svPending')
+               : t('account.svNone')}
+            </span>
+          )}
         </Link>
       </div>
 

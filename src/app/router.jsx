@@ -20,6 +20,8 @@ import { TermsPage } from '../pages/TermsPage'
 import { PrivacyPage } from '../pages/PrivacyPage'
 import { RefundPolicyPage } from '../pages/RefundPolicyPage'
 import { AboutPage } from '../pages/AboutPage'
+import { StudentDiscountPage } from '../pages/StudentDiscountPage'
+import { AdminStudentVerificationsPage } from '../pages/AdminStudentVerificationsPage'
 
 export function AppRouter() {
   return (
@@ -40,7 +42,9 @@ export function AppRouter() {
         <Route path="referral" element={<ReferralPage />} />
         <Route element={<AdminRoute />}>
           <Route path="admin" element={<AdminDashboardPage />} />
+          <Route path="admin/student-verifications" element={<AdminStudentVerificationsPage />} />
         </Route>
+        <Route path="student-discount" element={<StudentDiscountPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route path="privacy" element={<PrivacyPage />} />

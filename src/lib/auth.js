@@ -69,7 +69,7 @@ export async function signIn(email, password) {
 export async function fetchProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, phone, name, role, referral_code, referred_by')
+    .select('id, email, phone, name, role, referral_code, referred_by, student_verified, student_discount_enabled')
     .eq('id', userId)
     .single()
 

@@ -50,6 +50,10 @@ const REFERRAL_DISCOUNT_PCT  = 0.10
 const REFERRAL_DISCOUNT_CAP  = 150
 const REFERRAL_MIN_ORDER     = 300
 
+// Student discount constants
+const STUDENT_DISCOUNT_PCT = 0.05
+const STUDENT_DISCOUNT_CAP = 500
+
 export function CheckoutPage() {
   const { t } = useTranslation()
   const { state, dispatch } = useStore()
@@ -147,8 +151,14 @@ export function CheckoutPage() {
     return Math.min(Math.floor(subtotal * REFERRAL_DISCOUNT_PCT), REFERRAL_DISCOUNT_CAP)
   }, [isFirstOrder, subtotal])
 
+  // Student discount
+  const studentDiscount = useMemo(() => {
+    if (!state.user?.student_discount_enabled) return 0
+    return Math.min(Math.floor(subtotal * STUDENT_DISCOUNT_PCT), STUDENT_DISCOUNT_CAP)
+  }, [state.user?.student_discount_enabled, subtotal])
+
   // Wallet credit
-  const afterDiscount       = subtotal - referralDiscount + deliveryFee
+  const afterDiscount       = subtotal - referralDiscount - studentDiscount + deliveryFee
   const maxWalletApplicable = Math.min(walletBalance, afterDiscount)
   const walletCreditApplied = useWallet && maxWalletApplicable > 0 ? maxWalletApplicable : 0
   const finalTotal          = afterDiscount - walletCreditApplied
@@ -303,6 +313,7 @@ export function CheckoutPage() {
         payment_status:     'pending',
         status:             'order_received',
         referral_discount:  referralDiscount,
+        student_discount:   studentDiscount,
         wallet_credit_used: walletCreditApplied,
       })
 
@@ -621,6 +632,13 @@ export function CheckoutPage() {
             <span>−{birr(referralDiscount)}</span>
           </div>
         )}
+
+        {studentDiscount > 0 && (
+          <div className="chk-line chk-line--discount">
+            <span>🎓 {t('studentDiscount.discountLine')}</span>
+            <span>−{birr(studentDiscount)}</span>
+          </div>
+        )}
         {isFirstOrder && subtotal > 0 && subtotal < REFERRAL_MIN_ORDER && state.user?.referred_by && (
           <p className="chk-note">{t('checkout.referralMinNote', { min: birr(REFERRAL_MIN_ORDER) })}</p>
         )}
@@ -660,6 +678,11 @@ export function CheckoutPage() {
         {referralDiscount > 0 && (
           <p className="chk-note chk-note--success">
             ✓ {t('checkout.referralApplied', { amount: birr(referralDiscount) })}
+          </p>
+        )}
+        {studentDiscount > 0 && (
+          <p className="chk-note chk-note--success">
+            ✓ {t('studentDiscount.discountApplied', { amount: birr(studentDiscount) })}
           </p>
         )}
 
