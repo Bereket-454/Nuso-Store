@@ -69,7 +69,9 @@ export function ProductDetailsPage() {
     )
   }
 
-  const productPrice = product.price
+  // Destructure immediately after null guard so the sticky bar price
+  // is bound to this product alone and cannot be affected by related cards.
+  const { price: currentPrice } = product
   const total = product.images.length
   const goPrev = () => setSelectedImage(i => (i - 1 + total) % total)
   const goNext = () => setSelectedImage(i => (i + 1) % total)
@@ -263,7 +265,7 @@ export function ProductDetailsPage() {
 
       {/* Sticky Add to Cart bar — mobile only, controlled by CSS */}
       <div className="sticky-cta">
-        <span className="sticky-cta__price">{birr(productPrice)}</span>
+        <span className="sticky-cta__price">{birr(currentPrice)}</span>
         <AddToCartButton
           className="btn btn-primary sticky-cta__btn"
           onClick={handleAddToCart}

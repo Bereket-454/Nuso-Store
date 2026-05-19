@@ -4781,7 +4781,7 @@ textarea {
     bottom: calc(56px + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
-    z-index: 40;
+    z-index: 50;
     background: #fff;
     border-top: 1px solid var(--border);
     padding: 0.8rem 1.25rem;
