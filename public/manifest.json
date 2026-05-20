@@ -1,0 +1,23 @@
+{
+  "name": "Nuso Store",
+  "short_name": "Nuso",
+  "description": "Fast delivery in Wolaita Sodo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a2340",
+  "icons": [
+    {
+      "src": "/nuso-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/nuso-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
