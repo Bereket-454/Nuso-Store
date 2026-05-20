@@ -1289,6 +1289,7 @@ export function AdminDashboardPage() {
                           <button
                             className="btn btn-secondary"
                             onClick={() => {
+                              console.log('[Admin] Edit clicked — product:', product.id, product.name, '| canEditProducts:', canEditProducts)
                               const b = businessInfo[product.id] || {}
                               setProductForm({
                                 ...product,
