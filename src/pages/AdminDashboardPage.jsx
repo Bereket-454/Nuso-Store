@@ -572,8 +572,9 @@ export function AdminDashboardPage() {
           </div>
           <div className="form-group">
             <label htmlFor="admin-short-desc">Short description</label>
-            <input
+            <textarea
               id="admin-short-desc"
+              rows={3}
               value={productForm.shortDescription}
               onChange={(e) => setProductForm((v) => ({ ...v, shortDescription: e.target.value }))}
               placeholder="One-line summary shown on the product page"
