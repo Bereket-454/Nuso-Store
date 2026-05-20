@@ -35,8 +35,6 @@ const defaultProduct = {
   sizes: ['M'],
   description: '',
   shortDescription: '',
-  features: '',      // newline-separated string in the form; converted to array on save
-  extraInfo: '',
   images: ['https://picsum.photos/seed/dire-admin/640/640'],
   isBestSeller: false,
   isNewArrival: true,
@@ -292,10 +290,6 @@ export function AdminDashboardPage() {
           id: role === 'staff' ? '' : productForm.id,
           price: Number(productForm.price),
           stock: Number(productForm.stock),
-          // features is a textarea string in the form; split to array for storage.
-          features: productForm.features
-            ? productForm.features.split('\n').map((s) => s.trim()).filter(Boolean)
-            : [],
         },
         // Pass author on new products (no editingName) or whenever staff saves (always an INSERT).
         role === 'staff' || !editingName ? { addedById: state.user?.id, addedByEmail: state.user?.email } : {},
@@ -659,7 +653,7 @@ export function AdminDashboardPage() {
           <div className="form-group">
             <label htmlFor="admin-description">
               {t('admin.description')}
-              <span style={{ fontWeight: 400, color: 'var(--muted)', marginLeft: '0.4rem', fontSize: '0.8em' }}>(optional — shown only if no features are set)</span>
+              <span style={{ fontWeight: 400, color: 'var(--muted)', marginLeft: '0.4rem', fontSize: '0.8em' }}>(optional)</span>
             </label>
             <textarea
               id="admin-description"
@@ -667,25 +661,6 @@ export function AdminDashboardPage() {
               onChange={(event) =>
                 setProductForm((value) => ({ ...value, description: event.target.value }))
               }
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="admin-features">Features <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: '0.8em' }}>(one per line)</span></label>
-            <textarea
-              id="admin-features"
-              rows={4}
-              value={productForm.features}
-              onChange={(e) => setProductForm((v) => ({ ...v, features: e.target.value }))}
-              placeholder={'Breathable knit upper\nLightweight sole\nFlexible and durable'}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="admin-extra-info">Extra info <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: '0.8em' }}>(optional)</span></label>
-            <input
-              id="admin-extra-info"
-              value={productForm.extraInfo}
-              onChange={(e) => setProductForm((v) => ({ ...v, extraInfo: e.target.value }))}
-              placeholder="e.g. Made in Vietnam, Machine washable"
             />
           </div>
           <div className="form-group">
@@ -1294,9 +1269,7 @@ export function AdminDashboardPage() {
                               setProductForm({
                                 ...product,
                                 categories: product.categories ?? [product.category],
-                                features: (product.features ?? []).join('\n'),
                                 shortDescription: product.shortDescription ?? '',
-                                extraInfo: product.extraInfo ?? '',
                                 costPrice: b.cost_price ?? '',
                                 supplierName: b.supplier_name ?? '',
                                 supplierContact: b.supplier_contact ?? '',
