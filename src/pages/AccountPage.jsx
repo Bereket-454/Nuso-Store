@@ -569,6 +569,7 @@ function ProfileCard({ user, t, state, dispatch }) {
   const initials = getInitials(user.name)
   const [editing, setEditing] = useState(false)
   const navigate = useNavigate()
+  const { language, setLanguage } = useTranslation()
 
   function handleSignOut() {
     dispatch({ type: 'AUTH_CHANGED', payload: null })
@@ -1223,6 +1224,23 @@ function ProfileCard({ user, t, state, dispatch }) {
                     <button type="button" className="dash-info-row__edit" onClick={() => setEditing(true)} aria-label={t('account.editProfile')}><PencilIcon /></button>
                   </div>
                 ) : null}
+                <div className="dash-info-row">
+                  <span className="dash-info-row__label">Language</span>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      className={`btn${language === 'en' ? ' btn-primary' : ' btn-secondary'}`}
+                      style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+                      onClick={() => setLanguage('en')}
+                    >EN</button>
+                    <button
+                      type="button"
+                      className={`btn${language === 'am' ? ' btn-primary' : ' btn-secondary'}`}
+                      style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+                      onClick={() => setLanguage('am')}
+                    >አማ</button>
+                  </div>
+                </div>
                 <button
                   type="button"
                   className="btn btn-secondary"
