@@ -121,7 +121,11 @@ export function ProductDetailsPage() {
             <AnimatePresence mode="wait" initial={false}>
               <motion.img
                 key={selectedImage}
-                src={product.images[selectedImage]}
+                src={
+                  product.images[selectedImage]?.includes('supabase.co/storage')
+                    ? `${product.images[selectedImage]}?width=800&quality=75`
+                    : product.images[selectedImage]
+                }
                 alt={product.name}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

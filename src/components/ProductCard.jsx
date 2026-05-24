@@ -47,7 +47,7 @@ export function ProductCard({ product, activeCategory, index = 0 }) {
             <img
               src={
                 product.images[0].includes('supabase.co/storage')
-                  ? `${product.images[0]}?width=400&quality=75`
+                  ? `${product.images[0]}?width=400&height=400&resize=contain&quality=70`
                   : product.images[0]
               }
               alt=""
