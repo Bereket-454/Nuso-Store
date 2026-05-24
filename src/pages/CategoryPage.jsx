@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { ProductCard } from '../components/ProductCard'
@@ -12,7 +12,11 @@ export function CategoryPage() {
   const { t } = useTranslation()
   const { slug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { state } = useStore()
+  const { state, loadCatalog } = useStore()
+
+  useEffect(() => {
+    loadCatalog()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const subcategoryFilter = searchParams.get('subcategory') || 'all'
   const isPrimary = isPrimaryCategorySlug(slug)

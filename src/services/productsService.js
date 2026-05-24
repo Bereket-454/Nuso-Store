@@ -50,6 +50,44 @@ export async function fetchProducts() {
 }
 
 /**
+ * Fetch a single page of products for paginated / lazy catalog loading.
+ * offset is zero-based; limit defaults to 20.
+ */
+export async function fetchProductsPage(offset = 0, limit = 20) {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error('[fetchProductsPage] Supabase error:', error.message)
+      return []
+    }
+    return data.map(rowToProduct)
+  } catch (err) {
+    console.error('[fetchProductsPage] Unexpected error:', err)
+    return []
+  }
+}
+
+/**
+ * Fetch the minimal sets needed by the homepage:
+ * up to 8 best sellers and up to 8 new arrivals in parallel.
+ */
+export async function fetchHomeProducts() {
+  const [bestRes, newRes] = await Promise.all([
+    supabase.from('products').select('*').eq('is_best_seller', true).limit(8),
+    supabase.from('products').select('*').eq('is_new_arrival', true).limit(8),
+  ])
+  return {
+    bestSellers: (bestRes.data || []).map(rowToProduct),
+    newArrivals: (newRes.data || []).map(rowToProduct),
+  }
+}
+
+/**
  * Upsert a product to Supabase.
  * Generates an id if none is provided (new product).
  * Pass { addedById, addedByEmail } only when inserting — never on edits — so the

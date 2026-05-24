@@ -20,8 +20,8 @@ export function HomePage() {
     JSON.parse(localStorage.getItem('recentlyViewed') || '[]')
   )
 
-  const bestSellers = state.products.filter((item) => item.isBestSeller).slice(0, 4)
-  const newArrivals = state.products.filter((item) => item.isNewArrival).slice(0, 4)
+  const bestSellers = (state.homeProducts?.bestSellers ?? []).slice(0, 4)
+  const newArrivals = (state.homeProducts?.newArrivals ?? []).slice(0, 4)
 
   const recentProducts = recentIds
     .map((id) => state.products.find((p) => p.id === id))
@@ -33,15 +33,16 @@ export function HomePage() {
     setRecentIds([])
   }
 
-  // Fill 4 hero image slots: best sellers first, then newest arrivals, then any remaining.
+  // Fill 4 hero image slots from home products (best sellers first, then new arrivals).
   const withImage = (p) => p.images?.[0]
-  const bestSellerImages = state.products.filter((p) => p.isBestSeller && withImage(p))
+  const homeBestSellers = state.homeProducts?.bestSellers ?? []
+  const homeNewArrivals = state.homeProducts?.newArrivals ?? []
+  const bestSellerImages = homeBestSellers.filter(withImage)
   const neededAfterBestSellers = 4 - bestSellerImages.length
   const bestSellerIds = new Set(bestSellerImages.map((p) => p.id))
   const fillImages = neededAfterBestSellers > 0
-    ? state.products
+    ? homeNewArrivals
         .filter((p) => !bestSellerIds.has(p.id) && withImage(p))
-        .sort((a, b) => Number(b.isNewArrival) - Number(a.isNewArrival))
         .slice(0, neededAfterBestSellers)
     : []
   const heroImages = [...bestSellerImages, ...fillImages]
@@ -101,7 +102,7 @@ export function HomePage() {
       <section>
         <h2 className="section-title">{t('home.bestSellers')}</h2>
         <div className="grid cols-4 product-listing-grid">
-          {state.productsLoading
+          {state.homeLoading
             ? Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)
             : bestSellers.map((product, i) => <ProductCard key={product.id} product={product} index={i} />)}
         </div>
@@ -110,7 +111,7 @@ export function HomePage() {
       <section>
         <h2 className="section-title">{t('home.newArrivals')}</h2>
         <div className="grid cols-4 product-listing-grid">
-          {state.productsLoading
+          {state.homeLoading
             ? Array.from({ length: 4 }, (_, i) => <ProductCardSkeleton key={i} />)
             : newArrivals.map((product, i) => <ProductCard key={product.id} product={product} index={i} />)}
         </div>

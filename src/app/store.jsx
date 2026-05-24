@@ -1,8 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useReducer } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
 import { normalizeProduct } from '../data/categoryModel'
-import { CATEGORIES, DELIVERY_FEE, SAMPLE_PRODUCTS, SUBCATEGORIES } from '../data/mockData'
-import { fetchCategories, fetchProducts, fetchSubcategories } from '../services/productsService'
+import { CATEGORIES, DELIVERY_FEE, SUBCATEGORIES } from '../data/mockData'
+import { fetchCategories, fetchHomeProducts, fetchProductsPage, fetchSubcategories } from '../services/productsService'
 import { supabase } from '../lib/supabase'
 import { fetchProfile } from '../lib/auth'
 import { getWalletBalance } from '../services/wallet'
@@ -32,10 +32,15 @@ function saveUserCart(userId, cart) {
 const StoreContext = createContext(null)
 
 const initialState = {
-  products: SAMPLE_PRODUCTS,
+  products: [],
   categories: CATEGORIES,
   subcategories: SUBCATEGORIES,
-  productsLoading: true,  // true until CATALOGUE_LOADED fires for the first time
+  productsLoading: false,   // true while catalog page is being fetched
+  homeProducts: null,       // { bestSellers: [], newArrivals: [] } — fast homepage query
+  homeLoading: true,        // true until home products load
+  catalogFetched: false,    // whether the catalog has been fetched this session
+  catalogHasMore: true,     // whether more products exist server-side
+  catalogOffset: 0,         // next offset for server-side page fetch
   cart: [],
   cartPurged: false,   // true when CATALOGUE_LOADED silently removed stale cart items
   user: null,
@@ -54,19 +59,22 @@ function loadState() {
     merged.products = (merged.products || []).map(normalizeProduct)
     merged.categories = CATEGORIES
     merged.subcategories = SUBCATEGORIES
-    merged.user = null        // session is managed by Supabase, not localStorage
-    merged.cart = []          // cart is managed per-user; loaded after auth resolves
-    merged.orders = []        // orders are fetched from Supabase, not localStorage
-    merged.productsLoading = true // always fetch fresh on load
-    merged.cartPurged = false // reset on every page load
-    merged.wallet = null      // fetched from Supabase after auth resolves
+    merged.user = null         // session is managed by Supabase, not localStorage
+    merged.cart = []           // cart is managed per-user; loaded after auth resolves
+    merged.orders = []         // orders are fetched from Supabase, not localStorage
+    merged.productsLoading = false // catalog is lazy-loaded on demand
+    merged.homeLoading = true  // always re-fetch home products on load
+    merged.catalogFetched = false  // reset so pages trigger a fresh fetch
+    merged.catalogOffset = 0
+    merged.cartPurged = false  // reset on every page load
+    merged.wallet = null       // fetched from Supabase after auth resolves
     return merged
   } catch {
     return initialState
   }
 }
 
-function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, productsLoading: _productsLoading, wallet: _wallet, orders: _orders, ...rest }) {
+function persist({ user: _user, cart: _cart, cartPurged: _cartPurged, productsLoading: _pl, homeLoading: _hl, catalogFetched: _cf, catalogOffset: _co, wallet: _wallet, orders: _orders, ...rest }) {
   // Exclude session-managed or transiently-fetched fields from localStorage.
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
 }
@@ -136,6 +144,16 @@ function reducer(state, action) {
     }
     case 'ADMIN_PRODUCT_DELETE':
       return { ...state, products: state.products.filter((item) => item.id !== action.payload.id) }
+    case 'HOME_PRODUCTS_LOADED':
+      return {
+        ...state,
+        homeProducts: action.payload.homeProducts,
+        categories: action.payload.categories,
+        subcategories: action.payload.subcategories,
+        homeLoading: false,
+      }
+    case 'CATALOG_LOAD_START':
+      return { ...state, productsLoading: true }
     case 'CATALOGUE_LOADED': {
       const loadedProducts = action.payload.products.map(normalizeProduct)
       const validIds = new Set(loadedProducts.map((p) => p.id))
@@ -143,19 +161,28 @@ function reducer(state, action) {
       const itemsRemoved = cleanCart.length < state.cart.length
       console.log(
         '[CATALOGUE_LOADED] products loaded:', loadedProducts.length,
-        '| cart before purge:', state.cart.map((i) => i.productId),
-        '| cart after purge:', cleanCart.map((i) => i.productId),
-        '| items removed:', itemsRemoved,
+        '| hasMore:', action.payload.hasMore,
+        '| items removed from cart:', itemsRemoved,
       )
       return {
         ...state,
         products: loadedProducts,
-        categories: action.payload.categories,
-        subcategories: action.payload.subcategories,
         productsLoading: false,
+        catalogFetched: true,
+        catalogOffset: loadedProducts.length,
+        catalogHasMore: action.payload.hasMore ?? true,
         cart: cleanCart,
-        // Preserve an existing true flag — AUTH_CHANGED may have already set it.
         cartPurged: state.cartPurged || itemsRemoved,
+      }
+    }
+    case 'CATALOGUE_MORE_LOADED': {
+      const more = action.payload.products.map(normalizeProduct)
+      return {
+        ...state,
+        products: [...state.products, ...more],
+        productsLoading: false,
+        catalogOffset: state.catalogOffset + more.length,
+        catalogHasMore: action.payload.hasMore ?? (more.length === 20),
       }
     }
     case 'CART_PURGE_DISMISS':
@@ -215,16 +242,33 @@ export function StoreProvider({ children }) {
     }
   }, [state.cart, state.user?.id])
 
-  // Load live catalogue from Supabase on mount; falls back to mockData if unavailable.
+  // On mount: fetch only the lightweight homepage products + categories.
+  // The full catalog is lazy-loaded when the user navigates to /products or a category page.
   useEffect(() => {
-    console.log('[store] CATALOGUE_LOADED effect running')
-    Promise.all([fetchProducts(), fetchCategories(), fetchSubcategories()]).then(
-      ([products, categories, subcategories]) => {
-        console.log(`[store] CATALOGUE_LOADED dispatched with ${products.length} products`)
-        dispatch({ type: 'CATALOGUE_LOADED', payload: { products, categories, subcategories } })
+    Promise.all([fetchHomeProducts(), fetchCategories(), fetchSubcategories()]).then(
+      ([homeProducts, categories, subcategories]) => {
+        dispatch({ type: 'HOME_PRODUCTS_LOADED', payload: { homeProducts, categories, subcategories } })
       },
     )
   }, [])
+
+  // Load the first page of the catalog. Idempotent — no-op if already fetched or loading.
+  const loadCatalog = useCallback(() => {
+    if (state.productsLoading || state.catalogFetched) return
+    dispatch({ type: 'CATALOG_LOAD_START' })
+    fetchProductsPage(0, 20).then((products) => {
+      dispatch({ type: 'CATALOGUE_LOADED', payload: { products, hasMore: products.length === 20 } })
+    })
+  }, [state.productsLoading, state.catalogFetched])
+
+  // Load the next page of products. Idempotent — no-op if no more or already loading.
+  const loadMoreProducts = useCallback(() => {
+    if (!state.catalogHasMore || state.productsLoading) return
+    dispatch({ type: 'CATALOG_LOAD_START' })
+    fetchProductsPage(state.catalogOffset, 20).then((products) => {
+      dispatch({ type: 'CATALOGUE_MORE_LOADED', payload: { products, hasMore: products.length === 20 } })
+    })
+  }, [state.catalogHasMore, state.productsLoading, state.catalogOffset])
 
   // Sync Supabase Auth session into store state.
   // Fires immediately on mount with INITIAL_SESSION (restores existing session on refresh),
@@ -275,7 +319,10 @@ export function StoreProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const value = useMemo(() => ({ state, dispatch }), [state])
+  const value = useMemo(
+    () => ({ state, dispatch, loadCatalog, loadMoreProducts }),
+    [state, loadCatalog, loadMoreProducts],
+  )
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }

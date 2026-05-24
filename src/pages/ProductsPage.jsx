@@ -43,7 +43,7 @@ const SHUFFLE_SEED = (() => {
 
 export function ProductsPage() {
   const { t } = useTranslation()
-  const { state } = useStore()
+  const { state, loadCatalog, loadMoreProducts } = useStore()
   usePageMeta(t('meta.products.title'), t('meta.products.desc'))
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('all')
@@ -52,6 +52,10 @@ export function ProductsPage() {
   const [page, setPage] = useState(1)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const sentinelRef = useRef(null)
+
+  useEffect(() => {
+    loadCatalog()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const update = () => setIsOnline(navigator.onLine)
@@ -91,23 +95,24 @@ export function ProductsPage() {
   const visible = filtered.slice(0, page * PAGE_SIZE)
   const allLoaded = page >= maxPage
 
-  // Infinite scroll — advance page when the sentinel enters the viewport.
-  // rootMargin of 400px fires early enough that products appear before the
-  // user reaches the exact bottom, keeping the experience seamless.
+  // Infinite scroll — advance local page, or fetch the next server page when exhausted.
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (!sentinel) return
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !allLoaded) {
+        if (!entries[0].isIntersecting) return
+        if (!allLoaded) {
           setPage((p) => p + 1)
+        } else if (state.catalogHasMore && !state.productsLoading) {
+          loadMoreProducts()
         }
       },
       { rootMargin: '400px' },
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [allLoaded])
+  }, [allLoaded, state.catalogHasMore, state.productsLoading, loadMoreProducts])
 
   return (
     <div>

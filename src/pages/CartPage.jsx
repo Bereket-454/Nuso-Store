@@ -35,10 +35,11 @@ function PurgeNotice({ onDismiss, t }) {
 
 export function CartPage() {
   const { t } = useTranslation()
-  const { state, dispatch } = useStore()
+  const { state, dispatch, loadCatalog } = useStore()
   usePageMeta(t('meta.cart.title'), t('meta.cart.desc'))
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
+  useEffect(() => { loadCatalog() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Map cart items to their products. Defensive filter: drop items with no matching
   // product or zero price. The store already cleans the cart in CATALOGUE_LOADED;

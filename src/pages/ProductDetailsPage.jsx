@@ -13,8 +13,12 @@ export function ProductDetailsPage() {
   const { t } = useTranslation()
   const prefersReduced = useReducedMotion()
   const { id } = useParams()
-  const { state, dispatch } = useStore()
+  const { state, dispatch, loadCatalog } = useStore()
   const product = state.products.find((item) => item.id === id)
+
+  useEffect(() => {
+    loadCatalog()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedImage, setSelectedImage] = useState(0)
   const [size, setSize] = useState(product?.sizes[0] || '')
   const [color, setColor] = useState('')
@@ -59,6 +63,11 @@ export function ProductDetailsPage() {
   usePageMeta(product?.name || t('meta.product.title'), product?.description || t('meta.product.desc'))
 
   if (!product) {
+    if (state.productsLoading) {
+      return <div className="grid cols-4 product-listing-grid" style={{ marginTop: '2rem' }}>
+        {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton" style={{ height: '220px', borderRadius: '12px' }} />)}
+      </div>
+    }
     return (
       <article className="card card-body">
         <h2>{t('productDetail.notFound')}</h2>
