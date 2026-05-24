@@ -44,7 +44,15 @@ export function ProductCard({ product, activeCategory, index = 0 }) {
       <div className="product-card__content">
         <div style={{ position: 'relative' }}>
           {product.images?.[0] ? (
-            <img src={product.images[0]} alt="" loading="lazy" />
+            <img
+              src={
+                product.images[0].includes('supabase.co/storage')
+                  ? `${product.images[0]}?width=400&quality=75`
+                  : product.images[0]
+              }
+              alt=""
+              loading="lazy"
+            />
           ) : (
             <div className="product-card__placeholder" aria-hidden="true">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
