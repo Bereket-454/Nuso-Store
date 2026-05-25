@@ -52,6 +52,8 @@ export function ProductsPage() {
   const [page, setPage] = useState(1)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const sentinelRef = useRef(null)
+  // Stable shuffled order: built once from the initial load, new arrivals appended at end.
+  const shuffledIdsRef = useRef(null)
 
   useEffect(() => {
     loadCatalog()
@@ -68,8 +70,22 @@ export function ProductsPage() {
   }, [])
 
   const filtered = useMemo(() => {
+    // Keep shuffledIdsRef current: shuffle all IDs once on first call, then only
+    // append IDs for products that weren't in the previous load. This prevents the
+    // full array from being re-shuffled when infinite scroll appends new products.
+    const allIds = state.products.map((p) => p.id)
+    if (!shuffledIdsRef.current) {
+      shuffledIdsRef.current = seededShuffle(allIds, SHUFFLE_SEED)
+    } else {
+      const known = new Set(shuffledIdsRef.current)
+      const newIds = allIds.filter((id) => !known.has(id))
+      if (newIds.length > 0) {
+        shuffledIdsRef.current = [...shuffledIdsRef.current, ...newIds]
+      }
+    }
+
     const text = search.trim().toLowerCase()
-    let list = state.products.filter((item) => {
+    const passes = (item) => {
       const byCategory = category === 'all' ||
         (Array.isArray(item.categories) ? item.categories.includes(category) : item.category === category)
       const bySubcategory = subcategory === 'all' || item.subcategory === subcategory
@@ -78,9 +94,14 @@ export function ProductsPage() {
         item.name.toLowerCase().includes(text) ||
         item.description.toLowerCase().includes(text)
       return byCategory && bySubcategory && bySearch
-    })
+    }
 
-    if (sort === 'random') list = seededShuffle(list, SHUFFLE_SEED)
+    if (sort === 'random') {
+      const productMap = new Map(state.products.map((p) => [p.id, p]))
+      return shuffledIdsRef.current.map((id) => productMap.get(id)).filter((p) => p && passes(p))
+    }
+
+    let list = state.products.filter(passes)
     if (sort === 'featured') list = list.sort((a, b) => {
       const score = (p) => (p.isBestSeller ? 2 : p.isNewArrival ? 1 : 0)
       return score(b) - score(a)
