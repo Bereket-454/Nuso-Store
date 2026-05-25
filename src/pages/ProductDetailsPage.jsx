@@ -20,7 +20,10 @@ export function ProductDetailsPage() {
     loadCatalog()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedImage, setSelectedImage] = useState(0)
-  const [size, setSize] = useState(product?.sizes[0] || '')
+  const isShoes = product?.subcategory === 'shoes'
+  const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46']
+  const effectiveSizes = isShoes ? SHOE_SIZES : (product?.sizes ?? [])
+  const [size, setSize] = useState(isShoes ? '' : (product?.sizes[0] || ''))
   const [color, setColor] = useState('')
   const [colorError, setColorError] = useState('')
   const [colorShake, setColorShake] = useState(false)
@@ -37,7 +40,7 @@ export function ProductDetailsPage() {
 
   useEffect(() => {
     setSelectedImage(0)
-    setSize(product?.sizes[0] || '')
+    setSize(product?.subcategory === 'shoes' ? '' : (product?.sizes[0] || ''))
     setColor(product?.colors?.length === 1 ? product.colors[0] : '')
     setColorError('')
     setFeedback('')
@@ -90,6 +93,10 @@ export function ProductDetailsPage() {
   }
 
   const handleAddToCart = () => {
+    if (isShoes && !size) {
+      colorPickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return false
+    }
     if (product.colors?.length > 0 && !color) {
       setColorError(t('productDetail.selectColor'))
       setColorShake(true)
@@ -207,14 +214,36 @@ export function ProductDetailsPage() {
             </p>
           )}
           <div className="form-group">
-            <label htmlFor="size">{t('productDetail.size')}</label>
-            <select id="size" value={size} onChange={(event) => setSize(event.target.value)}>
-              {product.sizes.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
+            <label>{t('productDetail.size')}{isShoes && !size ? <span style={{ color: 'var(--danger)', marginLeft: '0.35rem', fontSize: '0.82rem' }}>— {t('productDetail.selectSize') || 'Select a size'}</span> : null}</label>
+            {isShoes ? (
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', paddingTop: '0.25rem' }}>
+                {SHOE_SIZES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    aria-pressed={size === s}
+                    onClick={() => setSize(s)}
+                    style={{
+                      padding: '0.3rem 0.7rem',
+                      borderRadius: '999px',
+                      border: size === s ? '2px solid var(--accent)' : '1.5px solid var(--border)',
+                      background: size === s ? 'var(--accent)' : 'transparent',
+                      color: size === s ? '#fff' : 'var(--text)',
+                      fontWeight: size === s ? 600 : 400,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >{s}</button>
+                ))}
+              </div>
+            ) : (
+              <select id="size" value={size} onChange={(event) => setSize(event.target.value)}>
+                {effectiveSizes.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            )}
           </div>
           {product.colors?.length > 0 && (
             <div ref={colorPickerRef} className={`form-group${colorShake ? ' color-picker--shake' : ''}`}>
