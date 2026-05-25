@@ -2,7 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
 import { normalizeProduct } from '../data/categoryModel'
 import { CATEGORIES, DELIVERY_FEE, SUBCATEGORIES } from '../data/mockData'
-import { fetchCategories, fetchHomeProducts, fetchProductsPage, fetchSubcategories } from '../services/productsService'
+import { fetchCategories, fetchHomeProducts, fetchProducts, fetchProductsPage, fetchSubcategories } from '../services/productsService'
 import { supabase } from '../lib/supabase'
 import { fetchProfile } from '../lib/auth'
 import { getWalletBalance } from '../services/wallet'
@@ -185,6 +185,17 @@ function reducer(state, action) {
         catalogHasMore: action.payload.hasMore ?? (more.length === 20),
       }
     }
+    case 'CATALOGUE_ALL_LOADED': {
+      const all = action.payload.products.map(normalizeProduct)
+      return {
+        ...state,
+        products: all,
+        productsLoading: false,
+        catalogFetched: true,
+        catalogOffset: all.length,
+        catalogHasMore: false,
+      }
+    }
     case 'CART_PURGE_DISMISS':
       return { ...state, cartPurged: false }
     case 'WALLET_LOADED':
@@ -270,6 +281,17 @@ export function StoreProvider({ children }) {
     })
   }, [state.catalogHasMore, state.productsLoading, state.catalogOffset])
 
+  // Load ALL products without pagination — for admin inventory views.
+  // Replaces any partially-loaded catalog so admin always sees the full list.
+  const loadAllProducts = useCallback(() => {
+    if (state.productsLoading) return
+    if (!state.catalogHasMore && state.catalogFetched) return  // already fully loaded
+    dispatch({ type: 'CATALOG_LOAD_START' })
+    fetchProducts().then((products) => {
+      dispatch({ type: 'CATALOGUE_ALL_LOADED', payload: { products } })
+    })
+  }, [state.productsLoading, state.catalogHasMore, state.catalogFetched])
+
   // Sync Supabase Auth session into store state.
   // Fires immediately on mount with INITIAL_SESSION (restores existing session on refresh),
   // then again on SIGNED_IN and SIGNED_OUT.
@@ -320,8 +342,8 @@ export function StoreProvider({ children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ state, dispatch, loadCatalog, loadMoreProducts }),
-    [state, loadCatalog, loadMoreProducts],
+    () => ({ state, dispatch, loadCatalog, loadMoreProducts, loadAllProducts }),
+    [state, loadCatalog, loadMoreProducts, loadAllProducts],
   )
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

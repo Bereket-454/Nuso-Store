@@ -47,7 +47,7 @@ const defaultProduct = {
 
 export function AdminDashboardPage() {
   const { t } = useTranslation()
-  const { state, dispatch } = useStore()
+  const { state, dispatch, loadAllProducts } = useStore()
   const [productForm, setProductForm] = useState(defaultProduct)
   const [uploadLoading, setUploadLoading] = useState(false)
   const [uploadError, setUploadError] = useState('')
@@ -83,6 +83,10 @@ export function AdminDashboardPage() {
   const [auditLogsVisible, setAuditLogsVisible] = useState(10)
   const [expandedStaff, setExpandedStaff] = useState(new Set())
   usePageMeta(t('meta.admin.title'), t('meta.admin.desc'))
+
+  useEffect(() => {
+    loadAllProducts()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!state.user?.id) return
