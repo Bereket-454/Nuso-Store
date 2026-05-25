@@ -55,9 +55,33 @@ export function ProductsPage() {
   // Stable shuffled order: built once from the initial load, new arrivals appended at end.
   const shuffledIdsRef = useRef(null)
 
+  // Buffered product list: only updates when a full batch is ready + 300ms min elapsed.
+  // This prevents jarring single-product pops and keeps the grid stable while loading.
+  const [displayedProducts, setDisplayedProducts] = useState(state.products)
+  const loadStartRef = useRef(null)
+
   useEffect(() => {
     loadCatalog()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (state.productsLoading) {
+      loadStartRef.current = Date.now()
+      return
+    }
+    const snapshot = state.products
+    if (loadStartRef.current === null) {
+      setDisplayedProducts(snapshot)
+      return
+    }
+    const elapsed = Date.now() - loadStartRef.current
+    const delay = Math.max(0, 300 - elapsed)
+    const timer = setTimeout(() => {
+      setDisplayedProducts(snapshot)
+      loadStartRef.current = null
+    }, delay)
+    return () => clearTimeout(timer)
+  }, [state.productsLoading, state.products])
 
   useEffect(() => {
     const update = () => setIsOnline(navigator.onLine)
@@ -70,10 +94,9 @@ export function ProductsPage() {
   }, [])
 
   const filtered = useMemo(() => {
-    // Keep shuffledIdsRef current: shuffle all IDs once on first call, then only
-    // append IDs for products that weren't in the previous load. This prevents the
-    // full array from being re-shuffled when infinite scroll appends new products.
-    const allIds = state.products.map((p) => p.id)
+    // Keep shuffledIdsRef current against the buffered display list, not the live
+    // state.products, so the shuffle order and the rendered list stay in sync.
+    const allIds = displayedProducts.map((p) => p.id)
     if (!shuffledIdsRef.current) {
       shuffledIdsRef.current = seededShuffle(allIds, SHUFFLE_SEED)
     } else {
@@ -97,11 +120,11 @@ export function ProductsPage() {
     }
 
     if (sort === 'random') {
-      const productMap = new Map(state.products.map((p) => [p.id, p]))
+      const productMap = new Map(displayedProducts.map((p) => [p.id, p]))
       return shuffledIdsRef.current.map((id) => productMap.get(id)).filter((p) => p && passes(p))
     }
 
-    let list = state.products.filter(passes)
+    let list = displayedProducts.filter(passes)
     if (sort === 'featured') list = list.sort((a, b) => {
       const score = (p) => (p.isBestSeller ? 2 : p.isNewArrival ? 1 : 0)
       return score(b) - score(a)
@@ -110,11 +133,12 @@ export function ProductsPage() {
     if (sort === 'price-desc') list = list.sort((a, b) => b.price - a.price)
     if (sort === 'newest') list = list.sort((a, b) => Number(b.isNewArrival) - Number(a.isNewArrival))
     return list
-  }, [state.products, search, category, subcategory, sort])
+  }, [displayedProducts, search, category, subcategory, sort])
 
   const maxPage = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const visible = filtered.slice(0, page * PAGE_SIZE)
   const allLoaded = page >= maxPage
+  const isLoadingMore = state.productsLoading && displayedProducts.length > 0
 
   // Infinite scroll — advance local page, or fetch the next server page when exhausted.
   useEffect(() => {
@@ -200,11 +224,11 @@ export function ProductsPage() {
         </div>
       </div>
 
-      {state.productsLoading ? (
+      {state.productsLoading && displayedProducts.length === 0 ? (
         <div className="grid cols-3 product-listing-grid" style={{ marginTop: '1rem' }}>
           {Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}
         </div>
-      ) : !state.productsLoading && state.products.length === 0 ? (
+      ) : !state.productsLoading && displayedProducts.length === 0 ? (
         // Catalogue failed to load — distinguish offline vs generic error
         <article className="card card-body" style={{ marginTop: '1rem' }}>
           {isOnline ? (
@@ -244,9 +268,14 @@ export function ProductsPage() {
               <ProductCard key={product.id} product={product} index={i % PAGE_SIZE} />
             ))}
           </div>
+          {isLoadingMore && (
+            <div className="grid cols-3 product-listing-grid" style={{ marginTop: 0 }}>
+              {Array.from({ length: 6 }, (_, i) => <ProductCardSkeleton key={i} />)}
+            </div>
+          )}
           {/* Sentinel — sits just below the grid; IntersectionObserver loads the next page */}
           <div ref={sentinelRef} aria-hidden="true" style={{ height: '1px' }} />
-          {allLoaded && <RequestBanner compact />}
+          {allLoaded && !isLoadingMore && <RequestBanner compact />}
         </>
       )}
     </div>
