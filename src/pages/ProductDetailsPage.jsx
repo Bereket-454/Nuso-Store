@@ -21,6 +21,8 @@ export function ProductDetailsPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedImage, setSelectedImage] = useState(0)
   const isShoes = product?.subcategory === 'shoes'
+  const NO_SIZE_SUBCATEGORIES = ['perfumes', 'appliances']
+  const hasSize = !NO_SIZE_SUBCATEGORIES.includes(product?.subcategory)
   const SHOE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46']
   const effectiveSizes = isShoes ? SHOE_SIZES : (product?.sizes ?? [])
   const [size, setSize] = useState(isShoes ? '' : (product?.sizes[0] || ''))
@@ -213,7 +215,7 @@ export function ProductDetailsPage() {
               {t('productDetail.outOfStockMessage')}
             </p>
           )}
-          <div className="form-group">
+          {hasSize && <div className="form-group">
             <label>{t('productDetail.size')}{isShoes && !size ? <span style={{ color: 'var(--danger)', marginLeft: '0.35rem', fontSize: '0.82rem' }}>— {t('productDetail.selectSize') || 'Select a size'}</span> : null}</label>
             {isShoes ? (
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', paddingTop: '0.25rem' }}>
@@ -244,7 +246,7 @@ export function ProductDetailsPage() {
                 ))}
               </select>
             )}
-          </div>
+          </div>}
           {product.colors?.length > 0 && (
             <div ref={colorPickerRef} className={`form-group${colorShake ? ' color-picker--shake' : ''}`}>
               <label>{t('productDetail.color')}{color ? <span style={{ fontWeight: 400, color: 'var(--muted)', marginLeft: '0.4rem' }}>— {color}</span> : null}</label>
