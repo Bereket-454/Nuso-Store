@@ -130,8 +130,10 @@ export async function upsertProduct(product, { addedById, addedByEmail } = {}) {
  * Returns { error }.
  */
 export async function deleteProduct(id) {
-  const { error } = await supabase.from('products').delete().eq('id', id)
-  return { error }
+  console.log('[deleteProduct] attempting delete for id:', id)
+  const result = await supabase.from('products').delete().eq('id', id)
+  console.log('[deleteProduct] full result:', JSON.stringify({ data: result.data, error: result.error, status: result.status, statusText: result.statusText }))
+  return { error: result.error }
 }
 
 /**

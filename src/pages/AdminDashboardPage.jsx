@@ -1291,9 +1291,10 @@ export function AdminDashboardPage() {
                           <button
                             className="btn btn-danger"
                             onClick={async () => {
+                              console.log('[AdminDashboard] Delete clicked — product.id:', product.id, 'user.id:', state.user?.id, 'role:', state.user?.role)
                               const { error } = await deleteProduct(product.id)
                               if (error) {
-                                console.error('[AdminDashboard] deleteProduct error:', error.message)
+                                console.error('[AdminDashboard] deleteProduct error:', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint)
                               } else {
                                 insertAuditLog({
                                   adminUserId: state.user?.id,

@@ -134,6 +134,15 @@ export function CheckoutPage() {
       })
   }, [state.user?.id])
 
+  // Redirect to /cart when the last item is removed via the mini-cart controls
+  const prevCartLength = useRef(state.cart.length)
+  useEffect(() => {
+    if (prevCartLength.current > 0 && state.cart.length === 0) {
+      navigate('/cart')
+    }
+    prevCartLength.current = state.cart.length
+  }, [state.cart.length])
+
   // Cart
   const cartItems = state.cart
     .map((item) => {
@@ -614,9 +623,64 @@ export function CheckoutPage() {
         <h3>{t('checkout.orderSummary')}</h3>
 
         {cartItems.map((item) => (
-          <p key={item.key} style={{ margin: '0 0 0.3rem', fontSize: '0.9rem' }}>
-            {item.product?.name} × {item.quantity}
-          </p>
+          <div
+            key={item.key}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderBottom: '1px solid var(--border)',
+              padding: '0.65rem 0',
+              gap: '0.6rem',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <strong style={{ fontSize: '0.88rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {item.product.name}
+              </strong>
+              {(item.size || item.color) && (
+                <p className="muted" style={{ margin: '0.1rem 0 0', fontSize: '0.78rem' }}>
+                  {item.size} / {item.color}
+                </p>
+              )}
+              <p style={{ margin: '0.1rem 0 0', fontSize: '0.82rem' }}>
+                {birr(item.product.price)}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexShrink: 0 }}>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.1rem 0.45rem', fontSize: '1rem', lineHeight: 1.2 }}
+                onClick={() =>
+                  dispatch({ type: 'CART_UPDATE', payload: { key: item.key, quantity: item.quantity - 1 } })
+                }
+              >
+                -
+              </button>
+              <span style={{ minWidth: '1.4rem', textAlign: 'center', fontSize: '0.9rem' }}>
+                {item.quantity}
+              </span>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.1rem 0.45rem', fontSize: '1rem', lineHeight: 1.2 }}
+                onClick={() =>
+                  dispatch({ type: 'CART_UPDATE', payload: { key: item.key, quantity: item.quantity + 1 } })
+                }
+              >
+                +
+              </button>
+              <button
+                className="btn btn-danger"
+                style={{ padding: '0.1rem 0.45rem', fontSize: '0.9rem', lineHeight: 1.2 }}
+                aria-label={`Remove ${item.product.name}`}
+                onClick={() =>
+                  dispatch({ type: 'CART_REMOVE', payload: { key: item.key } })
+                }
+              >
+                ×
+              </button>
+            </div>
+          </div>
         ))}
 
         <hr style={{ border: '1px solid var(--border)', width: '100%', margin: '0.75rem 0' }} />
