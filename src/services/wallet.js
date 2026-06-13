@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 export async function getWalletBalance(userId) {
   const { data, error } = await supabase
     .from('wallets')
-    .select('balance_etb')
+    .select('balance')
     .eq('user_id', userId)
     .single()
 
@@ -16,7 +16,7 @@ export async function getWalletBalance(userId) {
     console.error('[wallet] getWalletBalance error:', error)
     return { balance: 0, error }
   }
-  return { balance: Number(data?.balance_etb ?? 0), error: null }
+  return { balance: Number(data?.balance ?? 0), error: null }
 }
 
 /**

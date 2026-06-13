@@ -127,20 +127,23 @@ export function CheckoutPage() {
     }
     supabase
       .from('wallets')
-      .select('balance_etb')
+      .select('balance')
       .eq('user_id', state.user.id)
       .single()
       .then(({ data }) => {
-        const bal = Number(data?.balance_etb ?? 0)
+        const bal = Number(data?.balance ?? 0)
         setWalletBalance(bal)
         dispatch({ type: 'WALLET_LOADED', payload: { balance: bal } })
       })
   }, [state.user?.id])
 
-  // Redirect to /cart when the last item is removed via the mini-cart controls
+  // Redirect to /cart only when the customer removes the last item via the mini-cart
+  // controls. The orderPlaced ref prevents this from firing when ORDER_CREATE clears
+  // the cart on a successful order (which triggers its own navigate to /order-confirmation).
   const prevCartLength = useRef(state.cart.length)
+  const orderPlaced = useRef(false)
   useEffect(() => {
-    if (prevCartLength.current > 0 && state.cart.length === 0) {
+    if (prevCartLength.current > 0 && state.cart.length === 0 && !orderPlaced.current) {
       navigate('/cart')
     }
     prevCartLength.current = state.cart.length
@@ -224,6 +227,7 @@ export function CheckoutPage() {
   }
 
   const handlePlaceOrder = async () => {
+    console.log('[Checkout] handlePlaceOrder started — paymentMethod:', paymentMethod)
     // Auth guard — must be signed in; cart is preserved during redirect
     if (!state.user) {
       navigate('/account?returnTo=/checkout')
@@ -317,7 +321,7 @@ export function CheckoutPage() {
       }))
 
       // Insert order — payment_status is 'pending'; admin confirms before delivery
-      const { error: insertError } = await supabase.from('orders').insert({
+      const orderPayload = {
         id:                 orderId,
         user_id:            userId,
         customer_name:      customer.name,
@@ -334,7 +338,10 @@ export function CheckoutPage() {
         referral_discount:  referralDiscount,
         student_discount:   studentDiscount,
         wallet_credit_used: walletCreditApplied,
-      })
+      }
+      console.log('[Checkout] inserting order — payload:', orderPayload)
+      const { error: insertError } = await supabase.from('orders').insert(orderPayload)
+      console.log('[Checkout] insert result — error:', insertError ?? 'none')
 
       if (insertError) {
         console.error('[Checkout] insert error:', insertError.message)
@@ -406,9 +413,12 @@ export function CheckoutPage() {
         customer,
         createdAt: new Date().toISOString(),
       }
+      console.log('[Checkout] dispatching ORDER_CREATE — this will clear the cart. orderId:', orderId)
+      orderPlaced.current = true
       dispatch({ type: 'ORDER_CREATE', payload: newOrder })
       recalculateBestSellers([newOrder, ...state.orders])
 
+      console.log('[Checkout] navigating to /order-confirmation/', orderId)
       navigate(`/order-confirmation/${orderId}`)
     } catch (err) {
       console.error('[Checkout] handlePlaceOrder error:', err)
