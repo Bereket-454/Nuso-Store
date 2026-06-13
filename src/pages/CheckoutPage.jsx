@@ -72,7 +72,10 @@ export function CheckoutPage() {
   const [stockErrors, setStockErrors] = useState([])
 
   // Payment state
-  const [paymentMethod, setPaymentMethod] = useState('cod') // 'cod' | 'telebirr' | 'cbe'
+  const [paymentMethod, setPaymentMethod] = useState(null)  // null | 'cod' | 'telebirr' | 'cbe'
+  const [paymentShake, setPaymentShake]   = useState(false)
+  const [paymentError, setPaymentError]   = useState(false)
+  const paymentSectionRef = useRef(null)
   const [payWhen, setPayWhen] = useState('after')           // 'after' | 'now'
   const [screenshot, setScreenshot] = useState(null)
   const [screenshotPreview, setScreenshotPreview] = useState('')
@@ -228,6 +231,13 @@ export function CheckoutPage() {
     }
     if (!validateShipping()) {
       setStatus({ loading: false, msgKey: 'checkout.msg.fillAddress', variant: 'error' })
+      return
+    }
+    if (!paymentMethod) {
+      setPaymentError(true)
+      setPaymentShake(true)
+      setTimeout(() => setPaymentShake(false), 600)
+      paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
     setStatus({ loading: true, msgKey: 'checkout.msg.placingOrder', variant: 'muted' })
@@ -466,7 +476,7 @@ export function CheckoutPage() {
         </section>
 
         {/* Payment Method */}
-        <section className="card card-body">
+        <section ref={paymentSectionRef} className={`card card-body${paymentShake ? ' chk-payment--shake' : ''}`}>
           <h3 style={{ marginBottom: '0.6rem' }}>{t('checkout.paymentMethod')}</h3>
 
           {/* Trust signals */}
@@ -480,7 +490,7 @@ export function CheckoutPage() {
             <button
               type="button"
               className={`chk-payment__option${paymentMethod === 'cod' ? ' chk-payment__option--active' : ''}`}
-              onClick={() => setPaymentMethod('cod')}
+              onClick={() => { setPaymentMethod('cod'); setPaymentError(false) }}
             >
               <span className="chk-payment__icon"><IconCod /></span>
               <span className="chk-payment__info">
@@ -495,7 +505,7 @@ export function CheckoutPage() {
             <button
               type="button"
               className={`chk-payment__option${paymentMethod === 'telebirr' ? ' chk-payment__option--active' : ''}`}
-              onClick={() => setPaymentMethod('telebirr')}
+              onClick={() => { setPaymentMethod('telebirr'); setPaymentError(false) }}
             >
               <span className="chk-payment__icon"><IconTelebirr /></span>
               <span className="chk-payment__info">
@@ -506,7 +516,7 @@ export function CheckoutPage() {
             <button
               type="button"
               className={`chk-payment__option${paymentMethod === 'cbe' ? ' chk-payment__option--active' : ''}`}
-              onClick={() => setPaymentMethod('cbe')}
+              onClick={() => { setPaymentMethod('cbe'); setPaymentError(false) }}
             >
               <span className="chk-payment__icon"><IconCbe /></span>
               <span className="chk-payment__info">
@@ -515,8 +525,14 @@ export function CheckoutPage() {
             </button>
           </div>
 
+          {paymentError && (
+            <p className="error-text" style={{ margin: '0.4rem 0 0', fontSize: '0.88rem' }}>
+              {t('checkout.validation.paymentMethod')}
+            </p>
+          )}
+
           {/* Pay timing — only for Telebirr / CBE */}
-          {paymentMethod !== 'cod' && (
+          {paymentMethod && paymentMethod !== 'cod' && (
             <div className="chk-pay-when">
               <p className="chk-pay-when__title">{t('checkout.payWhenTitle')}</p>
               <div className="chk-pay-when__options">
