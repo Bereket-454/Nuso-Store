@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
@@ -51,6 +52,7 @@ export function OrderConfirmationPage() {
   const { state } = useStore()
   const order = state.orders.find((item) => item.id === id)
   usePageMeta(t('meta.orderConfirmation.title'), t('meta.orderConfirmation.desc'))
+  useEffect(() => { window.scrollTo(0, 0) }, [])
 
   if (!order) {
     return (
