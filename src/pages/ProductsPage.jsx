@@ -178,7 +178,7 @@ export function ProductsPage() {
           <button
             type="button"
             className={`shop-chip${category === 'all' ? ' shop-chip--active' : ''}`}
-            onClick={() => { setCategory('all'); setPage(1) }}
+            onClick={() => { setCategory('all'); setSubcategory('all'); setPage(1) }}
           >
             {t('products.all')}
           </button>
@@ -187,7 +187,7 @@ export function ProductsPage() {
               key={item.slug}
               type="button"
               className={`shop-chip${category === item.slug ? ' shop-chip--active' : ''}`}
-              onClick={() => { setCategory(item.slug); setPage(1) }}
+              onClick={() => { setCategory(item.slug); setSubcategory('all'); setPage(1) }}
             >
               {t(`category.${item.slug}`)}
             </button>
