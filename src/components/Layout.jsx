@@ -7,6 +7,7 @@ import { signOut } from '../lib/auth'
 import { useTranslation } from '../i18n'
 import { getFirstName } from '../pages/AccountPage'
 import { AdminNav } from './AdminNav'
+import { NotificationBell } from './NotificationBell'
 
 const IconPerson = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -268,6 +269,9 @@ export function Layout() {
             <NavLink to="/request" className="nav-request-cta">
               {t('nav.request')}
             </NavLink>
+
+            {/* Notification bell — logged-in users only */}
+            {state.user && <NotificationBell userId={state.user.id} />}
 
             {/* Cart icon with count badge */}
             <NavLink

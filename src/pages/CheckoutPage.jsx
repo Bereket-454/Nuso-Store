@@ -5,6 +5,7 @@ import { usePageMeta } from '../hooks/usePageMeta'
 import { birr } from '../utils/format'
 import { fetchCategories, fetchProducts, fetchSubcategories, recalculateBestSellers } from '../services/productsService'
 import { completeReferralReward } from '../services/referral'
+import { notifyAdmins } from '../services/notificationsService'
 import { useWalletCredit } from '../services/wallet'
 import { useTranslation } from '../i18n'
 import { supabase } from '../lib/supabase'
@@ -413,6 +414,9 @@ export function CheckoutPage() {
         customer,
         createdAt: new Date().toISOString(),
       }
+      // Notify admin users about the new order (fire-and-forget)
+      notifyAdmins({ orderId, customerName: customer.name, total: finalTotal }).catch(() => {})
+
       console.log('[Checkout] dispatching ORDER_CREATE — this will clear the cart. orderId:', orderId)
       orderPlaced.current = true
       dispatch({ type: 'ORDER_CREATE', payload: newOrder })

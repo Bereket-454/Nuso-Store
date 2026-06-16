@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { signOut } from '../lib/auth'
 import { isSuperAdmin, isOrderManager, isDeliveryManager, isProductOperator } from '../utils/auth'
+import { NotificationBell } from './NotificationBell'
 
 export function AdminNav() {
   const { state } = useStore()
@@ -138,6 +139,7 @@ export function AdminNav() {
 
         {/* Desktop right actions */}
         <div className="admin-nav__actions">
+          <NotificationBell userId={user?.id} />
           <span className="admin-nav__user">{firstName}</span>
           <button type="button" className="admin-nav__view-store" onClick={handleViewStore}>
             View Store ↗
