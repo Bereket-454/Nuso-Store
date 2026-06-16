@@ -6559,3 +6559,93 @@ textarea {
     display: none;
   }
 }
+
+/* ── Delivery Manager mobile-first order cards (.dm-*) ──────────────────────── */
+
+.dm-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dm-tabs {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dm-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dm-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dm-card--done   { border-color: #86efac; background: #f0fdf4; }
+.dm-card--cancelled { opacity: 0.65; }
+
+.dm-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.dm-card__time  { font-size: 0.78rem; color: var(--muted); }
+.dm-card__total { font-size: 0.88rem; font-weight: 700; margin-left: auto; }
+
+.dm-card__name {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.dm-card__phone {
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 0.3rem 0;
+}
+.dm-card__phone:hover { text-decoration: underline; }
+
+.dm-card__addr {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Big, thumb-friendly advance button */
+.dm-card__advance {
+  margin-top: 0.45rem;
+  width: 100%;
+  min-height: 54px;
+  padding: 0.9rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.15s;
+}
+.dm-card__advance:disabled         { opacity: 0.55; cursor: not-allowed; }
+.dm-card__advance:active:not(:disabled) { opacity: 0.82; }
+
+.dm-card__state             { margin: 0; font-size: 0.9rem; font-weight: 600; }
+.dm-card__state--done       { color: var(--success); }
+.dm-card__state--cancelled  { color: var(--muted); }

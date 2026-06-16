@@ -380,7 +380,7 @@ export function AdminDashboardPage() {
     }
   }
 
-  const canManageProducts    = isAnyAdmin(state.user)
+  const canManageProducts    = isAnyAdmin(state.user) && !isDeliveryManager(state.user)
   const canEditProducts      = isSuperAdmin(state.user)
   const canDeleteProducts    = isSuperAdmin(state.user)
   const canViewOrders        = isSuperAdmin(state.user) || isOrderManager(state.user) || isDeliveryManager(state.user)
@@ -446,7 +446,7 @@ export function AdminDashboardPage() {
     )
   }
 
-  const showMyBar    = isAnyAdmin(state.user) && !isSuperAdmin(state.user)
+  const showMyBar    = isAnyAdmin(state.user) && !isSuperAdmin(state.user) && !isDeliveryManager(state.user)
   const adminFirstName = (state.user?.name ?? '').split(' ')[0] || state.user?.email?.split('@')[0] || 'Admin'
   const ROLE_LABELS  = {
     order_manager:    'Order Manager',
@@ -458,7 +458,7 @@ export function AdminDashboardPage() {
 
   return (
     <div>
-      <h1>{t('admin.title')}</h1>
+      <h1>{isDeliveryManager(state.user) ? 'Delivery Dashboard' : t('admin.title')}</h1>
 
       {/* Personal activity bar — all non-super_admin roles */}
       {showMyBar && (
@@ -958,6 +958,7 @@ export function AdminDashboardPage() {
           ) : (
             <AdminOrdersDashboard
               orders={adminOrders}
+              deliveryMode={isDeliveryManager(state.user)}
               onOrderUpdated={(id, update) =>
                 setAdminOrders((prev) =>
                   prev.map((o) =>

@@ -486,6 +486,168 @@ function ReturnsPanel({ returnRequests, orders, onUpdate }) {
   )
 }
 
+// ── Delivery Manager view ─────────────────────────────────────────────────────
+
+const DELIVERY_TAB_DEFS = [
+  { id: 'active',    label: 'Active' },
+  { id: 'delivered', label: 'Delivered' },
+  { id: 'all',       label: 'All' },
+]
+
+const DELIVERY_TAB_FILTERS = {
+  active:    (o) => ['confirmed', 'preparing', 'out_for_delivery'].includes(o.status),
+  delivered: (o) => o.status === 'delivered',
+  all:       () => true,
+}
+
+// Sort so the driver's active work is always at the top.
+const DELIVERY_PRIORITY = { out_for_delivery: 0, preparing: 1, confirmed: 2 }
+
+function DeliveryOrderCard({ order, onUpdated }) {
+  const { t }       = useTranslation()
+  const { state }   = useStore()
+  const [advancing, setAdvancing] = useState(false)
+
+  const resolved     = resolveStatus(order.status)
+  const currentIndex = statusIndex(resolved)
+  const isCancelled  = order.status === 'cancelled'
+  const isDelivered  = !isCancelled && currentIndex >= ORDER_STEPS.length - 1
+  const nextStep     = ORDER_STEPS[currentIndex + 1] ?? null
+  const allowedNext  = !isCancelled && !isDelivered && nextStep && DELIVERY_STEPS.has(nextStep.id)
+    ? nextStep : null
+
+  const sh      = order.shipping ?? {}
+  const phone   = sh.phone || order.customer_phone || null
+  const address = [sh.city, sh.area, sh.landmark].filter(Boolean).join(' · ')
+
+  const doAdvance = async () => {
+    if (!allowedNext || advancing) return
+    setAdvancing(true)
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: allowedNext.id, updated_at: new Date().toISOString() })
+      .eq('id', order.id)
+    if (!error) {
+      insertAuditLog({
+        adminUserId: state.user?.id, adminEmail: state.user?.email,
+        action: `order_status_changed_to_${allowedNext.id}`,
+        targetType: 'order', targetId: order.id,
+        oldValue: { status: order.status }, newValue: { status: allowedNext.id },
+      })
+      const n = NOTIF_MAP[allowedNext.id]
+      if (n && order.user_id) {
+        insertNotification({
+          userId: order.user_id, type: `order_${allowedNext.id}`,
+          message: n.en(order.id), messageAm: n.am(order.id), link: '/account',
+        })
+      }
+      if ((allowedNext.id === 'confirmed' || allowedNext.id === 'delivered') && n) {
+        sendOrderEmail({ toEmail: order.customer_email, toName: order.customer_name, message: n.en(order.id), orderId: order.id })
+      }
+      onUpdated({ status: allowedNext.id })
+    }
+    setAdvancing(false)
+  }
+
+  return (
+    <div className={`dm-card${isCancelled ? ' dm-card--cancelled' : ''}${isDelivered ? ' dm-card--done' : ''}`}>
+      <div className="dm-card__header">
+        <span className={`dash-status ${statusBadgeClass(order.status)}`}>
+          {t(`orderStatus.${resolveStatus(order.status)}`)}
+        </span>
+        <span className="dm-card__time">{timeAgo(order.created_at)}</span>
+        <span className="dm-card__total">{birr(order.total)}</span>
+      </div>
+
+      <p className="dm-card__name">{order.customer_name ?? '—'}</p>
+      {phone && (
+        <a className="dm-card__phone" href={`tel:${phone}`}>{phone}</a>
+      )}
+      {address && <p className="dm-card__addr">{address}</p>}
+
+      {allowedNext && (
+        <button
+          type="button"
+          className="dm-card__advance"
+          onClick={doAdvance}
+          disabled={advancing}
+        >
+          {advancing ? '…' : `→ ${ACTION_LABELS[allowedNext.id] ?? allowedNext.id}`}
+        </button>
+      )}
+      {isDelivered  && <p className="dm-card__state dm-card__state--done">✓ Delivered</p>}
+      {isCancelled  && <p className="dm-card__state dm-card__state--cancelled">✗ Cancelled</p>}
+    </div>
+  )
+}
+
+function DeliveryView({ orders, onOrderUpdated }) {
+  const [activeTab, setActiveTab] = useState('active')
+  const [search, setSearch]       = useState('')
+
+  const pool = useMemo(() => orders.filter((o) => !o.is_archived), [orders])
+
+  const filtered = useMemo(() => {
+    const filterFn = DELIVERY_TAB_FILTERS[activeTab] ?? (() => true)
+    let list = pool.filter(filterFn)
+    const q = search.trim().toLowerCase()
+    if (q) list = list.filter((o) =>
+      (o.id             ?? '').toLowerCase().includes(q) ||
+      (o.customer_name  ?? '').toLowerCase().includes(q) ||
+      (o.shipping?.phone ?? o.customer_phone ?? '').toLowerCase().includes(q),
+    )
+    return [...list].sort((a, b) => (DELIVERY_PRIORITY[a.status] ?? 99) - (DELIVERY_PRIORITY[b.status] ?? 99))
+  }, [pool, activeTab, search])
+
+  return (
+    <div className="dm-view">
+      <input
+        type="search"
+        className="aod-search"
+        placeholder="Search by name or phone…"
+        value={search}
+        onChange={(e) => { setSearch(e.target.value); setActiveTab('all') }}
+      />
+      <div className="aod-tabs dm-tabs" role="tablist">
+        {DELIVERY_TAB_DEFS.map(({ id, label }) => {
+          const count = pool.filter(DELIVERY_TAB_FILTERS[id] ?? (() => true)).length
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === id}
+              className={`aod-tab${activeTab === id ? ' aod-tab--active' : ''}`}
+              onClick={() => { setActiveTab(id); setSearch('') }}
+            >
+              {label}
+              {count > 0 && <span className="aod-tab__badge">{count}</span>}
+            </button>
+          )
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="muted" style={{ padding: '1.5rem 0', textAlign: 'center' }}>
+          {search
+            ? 'No orders match your search.'
+            : activeTab === 'active' ? 'No active orders right now.' : 'No orders here.'}
+        </p>
+      ) : (
+        <div className="dm-cards">
+          {filtered.map((o) => (
+            <DeliveryOrderCard
+              key={o.id}
+              order={o}
+              onUpdated={(update) => onOrderUpdated(o.id, update)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Summary Card ──────────────────────────────────────────────────────────────
 
 function SummaryCard({ label, count, active, onClick, accent }) {
@@ -509,7 +671,7 @@ function SummaryCard({ label, count, active, onClick, accent }) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
+export function AdminOrdersDashboard({ orders, onOrderUpdated, deliveryMode = false }) {
   const [activeTab, setActiveTab]         = useState('all')
   const [search, setSearch]               = useState('')
   const [detailOrder, setDetailOrder]     = useState(null)
@@ -548,6 +710,10 @@ export function AdminOrdersDashboard({ orders, onOrderUpdated }) {
     if (id === 'archived') return archivedPool.length
     if (id === 'returns')  return returnRequests.length
     return activePool.filter(TAB_FILTERS[id] ?? (() => true)).length
+  }
+
+  if (deliveryMode) {
+    return <DeliveryView orders={orders} onOrderUpdated={onOrderUpdated} />
   }
 
   const handleReturnUpdate = (reqId, updated) =>
