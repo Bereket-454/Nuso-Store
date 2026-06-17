@@ -6649,3 +6649,56 @@ textarea {
 .dm-card__state             { margin: 0; font-size: 0.9rem; font-weight: 600; }
 .dm-card__state--done       { color: var(--success); }
 .dm-card__state--cancelled  { color: var(--muted); }
+
+/* Waiting card — order_received / confirming, not yet Abi's to act on */
+.dm-card--waiting {
+  border-color: #d97706;
+  background: #fffbeb;
+  opacity: 0.88;
+}
+.dm-card--waiting .dm-card__name { color: #78716c; }
+.dm-card--waiting .dm-card__addr { color: #a8a29e; }
+
+.dm-waiting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92600a;
+  border: 1px solid #fbbf24;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  flex-shrink: 0;
+}
+
+/* Section dividers inside DeliveryView Active tab */
+.dm-section-header {
+  margin: 0.5rem 0 0.1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+.dm-section-header:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.dm-section-header--waiting { color: #92600a; }
+
+/* Order-manager "In Abi's hands" informational badge */
+.om-handoff-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #0369a1;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  white-space: nowrap;
+  align-self: center;
+}

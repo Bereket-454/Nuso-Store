@@ -286,6 +286,10 @@ function OrderCard({ order, onView, onUpdated, onArchive, onUnarchive }) {
   const allowedNext = !isCancelled && !isDelivered && nextStep && canAdvanceTo(nextStep.id)
     ? nextStep : null
 
+  // Show informational badge for order_manager viewing orders Abi is handling.
+  const showHandoff = !allowedNext && !order.is_archived && isOrderManager(state.user)
+    && (order.status === 'preparing' || order.status === 'out_for_delivery')
+
   const quickAdvance = async () => {
     if (!allowedNext || advancing) return
     setAdvancing(true)
@@ -359,6 +363,8 @@ function OrderCard({ order, onView, onUpdated, onArchive, onUnarchive }) {
           >
             {advancing ? '…' : `→ ${ACTION_LABELS[allowedNext.id] ?? allowedNext.id}`}
           </button>
+        ) : showHandoff ? (
+          <span className="om-handoff-label">🚚 In Abi's hands</span>
         ) : (
           <span style={{ flex: 1 }} />
         )}
@@ -509,6 +515,10 @@ const DELIVERY_PRIORITY = {
   order_received:   4,
 }
 
+// Statuses Abi can act on vs. statuses he can only observe.
+const ACTIONABLE_DM = new Set(['confirmed', 'preparing', 'out_for_delivery'])
+const WAITING_DM    = new Set(['order_received', 'confirming'])
+
 function DeliveryOrderCard({ order, onUpdated }) {
   const { t }       = useTranslation()
   const { state }   = useStore()
@@ -587,6 +597,27 @@ function DeliveryOrderCard({ order, onUpdated }) {
   )
 }
 
+// Read-only amber card — shown for order_received / confirming orders that are
+// not yet Abi's to act on (order manager still needs to confirm them first).
+function DeliveryWaitingCard({ order }) {
+  const sh      = order.shipping ?? {}
+  const phone   = sh.phone || order.customer_phone || null
+  const address = [sh.city, sh.area, sh.landmark].filter(Boolean).join(' · ')
+
+  return (
+    <div className="dm-card dm-card--waiting">
+      <div className="dm-card__header">
+        <span className="dm-waiting-badge">⏳ Waiting for confirmation</span>
+        <span className="dm-card__time">{timeAgo(order.created_at)}</span>
+        <span className="dm-card__total">{birr(order.total)}</span>
+      </div>
+      <p className="dm-card__name">{order.customer_name ?? '—'}</p>
+      {phone   && <p className="dm-card__addr">{phone}</p>}
+      {address && <p className="dm-card__addr">{address}</p>}
+    </div>
+  )
+}
+
 function DeliveryView({ orders, onOrderUpdated }) {
   const [activeTab, setActiveTab] = useState('active')
   const [search, setSearch]       = useState('')
@@ -636,21 +667,61 @@ function DeliveryView({ orders, onOrderUpdated }) {
         })}
       </div>
 
-      {filtered.length === 0 ? (
+      {activeTab === 'active' ? (
+        // Active tab: split into "yours to act on" and "waiting for confirmation"
+        (() => {
+          const actionable = filtered.filter((o) => ACTIONABLE_DM.has(o.status))
+          const waiting    = filtered.filter((o) => WAITING_DM.has(o.status))
+          if (actionable.length === 0 && waiting.length === 0) {
+            return (
+              <p className="muted" style={{ padding: '1.5rem 0', textAlign: 'center' }}>
+                No active orders right now.
+              </p>
+            )
+          }
+          return (
+            <>
+              {actionable.length > 0 && (
+                <>
+                  <p className="dm-section-header">
+                    Your active orders ({actionable.length})
+                  </p>
+                  <div className="dm-cards">
+                    {actionable.map((o) => (
+                      <DeliveryOrderCard
+                        key={o.id}
+                        order={o}
+                        onUpdated={(upd) => onOrderUpdated(o.id, upd)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+              {waiting.length > 0 && (
+                <>
+                  <p className="dm-section-header dm-section-header--waiting">
+                    ⏳ Waiting for confirmation ({waiting.length})
+                  </p>
+                  <div className="dm-cards">
+                    {waiting.map((o) => <DeliveryWaitingCard key={o.id} order={o} />)}
+                  </div>
+                </>
+              )}
+            </>
+          )
+        })()
+      ) : filtered.length === 0 ? (
         <p className="muted" style={{ padding: '1.5rem 0', textAlign: 'center' }}>
-          {search
-            ? 'No orders match your search.'
-            : activeTab === 'active' ? 'No active orders right now.' : 'No orders here.'}
+          {search ? 'No orders match your search.' : 'No orders here.'}
         </p>
       ) : (
+        // Delivered / All tabs: use appropriate card type per status
         <div className="dm-cards">
-          {filtered.map((o) => (
-            <DeliveryOrderCard
-              key={o.id}
-              order={o}
-              onUpdated={(update) => onOrderUpdated(o.id, update)}
-            />
-          ))}
+          {filtered.map((o) =>
+            WAITING_DM.has(o.status)
+              ? <DeliveryWaitingCard key={o.id} order={o} />
+              : <DeliveryOrderCard key={o.id} order={o} onUpdated={(upd) => onOrderUpdated(o.id, upd)} />
+          )}
         </div>
       )}
     </div>

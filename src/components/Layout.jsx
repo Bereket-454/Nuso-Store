@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
-import { isAdminUser } from '../utils/auth'
+import { isAdminUser, isDeliveryManager } from '../utils/auth'
 import { signOut } from '../lib/auth'
 import { useTranslation } from '../i18n'
 import { getFirstName } from '../pages/AccountPage'
@@ -156,6 +156,12 @@ export function Layout() {
       if (rafId !== null) cancelAnimationFrame(rafId)
     }
   }, [])
+
+  // Delivery managers have no business on customer-facing pages.
+  // Redirect them to the admin dashboard unless they're already there.
+  if (state.user && isDeliveryManager(state.user) && !location.pathname.startsWith('/admin')) {
+    return <Navigate to="/admin" replace />
+  }
 
   const adminViewStore = localStorage.getItem('adminViewStore') === 'true'
   const showAdminNav = isAdminUser(state.user) && !adminViewStore
