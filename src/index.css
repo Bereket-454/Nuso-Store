@@ -3183,6 +3183,137 @@ textarea {
   font-size: 0.88rem;
 }
 
+/* ── Walking Tracker (TrackingPage animated figure) ────────────────────── */
+
+.wt {
+  position: relative;
+  min-height: 96px;
+  margin: 0.25rem 0;
+  user-select: none;
+}
+
+/* Figure walks above the track; translateX(-50%) centres it on the dot */
+.wt-figure {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  line-height: 0;
+  z-index: 2;
+}
+
+/* Track bg: from centre of first dot (12.5%) to centre of last dot (87.5%) */
+.wt-track-bg {
+  position: absolute;
+  top: 48px;
+  left: 12.5%;
+  right: 12.5%;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* Orange fill — same span, scaleX animated by Framer Motion */
+.wt-track-fill {
+  position: absolute;
+  top: 48px;
+  left: 12.5%;
+  width: 75%;
+  height: 3px;
+  background: #FF6B00;
+  border-radius: 2px;
+  z-index: 1;
+}
+
+/* Stage dots at 12.5 / 37.5 / 62.5 / 87.5 % of .wt width */
+.wt-dot {
+  position: absolute;
+  top: 48px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2.5px solid var(--border);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+
+.wt-dot--filled {
+  background: #FF6B00;
+  border-color: #FF6B00;
+}
+
+/* Stage labels aligned under dots via flex */
+.wt-labels {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+}
+
+.wt-label {
+  flex: 1;
+  text-align: center;
+  font-size: 0.67rem;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.3;
+  padding: 0 2px;
+}
+
+.wt-label--active {
+  color: #FF6B00;
+  font-weight: 700;
+}
+
+/* Shown when status is order_received / confirming (before first milestone) */
+.wt-pre-msg {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  margin: 0 0 0.5rem;
+}
+
+.wt-delivered-msg {
+  margin: 0.6rem 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2d9e6b;
+}
+
+.wt-cancelled {
+  text-align: center;
+  padding: 1.25rem 0.5rem;
+}
+
+.wt-cancelled__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.65rem;
+}
+
+.wt-cancelled__title {
+  font-weight: 700;
+  margin: 0 0 0.3rem;
+  color: #dc2626;
+  font-size: 1rem;
+}
+
+.wt-cancelled__reason {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0;
+}
+
 /* ── Tracker body ─────────────────────────────────────────────────── */
 
 .order-tracker {

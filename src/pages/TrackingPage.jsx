@@ -1,42 +1,201 @@
 import { useEffect, useRef, useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
 import { supabase } from '../lib/supabase'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { birr } from '../utils/format'
-import { OrderTracker } from '../components/OrderTracker'
 
 // Normalise a raw Supabase order row to the shape the rest of the UI expects
 function normaliseOrder(row) {
   if (!row) return null
   return {
-    id:            row.id,
-    status:        row.status,
-    updatedAt:     row.updated_at,
-    createdAt:     row.created_at,
-    total:         row.total,
-    paymentStatus: row.payment_status,
-    shipping:      row.shipping  ?? {},
-    payment:       row.payment   ?? {},
+    id:                 row.id,
+    status:             row.status,
+    updatedAt:          row.updated_at,
+    createdAt:          row.created_at,
+    total:              row.total,
+    paymentStatus:      row.payment_status,
+    shipping:           row.shipping  ?? {},
+    payment:            row.payment   ?? {},
+    cancellationReason: row.cancellation_reason ?? null,
+    cancelledAt:        row.cancelled_at        ?? null,
   }
 }
 
+// ── Walking Tracker helpers ────────────────────────────────────────────────
+// The 4 milestones shown on the public tracker (subset of the full order flow)
+const WALK_STAGES = ['confirmed', 'preparing', 'out_for_delivery', 'delivered']
+
+function stageIdx(status) {
+  return WALK_STAGES.indexOf(status)  // -1 for pre-confirmed statuses
+}
+
+// Left% for the figure within .wt
+// Dots sit at: 12.5%, 37.5%, 62.5%, 87.5% (centre of each 25%-wide quarter)
+function figurePct(status) {
+  const i = stageIdx(status)
+  return i < 0 ? 4 : 12.5 + i * 25
+}
+
+// scaleX fraction for the orange track fill (0 = none, 1 = full)
+function fillScale(status) {
+  const i = stageIdx(status)
+  return i <= 0 ? 0 : i / (WALK_STAGES.length - 1)
+}
+
+function isDotFilled(stageId, currentStatus) {
+  const si = stageIdx(stageId)
+  const ci = stageIdx(currentStatus)
+  return ci >= 0 && ci >= si
+}
+
+// ── Walking figure SVG (side-profile silhouette, mid-stride) ──────────────
+function WalkingFigureSVG() {
+  return (
+    <svg width="22" height="36" viewBox="0 0 22 36" aria-hidden="true" style={{ display: 'block' }}>
+      {/* head */}
+      <circle cx="11" cy="4" r="3.5" fill="#FF6B00" />
+      {/* body — slight forward lean */}
+      <line x1="11"  y1="7.5" x2="10"  y2="19"  stroke="#FF6B00" strokeWidth="2.5" strokeLinecap="round" />
+      {/* right arm — swinging forward */}
+      <line x1="10.5" y1="11" x2="16"  y2="16"  stroke="#FF6B00" strokeWidth="2"   strokeLinecap="round" />
+      {/* left arm — swinging back */}
+      <line x1="10.5" y1="11" x2="5"   y2="14"  stroke="#FF6B00" strokeWidth="2"   strokeLinecap="round" />
+      {/* right leg — stepping forward, bent knee */}
+      <line x1="10"  y1="19"  x2="4"   y2="27"  stroke="#FF6B00" strokeWidth="2.2" strokeLinecap="round" />
+      <line x1="4"   y1="27"  x2="7"   y2="35"  stroke="#FF6B00" strokeWidth="2.2" strokeLinecap="round" />
+      {/* left leg — pushing off behind */}
+      <line x1="10"  y1="19"  x2="16"  y2="26"  stroke="#FF6B00" strokeWidth="2.2" strokeLinecap="round" />
+      <line x1="16"  y1="26"  x2="13"  y2="34"  stroke="#FF6B00" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// ── WalkingTracker component ───────────────────────────────────────────────
+function WalkingTracker({ status, updatedAt, cancellationReason }) {
+  const { t }          = useTranslation()
+  const prefersReduced = useReducedMotion()
+
+  const cancelled = status === 'cancelled'
+  const delivered = status === 'delivered'
+  const walking   = !cancelled && !delivered
+
+  const pct   = figurePct(status)
+  const scale = fillScale(status)
+  const dur   = prefersReduced ? 0 : 1.4
+
+  if (cancelled) {
+    return (
+      <div className="wt-cancelled">
+        <div className="wt-cancelled__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+            <line x1="18" y1="6"  x2="6"  y2="18" />
+            <line x1="6"  y1="6"  x2="18" y2="18" />
+          </svg>
+        </div>
+        <p className="wt-cancelled__title">{t('tracker.cancelled')}</p>
+        {cancellationReason && <p className="wt-cancelled__reason">{cancellationReason}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="wt">
+      {/* Pre-confirmed message when no milestone is reached yet */}
+      {stageIdx(status) < 0 && (
+        <p className="wt-pre-msg">⏳ Order received — waiting for confirmation…</p>
+      )}
+
+      {/* Walking figure — outer motion div controls horizontal position */}
+      <motion.div
+        className="wt-figure"
+        initial={{ left: `${pct}%` }}
+        animate={{ left: `${pct}%` }}
+        transition={{ duration: dur, ease: [0.25, 0.1, 0.25, 1] }}
+      >
+        {/* Inner motion div controls the vertical walking bob */}
+        <motion.div
+          animate={walking && !prefersReduced
+            ? { y: [0, -4, 0, -3, 0] }
+            : { y: 0 }
+          }
+          transition={walking && !prefersReduced
+            ? { duration: 0.6, repeat: Infinity, ease: 'easeInOut' }
+            : { duration: 0 }
+          }
+        >
+          <WalkingFigureSVG />
+        </motion.div>
+      </motion.div>
+
+      {/* Track background line */}
+      <div className="wt-track-bg" />
+
+      {/* Orange fill — animates scaleX from left */}
+      <motion.div
+        className="wt-track-fill"
+        initial={{ scaleX: scale }}
+        animate={{ scaleX: scale }}
+        transition={{ duration: dur, ease: 'easeOut' }}
+        style={{ transformOrigin: 'left center' }}
+      />
+
+      {/* Stage dots */}
+      {WALK_STAGES.map((sid, i) => (
+        <div
+          key={sid}
+          className={`wt-dot${isDotFilled(sid, status) ? ' wt-dot--filled' : ''}`}
+          style={{ left: `${12.5 + i * 25}%` }}
+        />
+      ))}
+
+      {/* Stage labels */}
+      <div className="wt-labels">
+        {WALK_STAGES.map((sid) => (
+          <span
+            key={sid}
+            className={`wt-label${isDotFilled(sid, status) ? ' wt-label--active' : ''}`}
+          >
+            {t(`orderStatus.${sid}`)}
+          </span>
+        ))}
+      </div>
+
+      {/* Last updated */}
+      {updatedAt && (
+        <p className="tracker-updated">
+          {t('tracker.lastUpdated')}: {new Date(updatedAt).toLocaleString()}
+        </p>
+      )}
+
+      {delivered && <p className="wt-delivered-msg">🎉 Your order has been delivered!</p>}
+    </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────
 export function TrackingPage() {
-  const { t } = useTranslation()
-  const { state } = useStore()
+  const { t }       = useTranslation()
+  const { state }   = useStore()
   usePageMeta(t('meta.tracking.title'), t('meta.tracking.desc'))
 
   const [orderId, setOrderId] = useState('')
-  const [phone,   setPhone]   = useState('')
+  const [phone,   setPhone]   = useState(state.user?.phone ?? '')
   const [result,  setResult]  = useState(null)
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
-  // Supabase realtime channel — resubscribed whenever result.id changes
+  // Auto-fill phone from profile when user logs in or profile loads
+  useEffect(() => {
+    if (state.user?.phone) {
+      setPhone((prev) => prev || state.user.phone)
+    }
+  }, [state.user?.phone])
+
   const channelRef = useRef(null)
 
   const subscribeToOrder = (id) => {
-    // Tear down any previous subscription
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current)
       channelRef.current = null
@@ -55,7 +214,6 @@ export function TrackingPage() {
       .subscribe()
   }
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current)
@@ -84,7 +242,6 @@ export function TrackingPage() {
       return
     }
 
-    // Verify phone matches the order's shipping address
     const orderPhone = (data.shipping?.phone ?? '').replace(/\s/g, '')
     const inputPhone = trimPhone.replace(/\s/g, '')
     if (orderPhone !== inputPhone) {
@@ -96,11 +253,6 @@ export function TrackingPage() {
     setResult(normalised)
     subscribeToOrder(normalised.id)
   }
-
-  // Logged-in user: show their most recent orders for quick access
-  const myOrders = state.user
-    ? [] // populated by Supabase fetch below
-    : []
 
   return (
     <div className="tracking-page">
@@ -179,10 +331,10 @@ export function TrackingPage() {
             </div>
           </div>
 
-          <OrderTracker
+          <WalkingTracker
             status={result.status}
             updatedAt={result.updatedAt ?? result.createdAt}
-            orderId={result.id}
+            cancellationReason={result.cancellationReason}
           />
 
           <div className="tracking-result__details">
