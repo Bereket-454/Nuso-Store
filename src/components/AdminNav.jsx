@@ -15,9 +15,9 @@ export function AdminNav() {
   const firstName = (user?.name ?? '').split(' ')[0] || user?.email?.split('@')[0] || 'Admin'
 
   // Which nav items this role may see
-  const showDashboard = isSuperAdmin(user) || isDeliveryManager(user)
+  const showDashboard = isSuperAdmin(user) || isOrderManager(user) || isDeliveryManager(user)
   const showOrders    = isSuperAdmin(user) || isOrderManager(user) || isDeliveryManager(user)
-  const showProducts  = isSuperAdmin(user) || isProductOperator(user)
+  const showProducts  = isSuperAdmin(user) || isOrderManager(user) || isProductOperator(user)
   const showInventory = isSuperAdmin(user) || isProductOperator(user)
   const showRequests  = isSuperAdmin(user)
 
