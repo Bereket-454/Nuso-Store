@@ -124,9 +124,11 @@ export function AdminNav() {
           {/* Mobile-only footer */}
           <div className="admin-nav__mobile-footer">
             <span className="admin-nav__user-mobile">{firstName}</span>
-            <button type="button" className="admin-nav__link admin-nav__link--btn" onClick={handleViewStore}>
-              View Store ↗
-            </button>
+            {!isDeliveryManager(user) && (
+              <button type="button" className="admin-nav__link admin-nav__link--btn" onClick={handleViewStore}>
+                View Store ↗
+              </button>
+            )}
             <button
               type="button"
               className="admin-nav__link admin-nav__link--btn admin-nav__link--signout"
@@ -141,9 +143,11 @@ export function AdminNav() {
         <div className="admin-nav__actions">
           <NotificationBell userId={user?.id} />
           <span className="admin-nav__user">{firstName}</span>
-          <button type="button" className="admin-nav__view-store" onClick={handleViewStore}>
-            View Store ↗
-          </button>
+          {!isDeliveryManager(user) && (
+            <button type="button" className="admin-nav__view-store" onClick={handleViewStore}>
+              View Store ↗
+            </button>
+          )}
           <button type="button" className="admin-nav__signout-btn" onClick={handleSignOut}>
             Sign Out
           </button>
