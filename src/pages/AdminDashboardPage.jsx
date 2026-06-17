@@ -112,6 +112,8 @@ export function AdminDashboardPage() {
   }, [])
 
   // Load orders, product requests, and business info on mount.
+  // Also subscribe to realtime order changes so cross-session updates
+  // (e.g. Abi marking cash collected) are reflected without a refresh.
   useEffect(() => {
     supabase
       .from('orders')
@@ -121,6 +123,30 @@ export function AdminDashboardPage() {
         if (error) console.error('[AdminDashboard] orders fetch error:', error.message)
         if (data) setAdminOrders(data)
       })
+
+    const ordersChannel = supabase
+      .channel('admin-orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        (payload) => {
+          setAdminOrders((prev) =>
+            prev.map((o) => (o.id === payload.new.id ? { ...o, ...payload.new } : o)),
+          )
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          setAdminOrders((prev) =>
+            prev.some((o) => o.id === payload.new.id) ? prev : [payload.new, ...prev],
+          )
+        },
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(ordersChannel) }
 
     supabase
       .from('product_requests')

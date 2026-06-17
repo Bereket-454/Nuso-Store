@@ -577,10 +577,13 @@ function DeliveryOrderCard({ order, onUpdated }) {
   const doMarkPaid = async () => {
     if (markingPaid) return
     setMarkingPaid(true)
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
       .eq('id', order.id)
+      .select('id, payment_status')
+      .single()
+    console.log('[DeliveryOrderCard] markPaid result:', { id: order.id, data, error: error?.message ?? null })
     if (!error) {
       insertAuditLog({
         adminUserId: state.user?.id, adminEmail: state.user?.email,

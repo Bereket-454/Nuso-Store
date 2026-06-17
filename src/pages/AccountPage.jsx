@@ -671,6 +671,38 @@ function ProfileCard({ user, t, state, dispatch }) {
 
   useEffect(() => { fetchOrders() }, [user.id])
 
+  // Realtime: pick up payment_status / status changes pushed by admins
+  // without requiring the customer to refresh or re-open the Orders tab.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`customer-orders-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new
+          setDbOrders((prev) =>
+            prev
+              ? prev.map((o) =>
+                  o.id === row.id
+                    ? {
+                        ...o,
+                        status:             row.status,
+                        paymentStatus:      row.payment_status,
+                        updatedAt:          row.updated_at,
+                        cancelledAt:        row.cancelled_at  ?? null,
+                        cancellationReason: row.cancellation_reason ?? '',
+                      }
+                    : o,
+                )
+              : prev,
+          )
+        },
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user.id])
+
   const [openTab, setOpenTab] = useState(null)
   const ordersTabRef    = useRef(null)
   const addressesTabRef = useRef(null)
