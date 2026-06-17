@@ -495,13 +495,19 @@ const DELIVERY_TAB_DEFS = [
 ]
 
 const DELIVERY_TAB_FILTERS = {
-  active:    (o) => ['confirmed', 'preparing', 'out_for_delivery'].includes(o.status),
+  active:    (o) => o.status !== 'delivered' && o.status !== 'cancelled',
   delivered: (o) => o.status === 'delivered',
   all:       () => true,
 }
 
-// Sort so the driver's active work is always at the top.
-const DELIVERY_PRIORITY = { out_for_delivery: 0, preparing: 1, confirmed: 2 }
+// Sort so the driver's most urgent work is always at the top.
+const DELIVERY_PRIORITY = {
+  out_for_delivery: 0,
+  preparing:        1,
+  confirmed:        2,
+  confirming:       3,
+  order_received:   4,
+}
 
 function DeliveryOrderCard({ order, onUpdated }) {
   const { t }       = useTranslation()
@@ -590,6 +596,9 @@ function DeliveryView({ orders, onOrderUpdated }) {
   const filtered = useMemo(() => {
     const filterFn = DELIVERY_TAB_FILTERS[activeTab] ?? (() => true)
     let list = pool.filter(filterFn)
+    if (activeTab === 'active' && list.length === 0 && pool.length > 0) {
+      console.log('[DeliveryView] Active tab empty. Pool statuses:', pool.map((o) => o.status))
+    }
     const q = search.trim().toLowerCase()
     if (q) list = list.filter((o) =>
       (o.id             ?? '').toLowerCase().includes(q) ||
