@@ -672,10 +672,17 @@ function ProfileCard({ user, t, state, dispatch }) {
   useEffect(() => { fetchOrders() }, [user.id])
 
   const [openTab, setOpenTab] = useState(null)
+  const ordersTabRef    = useRef(null)
+  const addressesTabRef = useRef(null)
+
   function toggleTab(tab) {
     const next = openTab === tab ? null : tab
     setOpenTab(next)
     if (tab === 'orders' && next === 'orders') fetchOrders()
+    if (next) {
+      const ref = tab === 'orders' ? ordersTabRef : addressesTabRef
+      setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
+    }
   }
 
   const orders       = dbOrders ?? []
@@ -861,7 +868,7 @@ function ProfileCard({ user, t, state, dispatch }) {
       </div>
 
       {/* ── My Orders ───────────────────────────────────────────────── */}
-      <div className={`dash-tab-panel${openTab === 'orders' ? ' dash-tab-panel--open' : ''}`}>
+      <div ref={ordersTabRef} className={`dash-tab-panel${openTab === 'orders' ? ' dash-tab-panel--open' : ''}`}>
       <div className="dash-section" id="dash-orders">
         <div className="dash-section__head">
           <div className="dash-section__icon-wrap"><IconPackage /></div>
@@ -1153,7 +1160,7 @@ function ProfileCard({ user, t, state, dispatch }) {
       </div>
 
       {/* ── My Addresses ────────────────────────────────────────────── */}
-      <div className={`dash-tab-panel${openTab === 'addresses' ? ' dash-tab-panel--open' : ''}`}>
+      <div ref={addressesTabRef} className={`dash-tab-panel${openTab === 'addresses' ? ' dash-tab-panel--open' : ''}`}>
       <div className="dash-section" id="dash-addresses">
         <div className="dash-section__head">
           <div className="dash-section__icon-wrap"><IconHome /></div>
