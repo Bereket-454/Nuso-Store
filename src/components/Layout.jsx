@@ -270,8 +270,10 @@ export function Layout() {
               {t('nav.request')}
             </NavLink>
 
-            {/* Notification bell — logged-in users only */}
-            {state.user && <NotificationBell userId={state.user.id} />}
+            {/* Notification bell — non-admin logged-in users only.
+                Admin users get the bell in AdminNav to avoid a duplicate
+                channel subscription (same userId, same channel name). */}
+            {state.user && !isAdminUser(state.user) && <NotificationBell userId={state.user.id} />}
 
             {/* Cart icon with count badge */}
             <NavLink
