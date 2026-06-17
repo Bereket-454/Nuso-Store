@@ -315,13 +315,14 @@ function SignInForm({ t, onSwitchToSignUp }) {
           msg.includes('user not found') ||
           msg.includes('no user found')
         ) {
-          const { exists } = await checkEmailExists(email.trim())
-          setErrorType(exists ? 'wrongPassword' : 'notFound')
+          setErrorType('invalidCredentials')
         } else {
+          console.error('[AccountPage] signIn unexpected error:', err)
           setErrorType('generic')
         }
       }
-    } catch {
+    } catch (err) {
+      console.error('[AccountPage] signIn exception:', err)
       setErrorType('generic')
     } finally {
       setLoading(false)
@@ -357,8 +358,9 @@ function SignInForm({ t, onSwitchToSignUp }) {
           {errorType === 'emailRequired' && (
             <p className="error-text">{t('auth.emailRequired')}</p>
           )}
-          {(errorType === 'wrongPassword' || errorType === 'notFound' || errorType === 'notConfirmed' || errorType === 'generic') && (
+          {(errorType === 'invalidCredentials' || errorType === 'wrongPassword' || errorType === 'notFound' || errorType === 'notConfirmed' || errorType === 'generic') && (
             <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--danger)' }}>
+              {errorType === 'invalidCredentials' && t('auth.signInErrorInvalidCredentials')}
               {errorType === 'wrongPassword' && t('auth.signInErrorWrongPassword')}
               {errorType === 'notFound' && (
                 <>{t('auth.signInErrorNotFound')}{' '}

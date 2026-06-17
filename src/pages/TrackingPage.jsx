@@ -188,6 +188,8 @@ export function TrackingPage() {
 
   // Auto-fill phone from profile when user logs in or profile loads
   useEffect(() => {
+    console.log('[TrackingPage] user object:', state.user)
+    console.log('[TrackingPage] user.phone:', state.user?.phone, '| typeof:', typeof state.user?.phone)
     if (state.user?.phone) {
       setPhone((prev) => prev || state.user.phone)
     }
@@ -221,6 +223,7 @@ export function TrackingPage() {
   }, [])
 
   const handleTrack = async () => {
+    console.log('[TrackingPage] handleTrack called', { orderId, phone })
     const trimId    = orderId.trim()
     const trimPhone = phone.trim()
     if (!trimId || !trimPhone) return
@@ -254,6 +257,9 @@ export function TrackingPage() {
     subscribeToOrder(normalised.id)
   }
 
+  const btnDisabled = loading || !orderId.trim() || !phone.trim()
+  console.log('[TrackingPage] render — btnDisabled:', btnDisabled, { loading, orderId: JSON.stringify(orderId), phone: JSON.stringify(phone) })
+
   return (
     <div className="tracking-page">
       {/* Search form */}
@@ -279,13 +285,18 @@ export function TrackingPage() {
             onKeyDown={(e) => e.key === 'Enter' && handleTrack()}
           />
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={handleTrack}
-          disabled={loading || !orderId.trim() || !phone.trim()}
-        >
-          {loading ? '…' : t('tracker.trackBtn')}
-        </button>
+        {/* wrapper catches pointer events even when button is disabled */}
+        <div onPointerDown={() => console.log('[TrackingPage] btn area pointer-down — btnDisabled:', btnDisabled, { orderId: JSON.stringify(orderId), phone: JSON.stringify(phone) })}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ width: '100%' }}
+            onClick={handleTrack}
+            disabled={btnDisabled}
+          >
+            {loading ? '…' : t('tracker.trackBtn')}
+          </button>
+        </div>
         {error && <p className="error-text" style={{ marginTop: '0.5rem' }}>{error}</p>}
       </section>
 
