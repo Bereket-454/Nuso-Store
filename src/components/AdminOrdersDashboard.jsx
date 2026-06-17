@@ -538,12 +538,31 @@ function DeliveryOrderCard({ order, onUpdated }) {
   const phone   = sh.phone || order.customer_phone || null
   const address = [sh.city, sh.area, sh.landmark].filter(Boolean).join(' · ')
 
-  // COD cash collection — only for cash-on-delivery orders in actionable statuses
-  const isCod          = order.payment?.method === 'cod'
+  // COD cash collection — only for cash-on-delivery orders in actionable statuses.
+  // order.payment is a JSONB column: { method: 'cod' | 'telebirr' | 'cbe', ... }.
+  // Some orders created before the payment field was added may have payment=null;
+  // fall back to the top-level payment_method column if present.
+  const isCod = order.payment?.method === 'cod' || order.payment_method === 'cod'
   const alreadyPaid    = localPaid || order.payment_status === 'paid'
   const canCollectCash = isCod
     && (order.status === 'out_for_delivery' || order.status === 'delivered')
     && !alreadyPaid
+
+  // Debug: log values for every card in an actionable status so we can see
+  // why the button is or isn't showing without guessing.
+  if (process.env.NODE_ENV !== 'production') {
+    if (order.status === 'out_for_delivery' || order.status === 'delivered') {
+      console.log('[DeliveryOrderCard]', order.id, {
+        status: order.status,
+        payment: order.payment,
+        payment_method: order.payment_method,
+        payment_status: order.payment_status,
+        isCod,
+        alreadyPaid,
+        canCollectCash,
+      })
+    }
+  }
 
   const doAdvance = async () => {
     if (!allowedNext || advancing) return
