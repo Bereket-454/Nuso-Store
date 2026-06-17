@@ -3186,10 +3186,18 @@ textarea {
 /* ── Walking Tracker (TrackingPage animated figure) ────────────────────── */
 
 .wt {
-  position: relative;
-  min-height: 96px;
   margin: 0.25rem 0;
   user-select: none;
+}
+
+/* Self-contained track band: the figure, track line, and dots are all
+   absolutely positioned inside this block so they never collide with the
+   pre-confirmed message above or the stage labels below. */
+.wt-track-row {
+  position: relative;
+  /* Must be tall enough for figure (top:2px + 36px SVG = 38px) and dots
+     (centered at top:48px, radius 7px → bottom at 55px). */
+  height: 58px;
 }
 
 /* Figure walks above the track; translateX(-50%) centres it on the dot */
@@ -3224,7 +3232,7 @@ textarea {
   z-index: 1;
 }
 
-/* Stage dots at 12.5 / 37.5 / 62.5 / 87.5 % of .wt width */
+/* Stage dots at 12.5 / 37.5 / 62.5 / 87.5 % of .wt-track-row width */
 .wt-dot {
   position: absolute;
   top: 48px;
@@ -3243,13 +3251,12 @@ textarea {
   border-color: #FF6B00;
 }
 
-/* Stage labels aligned under dots via flex */
+/* Stage labels sit in flow directly below .wt-track-row — no longer
+   absolutely anchored to the container bottom, so they can never
+   grow upward into the track line on narrow screens. */
 .wt-labels {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
+  margin-top: 6px;
 }
 
 .wt-label {
@@ -3267,13 +3274,14 @@ textarea {
   font-weight: 700;
 }
 
-/* Shown when status is order_received / confirming (before first milestone) */
+/* Shown when status is order_received / confirming (before first milestone).
+   Sits in normal flow above .wt-track-row, so the track never overlaps it. */
 .wt-pre-msg {
   font-size: 0.78rem;
   color: var(--muted);
   font-style: italic;
   text-align: center;
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.75rem;
 }
 
 .wt-delivered-msg {

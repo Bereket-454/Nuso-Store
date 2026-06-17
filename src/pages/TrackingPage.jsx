@@ -102,55 +102,59 @@ function WalkingTracker({ status, updatedAt, cancellationReason }) {
 
   return (
     <div className="wt">
-      {/* Pre-confirmed message when no milestone is reached yet */}
+      {/* Pre-confirmed message sits in flow above the track row */}
       {stageIdx(status) < 0 && (
         <p className="wt-pre-msg">⏳ Order received — waiting for confirmation…</p>
       )}
 
-      {/* Walking figure — outer motion div controls horizontal position */}
-      <motion.div
-        className="wt-figure"
-        initial={{ left: `${pct}%` }}
-        animate={{ left: `${pct}%` }}
-        transition={{ duration: dur, ease: [0.25, 0.1, 0.25, 1] }}
-      >
-        {/* Inner motion div controls the vertical walking bob */}
+      {/* Track row: own containing block so figure/track/dots don't overlap
+          flow siblings (pre-msg above, labels below) */}
+      <div className="wt-track-row">
+        {/* Walking figure — outer motion div controls horizontal position */}
         <motion.div
-          animate={walking && !prefersReduced
-            ? { y: [0, -4, 0, -3, 0] }
-            : { y: 0 }
-          }
-          transition={walking && !prefersReduced
-            ? { duration: 0.6, repeat: Infinity, ease: 'easeInOut' }
-            : { duration: 0 }
-          }
+          className="wt-figure"
+          initial={{ left: `${pct}%` }}
+          animate={{ left: `${pct}%` }}
+          transition={{ duration: dur, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <WalkingFigureSVG />
+          {/* Inner motion div controls the vertical walking bob */}
+          <motion.div
+            animate={walking && !prefersReduced
+              ? { y: [0, -4, 0, -3, 0] }
+              : { y: 0 }
+            }
+            transition={walking && !prefersReduced
+              ? { duration: 0.6, repeat: Infinity, ease: 'easeInOut' }
+              : { duration: 0 }
+            }
+          >
+            <WalkingFigureSVG />
+          </motion.div>
         </motion.div>
-      </motion.div>
 
-      {/* Track background line */}
-      <div className="wt-track-bg" />
+        {/* Track background line */}
+        <div className="wt-track-bg" />
 
-      {/* Orange fill — animates scaleX from left */}
-      <motion.div
-        className="wt-track-fill"
-        initial={{ scaleX: scale }}
-        animate={{ scaleX: scale }}
-        transition={{ duration: dur, ease: 'easeOut' }}
-        style={{ transformOrigin: 'left center' }}
-      />
-
-      {/* Stage dots */}
-      {WALK_STAGES.map((sid, i) => (
-        <div
-          key={sid}
-          className={`wt-dot${isDotFilled(sid, status) ? ' wt-dot--filled' : ''}`}
-          style={{ left: `${12.5 + i * 25}%` }}
+        {/* Orange fill — animates scaleX from left */}
+        <motion.div
+          className="wt-track-fill"
+          initial={{ scaleX: scale }}
+          animate={{ scaleX: scale }}
+          transition={{ duration: dur, ease: 'easeOut' }}
+          style={{ transformOrigin: 'left center' }}
         />
-      ))}
 
-      {/* Stage labels */}
+        {/* Stage dots */}
+        {WALK_STAGES.map((sid, i) => (
+          <div
+            key={sid}
+            className={`wt-dot${isDotFilled(sid, status) ? ' wt-dot--filled' : ''}`}
+            style={{ left: `${12.5 + i * 25}%` }}
+          />
+        ))}
+      </div>
+
+      {/* Stage labels — in flow directly below the track row */}
       <div className="wt-labels">
         {WALK_STAGES.map((sid) => (
           <span
