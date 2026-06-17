@@ -522,7 +522,9 @@ const WAITING_DM    = new Set(['order_received', 'confirming'])
 function DeliveryOrderCard({ order, onUpdated }) {
   const { t }       = useTranslation()
   const { state }   = useStore()
-  const [advancing, setAdvancing] = useState(false)
+  const [advancing,   setAdvancing]   = useState(false)
+  const [markingPaid, setMarkingPaid] = useState(false)
+  const [localPaid,   setLocalPaid]   = useState(false)
 
   const resolved     = resolveStatus(order.status)
   const currentIndex = statusIndex(resolved)
@@ -535,6 +537,13 @@ function DeliveryOrderCard({ order, onUpdated }) {
   const sh      = order.shipping ?? {}
   const phone   = sh.phone || order.customer_phone || null
   const address = [sh.city, sh.area, sh.landmark].filter(Boolean).join(' · ')
+
+  // COD cash collection — only for cash-on-delivery orders in actionable statuses
+  const isCod          = order.payment?.method === 'cod'
+  const alreadyPaid    = localPaid || order.payment_status === 'paid'
+  const canCollectCash = isCod
+    && (order.status === 'out_for_delivery' || order.status === 'delivered')
+    && !alreadyPaid
 
   const doAdvance = async () => {
     if (!allowedNext || advancing) return
@@ -565,6 +574,27 @@ function DeliveryOrderCard({ order, onUpdated }) {
     setAdvancing(false)
   }
 
+  const doMarkPaid = async () => {
+    if (markingPaid) return
+    setMarkingPaid(true)
+    const { error } = await supabase
+      .from('orders')
+      .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
+      .eq('id', order.id)
+    if (!error) {
+      insertAuditLog({
+        adminUserId: state.user?.id, adminEmail: state.user?.email,
+        action: 'cod_payment_collected',
+        targetType: 'order', targetId: order.id,
+        oldValue: { payment_status: order.payment_status },
+        newValue: { payment_status: 'paid' },
+      })
+      setLocalPaid(true)
+      onUpdated({ payment_status: 'paid' })
+    }
+    setMarkingPaid(false)
+  }
+
   return (
     <div className={`dm-card${isCancelled ? ' dm-card--cancelled' : ''}${isDelivered ? ' dm-card--done' : ''}`}>
       <div className="dm-card__header">
@@ -591,6 +621,21 @@ function DeliveryOrderCard({ order, onUpdated }) {
           {advancing ? '…' : `→ ${ACTION_LABELS[allowedNext.id] ?? allowedNext.id}`}
         </button>
       )}
+
+      {canCollectCash && (
+        <button
+          type="button"
+          className="dm-card__collect-cash"
+          onClick={doMarkPaid}
+          disabled={markingPaid}
+        >
+          {markingPaid ? '…' : '💵 Cash Collected'}
+        </button>
+      )}
+      {isCod && alreadyPaid && (
+        <p className="dm-card__cash-paid">✓ Cash Paid</p>
+      )}
+
       {isDelivered  && <p className="dm-card__state dm-card__state--done">✓ Delivered</p>}
       {isCancelled  && <p className="dm-card__state dm-card__state--cancelled">✗ Cancelled</p>}
     </div>

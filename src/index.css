@@ -6777,6 +6777,34 @@ textarea {
 .dm-card__advance:disabled         { opacity: 0.55; cursor: not-allowed; }
 .dm-card__advance:active:not(:disabled) { opacity: 0.82; }
 
+/* COD cash-collection button — green, same tap-target size as advance */
+.dm-card__collect-cash {
+  margin-top: 0.4rem;
+  width: 100%;
+  min-height: 50px;
+  padding: 0.75rem 1rem;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.15s;
+}
+.dm-card__collect-cash:disabled              { opacity: 0.55; cursor: not-allowed; }
+.dm-card__collect-cash:active:not(:disabled) { opacity: 0.82; }
+
+/* Confirmation label shown after cash is marked collected */
+.dm-card__cash-paid {
+  margin: 0.4rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #16a34a;
+  text-align: center;
+}
+
 .dm-card__state             { margin: 0; font-size: 0.9rem; font-weight: 600; }
 .dm-card__state--done       { color: var(--success); }
 .dm-card__state--cancelled  { color: var(--muted); }
