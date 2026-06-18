@@ -92,8 +92,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          // Clone synchronously before any async operation or return so the
+          // original body isn't consumed before the clone is made.
+          if (!response.bodyUsed) {
+            const responseToCache = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache))
+          }
           return response
         })
         .catch(async () => {
@@ -107,12 +111,18 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Static assets: cache-first, populate on miss
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached
       return fetch(request).then((response) => {
-        if (response.ok) {
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()))
+        // Must clone synchronously here — BEFORE `return response` hands the body
+        // to the browser. Cloning inside the async caches.open().then() callback
+        // is too late: the body is already consumed by then, causing
+        // "Failed to execute clone on Response: Response body is already used".
+        if (response.ok && !response.bodyUsed) {
+          const responseToCache = response.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache))
         }
         return response
       })
