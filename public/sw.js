@@ -1,3 +1,46 @@
+// ── Firebase Cloud Messaging (background notifications) ───────────────────────
+// importScripts must come first so firebase globals are defined before use
+importScripts('https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging-compat.js')
+
+firebase.initializeApp({
+  apiKey:            'AIzaSyBoGKiGTQXgAlUcBLDl-5PvfeKEYWUPwK8',
+  authDomain:        'nuso-store.firebaseapp.com',
+  projectId:         'nuso-store',
+  storageBucket:     'nuso-store.firebasestorage.app',
+  messagingSenderId: '808702557958',
+  appId:             '1:808702557958:web:6d81c7471f093512fb6887',
+})
+
+const messaging = firebase.messaging()
+
+// Called when a push arrives while the app is in the background or closed
+messaging.onBackgroundMessage((payload) => {
+  console.log('[SW] background message received:', payload)
+  const { title, body, icon } = payload.notification || {}
+  return self.registration.showNotification(title || 'Nuso Store', {
+    body:    body  || '',
+    icon:    icon  || '/nuso-icon.png',
+    badge:         '/nuso-icon.png',
+    data:    payload.data || {},
+    tag:    'nuso-push',
+  })
+})
+
+// Open or focus the app tab when user taps a notification
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/'
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      const existing = windowClients.find((c) => c.url.includes(self.location.origin) && 'focus' in c)
+      if (existing) return existing.focus()
+      return clients.openWindow(url)
+    })
+  )
+})
+
+// ── PWA caching ───────────────────────────────────────────────────────────────
 const CACHE_NAME = 'nuso-v1'
 
 const OFFLINE_HTML = `<!doctype html>
@@ -20,7 +63,6 @@ const OFFLINE_HTML = `<!doctype html>
   <button onclick="location.reload()">Try Again</button>
 </body></html>`
 
-// ── Install: pre-cache the app shell ─────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.add('/'))
@@ -28,7 +70,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting()
 })
 
-// ── Activate: delete stale caches ────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -40,17 +81,14 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
-// ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
 
-  // Ignore non-GET and cross-origin requests
   if (request.method !== 'GET') return
   if (url.origin !== self.location.origin) return
 
   if (request.mode === 'navigate') {
-    // Navigation: network-first → cached shell → inline offline page
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -69,7 +107,6 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Static assets (JS, CSS, images): cache-first, populate cache on miss
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached
