@@ -2628,6 +2628,19 @@ textarea {
   margin-bottom: 0;
 }
 
+.dash-addr__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.dash-addr__edit-btn {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.75rem;
+}
+
 .dash-addr__name {
   font-size: 0.85rem;
   font-weight: 700;
@@ -2639,6 +2652,36 @@ textarea {
   color: var(--muted);
   margin: 0;
   line-height: 1.5;
+}
+
+.dash-addr__saved {
+  font-size: 0.8rem;
+  color: #15803d;
+  font-weight: 600;
+  margin: 0.5rem 0 0;
+}
+
+.dash-addr-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.dash-addr-edit__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.dash-addr-edit__fields .form-group {
+  margin: 0;
+}
+
+.dash-addr-edit__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 /* ── Empty states ─────────────────────────────────────────────────────────── */

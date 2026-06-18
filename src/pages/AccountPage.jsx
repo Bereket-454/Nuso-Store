@@ -5,7 +5,7 @@ import { useStore } from '../app/store'
 import { birr, formatDeliveryDate } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
-import { checkEmailExists, checkPhoneExists, deleteAccount, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
+import { checkEmailExists, checkPhoneExists, deleteAccount, fetchDefaultShipping, isValidEthiopianPhone, saveDefaultShipping, signIn, signOut, signUp, updateProfile } from '../lib/auth'
 import { cancelOrder, CUSTOMER_CANCEL_STATUSES } from '../services/ordersService'
 import { RETURN_REASONS, fetchReturnRequestsForUser, submitReturnRequest } from '../services/returnsService'
 import { getMyVerification } from '../services/studentVerificationService'
@@ -599,6 +599,62 @@ function ProfileCard({ user, t, state, dispatch }) {
     })
   }, [user.id, user.student_verified])
 
+  // Default shipping address — fetched from profiles.default_shipping (Supabase)
+  // DB shape: { name, phone, city, subCity, landmark }
+  // Display shape: { fullName, phone, city, area, landmark }
+  const [defaultShipping, setDefaultShipping] = useState(undefined) // undefined = not yet loaded
+  const [addrLoading,     setAddrLoading]     = useState(false)
+  const [editingAddress,  setEditingAddress]  = useState(false)
+  const [addrForm,        setAddrForm]        = useState({ fullName: '', phone: '', city: '', area: '', landmark: '' })
+  const [addrSaving,      setAddrSaving]      = useState(false)
+  const [addrSaveError,   setAddrSaveError]   = useState('')
+  const [addrSaved,       setAddrSaved]       = useState(false)
+
+  function normaliseShipping(raw) {
+    if (!raw) return null
+    return {
+      fullName: raw.name     || raw.fullName || '',
+      phone:    raw.phone    || '',
+      city:     raw.city     || '',
+      area:     raw.subCity  || raw.area     || '',
+      landmark: raw.landmark || '',
+    }
+  }
+
+  async function loadDefaultShipping() {
+    setAddrLoading(true)
+    const raw = await fetchDefaultShipping(user.id)
+    console.log('[AccountPage] default_shipping raw:', raw)
+    const normalised = normaliseShipping(raw)
+    console.log('[AccountPage] default_shipping normalised:', normalised)
+    setDefaultShipping(normalised)
+    setAddrLoading(false)
+  }
+
+  // Load once on mount
+  useEffect(() => { loadDefaultShipping() }, [user.id])
+
+  function startEditAddress() {
+    setAddrForm(defaultShipping ?? { fullName: '', phone: '', city: '', area: '', landmark: '' })
+    setAddrSaveError('')
+    setAddrSaved(false)
+    setEditingAddress(true)
+  }
+
+  async function saveAddress() {
+    if (!addrForm.fullName.trim() || !addrForm.city.trim() || !addrForm.phone.trim()) {
+      setAddrSaveError(t('checkout.validation.fullName') + ' / ' + t('checkout.validation.city') + ' / ' + t('checkout.validation.phone'))
+      return
+    }
+    setAddrSaving(true)
+    setAddrSaveError('')
+    await saveDefaultShipping(user.id, addrForm)
+    setDefaultShipping({ ...addrForm })
+    setAddrSaving(false)
+    setAddrSaved(true)
+    setEditingAddress(false)
+  }
+
   async function handleCancelOrder(order) {
     setCancelLoading(true)
     setCancelError('')
@@ -711,7 +767,8 @@ function ProfileCard({ user, t, state, dispatch }) {
   function toggleTab(tab) {
     const next = openTab === tab ? null : tab
     setOpenTab(next)
-    if (tab === 'orders' && next === 'orders') fetchOrders()
+    if (tab === 'orders'    && next === 'orders')    fetchOrders()
+    if (tab === 'addresses' && next === 'addresses') loadDefaultShipping()
     if (next) {
       const ref = tab === 'orders' ? ordersTabRef : addressesTabRef
       setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
@@ -720,7 +777,7 @@ function ProfileCard({ user, t, state, dispatch }) {
 
   const orders       = dbOrders ?? []
   const orderCount   = orders.length
-  const addressCount = state.addresses.length
+  const addressCount = defaultShipping ? 1 : 0
   const lastOrderAgo = orders[0]?.createdAt ? daysAgo(orders[0].createdAt, t) : null
 
   const cutoff = Date.now() - THIRTY_DAYS_MS
@@ -1219,23 +1276,65 @@ function ProfileCard({ user, t, state, dispatch }) {
           ) : null}
         </div>
         <div className="dash-section__body">
-          {state.addresses.length === 0 ? (
+          {addrLoading && defaultShipping === undefined ? (
+            <p className="muted" style={{ fontSize: '0.88rem', textAlign: 'center', padding: '1rem 0' }}>…</p>
+          ) : !defaultShipping ? (
             <div className="dash-empty">
               <span className="dash-empty__icon" aria-hidden="true">📍</span>
               <p className="dash-empty__msg">{t('account.noAddresses')}</p>
               <p className="dash-empty__hint">{t('account.noAddressesHint')}</p>
             </div>
-          ) : (
-            state.addresses.map((address, idx) => (
-              <div key={address.id ?? idx} className="dash-addr">
-                <p className="dash-addr__name">{address.fullName}</p>
-                <p className="dash-addr__detail">
-                  {address.city}, {address.area}
-                  {address.landmark ? ` — ${address.landmark}` : ''}
-                </p>
-                <p className="dash-addr__detail">{address.phone}</p>
+          ) : editingAddress ? (
+            <div className="dash-addr-edit">
+              <div className="dash-addr-edit__fields">
+                <div className="form-group">
+                  <label>{t('checkout.fullName')}</label>
+                  <input value={addrForm.fullName} onChange={(e) => setAddrForm((p) => ({ ...p, fullName: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>{t('checkout.phone')}</label>
+                  <input value={addrForm.phone} onChange={(e) => setAddrForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+2519XXXXXXXX" />
+                </div>
+                <div className="form-group">
+                  <label>{t('checkout.city')}</label>
+                  <input value={addrForm.city} onChange={(e) => setAddrForm((p) => ({ ...p, city: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>{t('checkout.area')}</label>
+                  <input value={addrForm.area} onChange={(e) => setAddrForm((p) => ({ ...p, area: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>{t('checkout.landmark')}</label>
+                  <input value={addrForm.landmark} onChange={(e) => setAddrForm((p) => ({ ...p, landmark: e.target.value }))} />
+                </div>
               </div>
-            ))
+              {addrSaveError && <p className="error-text" style={{ fontSize: '0.82rem', margin: '0.4rem 0' }}>{addrSaveError}</p>}
+              <div className="dash-addr-edit__actions">
+                <button type="button" className="btn btn-primary" style={{ fontSize: '0.85rem' }} onClick={saveAddress} disabled={addrSaving}>
+                  {addrSaving ? '…' : t('account.saveChanges')}
+                </button>
+                <button type="button" className="btn btn-secondary" style={{ fontSize: '0.85rem' }} onClick={() => setEditingAddress(false)}>
+                  {t('account.cancelEdit')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="dash-addr">
+              <div className="dash-addr__row">
+                <div>
+                  <p className="dash-addr__name">{defaultShipping.fullName}</p>
+                  <p className="dash-addr__detail">
+                    {defaultShipping.city}{defaultShipping.area ? `, ${defaultShipping.area}` : ''}
+                    {defaultShipping.landmark ? ` — ${defaultShipping.landmark}` : ''}
+                  </p>
+                  <p className="dash-addr__detail">{defaultShipping.phone}</p>
+                </div>
+                <button type="button" className="btn btn-secondary dash-addr__edit-btn" onClick={startEditAddress}>
+                  {t('account.editProfile')}
+                </button>
+              </div>
+              {addrSaved && <p className="dash-addr__saved">{t('account.profileUpdated')}</p>}
+            </div>
           )}
         </div>
       </div>
