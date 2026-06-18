@@ -91,6 +91,12 @@ export function CheckoutPage() {
   const [walletBalance, setWalletBalance] = useState(state.wallet?.balance ?? 0)
   const [useWallet, setUseWallet]         = useState(false)
 
+  // Student discount — seeded from store but re-fetched fresh from Supabase on load
+  // because admin approval happens after login and state.user can be stale.
+  const [studentDiscountEnabled, setStudentDiscountEnabled] = useState(
+    state.user?.student_discount_enabled ?? false,
+  )
+
   // Pre-fill all shipping fields when user is signed in.
   // Priority: existing form input > Supabase saved > localStorage addresses > user profile.
   useEffect(() => {
@@ -118,16 +124,20 @@ export function CheckoutPage() {
     })
   }, [state.user?.id])
 
-  // Check first-order status (all users) and load wallet balance.
+  // Check first-order status, load wallet balance, and re-fetch profile for fresh
+  // student_discount_enabled — admin can approve a student after their last login
+  // so state.user may be stale.
   useEffect(() => {
     if (!state.user?.id) return
-    // First-order: true when this user has placed zero orders ever.
-    // No payment_status filter — any existing order means they're not new.
+
+    // First-order check
     supabase
       .from('orders')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', state.user.id)
       .then(({ count }) => setIsFirstOrder(count === 0))
+
+    // Wallet balance
     supabase
       .from('wallets')
       .select('balance')
@@ -137,6 +147,21 @@ export function CheckoutPage() {
         const bal = Number(data?.balance ?? 0)
         setWalletBalance(bal)
         dispatch({ type: 'WALLET_LOADED', payload: { balance: bal } })
+      })
+
+    // Fresh profile — ensures student_discount_enabled reflects any admin approval
+    // that happened since the user last signed in.
+    supabase
+      .from('profiles')
+      .select('student_verified, student_discount_enabled')
+      .eq('id', state.user.id)
+      .single()
+      .then(({ data, error }) => {
+        console.log('[Checkout] fresh profile fetch — data:', data, '| error:', error)
+        if (error || !data) return
+        const enabled = data.student_discount_enabled ?? false
+        console.log('[Checkout] student_verified:', data.student_verified, '| student_discount_enabled:', enabled)
+        setStudentDiscountEnabled(enabled)
       })
   }, [state.user?.id])
 
@@ -169,33 +194,13 @@ export function CheckoutPage() {
     return Math.min(Math.floor(subtotal * REFERRAL_DISCOUNT_PCT), REFERRAL_DISCOUNT_CAP)
   }, [isFirstOrder, subtotal, state.user?.referred_by])
 
-  // Student discount
+  // Student discount — driven by freshly-fetched studentDiscountEnabled, not stale state.user
   const studentDiscount = useMemo(() => {
-    if (!state.user?.student_discount_enabled) return 0
-    return Math.min(Math.floor(subtotal * STUDENT_DISCOUNT_PCT), STUDENT_DISCOUNT_CAP)
-  }, [state.user?.student_discount_enabled, subtotal])
-
-  // Diagnostic: log discount state whenever relevant user flags or subtotal change
-  useEffect(() => {
-    if (!state.user?.id) return
-    console.log('[Checkout] discount diagnostics:', {
-      student_verified:         state.user?.student_verified,
-      student_discount_enabled: state.user?.student_discount_enabled,
-      studentDiscount,
-      referred_by:              state.user?.referred_by,
-      isFirstOrder,
-      referralDiscount,
-      subtotal,
-    })
-  }, [
-    state.user?.student_verified,
-    state.user?.student_discount_enabled,
-    state.user?.referred_by,
-    studentDiscount,
-    isFirstOrder,
-    referralDiscount,
-    subtotal,
-  ])
+    if (!studentDiscountEnabled) return 0
+    const amount = Math.min(Math.floor(subtotal * STUDENT_DISCOUNT_PCT), STUDENT_DISCOUNT_CAP)
+    console.log('[Checkout] student discount — enabled:', studentDiscountEnabled, '| subtotal:', subtotal, '| discount:', amount)
+    return amount
+  }, [studentDiscountEnabled, subtotal])
 
   // First-order flat discount — all new customers, regardless of referral status
   const firstOrderDiscount = isFirstOrder ? FIRST_ORDER_DISCOUNT_AMOUNT : 0
