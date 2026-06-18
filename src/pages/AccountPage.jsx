@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
-import { birr } from '../utils/format'
+import { birr, formatDeliveryDate } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { checkEmailExists, checkPhoneExists, deleteAccount, isValidEthiopianPhone, signIn, signOut, signUp, updateProfile } from '../lib/auth'
@@ -633,7 +633,7 @@ function ProfileCard({ user, t, state, dispatch }) {
     const [ordersRes, returnsRes] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, total, status, payment_status, refund_reason, refund_reference, refunded_at, created_at, updated_at, payment, shipping, items, cancelled_at, cancellation_reason')
+        .select('id, total, status, payment_status, refund_reason, refund_reference, refunded_at, created_at, updated_at, payment, shipping, items, cancelled_at, cancellation_reason, estimated_delivery_date')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
       fetchReturnRequestsForUser(user.id),
@@ -657,8 +657,9 @@ function ProfileCard({ user, t, state, dispatch }) {
         payment:            row.payment,
         shipping:           row.shipping,
         items:              row.items ?? [],
-        cancelledAt:        row.cancelled_at ?? null,
-        cancellationReason: row.cancellation_reason ?? '',
+        cancelledAt:           row.cancelled_at             ?? null,
+        cancellationReason:    row.cancellation_reason      ?? '',
+        estimatedDeliveryDate: row.estimated_delivery_date  ?? null,
       })),
     )
     if (!returnsRes.error && returnsRes.data.length > 0) {
@@ -1035,6 +1036,13 @@ function ProfileCard({ user, t, state, dispatch }) {
                                 · {t('account.refundRef')}: {order.refundReference}
                               </span>
                             )}
+                          </p>
+                        )}
+
+                        {/* Estimated delivery — active orders only */}
+                        {ACTIVE_ORDER_STATUSES.has(order.status) && order.estimatedDeliveryDate && (
+                          <p className="dash-order__est-delivery">
+                            {t('account.estimatedDelivery')}: <strong>{formatDeliveryDate(order.estimatedDeliveryDate, language)}</strong>
                           </p>
                         )}
 

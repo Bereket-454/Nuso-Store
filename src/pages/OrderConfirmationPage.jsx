@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useStore } from '../app/store'
-import { birr } from '../utils/format'
+import { birr, formatDeliveryDate } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { PaymentStatusBadge } from '../components/PaymentStatusBadge'
@@ -47,7 +47,7 @@ function SuccessIcon() {
 }
 
 export function OrderConfirmationPage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { id } = useParams()
   const { state } = useStore()
   const order = state.orders.find((item) => item.id === id)
@@ -98,6 +98,14 @@ export function OrderConfirmationPage() {
           <span className="muted">{t('orderConfirm.paymentStatus')}</span>
           <PaymentStatusBadge status={order.paymentStatus || 'pending'} />
         </div>
+        {order.estimatedDeliveryDate && (
+          <div className="ord-confirm__row">
+            <span className="muted">{t('orderConfirm.estimatedDelivery')}</span>
+            <span style={{ fontWeight: 600 }}>
+              {formatDeliveryDate(order.estimatedDeliveryDate, language)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Delivery address */}

@@ -2914,6 +2914,12 @@ textarea {
   margin-top: 0.4rem;
 }
 
+.chk-line--delivery-date {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 0.4rem;
+}
+
 /* ── Payment method selection ──────────────────────────────────────────────── */
 
 .chk-trust-strip {
@@ -5815,6 +5821,13 @@ textarea {
 }
 
 /* ── Order card support link ──────────────────────────────────────────────── */
+.dash-order__est-delivery {
+  width: 100%;
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 .dash-order__support-link {
   display: inline-flex;
   align-items: center;

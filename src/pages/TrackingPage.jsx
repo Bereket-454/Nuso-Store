@@ -4,7 +4,7 @@ import { useStore } from '../app/store'
 import { supabase } from '../lib/supabase'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
-import { birr } from '../utils/format'
+import { birr, formatDeliveryDate } from '../utils/format'
 
 // Normalise a raw Supabase order row to the shape the rest of the UI expects
 function normaliseOrder(row) {
@@ -18,8 +18,9 @@ function normaliseOrder(row) {
     paymentStatus:      row.payment_status,
     shipping:           row.shipping  ?? {},
     payment:            row.payment   ?? {},
-    cancellationReason: row.cancellation_reason ?? null,
-    cancelledAt:        row.cancelled_at        ?? null,
+    cancellationReason:    row.cancellation_reason     ?? null,
+    cancelledAt:           row.cancelled_at             ?? null,
+    estimatedDeliveryDate: row.estimated_delivery_date  ?? null,
   }
 }
 
@@ -180,8 +181,8 @@ function WalkingTracker({ status, updatedAt, cancellationReason }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────
 export function TrackingPage() {
-  const { t }       = useTranslation()
-  const { state }   = useStore()
+  const { t, language } = useTranslation()
+  const { state }       = useStore()
   usePageMeta(t('meta.tracking.title'), t('meta.tracking.desc'))
 
   const [orderId, setOrderId] = useState('')
@@ -365,6 +366,14 @@ export function TrackingPage() {
                 <span>
                   {result.shipping.city}{result.shipping.area ? `, ${result.shipping.area}` : ''}
                   {result.shipping.landmark ? ` · ${result.shipping.landmark}` : ''}
+                </span>
+              </div>
+            )}
+            {result.estimatedDeliveryDate && result.status !== 'delivered' && result.status !== 'cancelled' && (
+              <div className="tracking-detail-row">
+                <span className="muted">{t('tracking.estimatedDelivery')}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {formatDeliveryDate(result.estimatedDeliveryDate, language)}
                 </span>
               </div>
             )}

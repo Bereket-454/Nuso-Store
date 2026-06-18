@@ -226,6 +226,7 @@ export const translations = {
       firstOrderBanner:   'Welcome! Enjoy 500 ETB off your first order',
       firstOrderDiscount: 'First Order Discount',
       firstOrderApplied:  '500 ETB first-order discount applied',
+      estimatedDelivery:  'Estimated delivery: {{date}}',
     },
     payment: {
       mock: 'Test mode — payments are simulated.',
@@ -307,6 +308,7 @@ export const translations = {
       noActiveOrders:     'No active orders right now.',
       noDeliveredOrders:  'No delivered orders yet.',
       noCancelledOrders:  'No cancelled orders.',
+      estimatedDelivery:  'Est. delivery',
       deleteAccountBtn:   'Delete Account',
       deleteAccountDesc:  'Permanently delete your account and remove your personal data.',
       deleteModalTitle:   'Delete your account?',
@@ -397,10 +399,11 @@ export const translations = {
       paymentAfter: 'Pay after confirmation',
       paymentNow:     'Screenshot uploaded',
       paymentStatus:  'Payment Status',
-      deliveryTo:     'Delivery to',
-      statusLine:     'Status: {{status}}',
-      trackOrder:     'Track My Order',
-      continueShopping: 'Continue Shopping',
+      deliveryTo:          'Delivery to',
+      statusLine:          'Status: {{status}}',
+      trackOrder:          'Track My Order',
+      continueShopping:    'Continue Shopping',
+      estimatedDelivery:   'Estimated delivery',
     },
     tracking: {
       title: 'Track Your Order',
@@ -413,7 +416,8 @@ export const translations = {
       noDetails: 'Tracking info will appear here once your order is on its way.',
       currentStatus: 'Current status',
       payment: 'Payment',
-      deliveryAddress: 'Delivery address',
+      deliveryAddress:    'Delivery address',
+      estimatedDelivery:  'Estimated delivery',
     },
     admin: {
       title: 'Admin Dashboard',
@@ -921,6 +925,7 @@ export const translations = {
       firstOrderBanner:   'እንኳን ደህና መጡ! በመጀመሪያ ትዕዛዝዎ 500 ብር ቅናሽ ያገኛሉ',
       firstOrderDiscount: 'የመጀመሪያ ትዕዛዝ ቅናሽ',
       firstOrderApplied:  '500 ብር የመጀመሪያ ትዕዛዝ ቅናሽ ተተግብሯል',
+      estimatedDelivery:  'የሚደርስበት: {{date}}',
       uploadFailed: 'መጫን አልተሳካም — እንደገና ለመሞከር ይጫኑ',
     },
     payment: {
@@ -1002,6 +1007,7 @@ export const translations = {
       noActiveOrders:  'አሁን ንቁ ትዕዛዞች የሉም።',
       noDeliveredOrders: 'እስካሁን የተረከቡ ትዕዛዞች የሉም።',
       noCancelledOrders: 'የተሰረዙ ትዕዛዞች የሉም።',
+      estimatedDelivery: 'የሚደርስበት ቀን',
       deleteAccountBtn:   'መለያ ሰርዝ',
       deleteAccountDesc:  'መለያዎን ለዘለዓለም ሰርዘው የግል ዳታዎን ያስወግዱ።',
       deleteModalTitle:   'መለያዎን ይሰርዛሉ?',
@@ -1088,6 +1094,7 @@ export const translations = {
       trackOrder: 'ትዕዛዝ ይከታተሉ',
       continueShopping: 'ግዢ ይቀጥሉ',
       paymentStatus: 'የክፍያ ሁኔታ',
+      estimatedDelivery: 'የሚደርስበት ቀን',
     },
     tracking: {
       title: 'ትዕዛዝዎን ይከታተሉ',
@@ -1101,6 +1108,7 @@ export const translations = {
       currentStatus: 'የአሁኑ ሁኔታ',
       payment: 'ክፍያ',
       deliveryAddress: 'የማድረሻ አድራሻ',
+      estimatedDelivery: 'የሚደርስበት ቀን',
     },
     admin: {
       title: 'የአስተዳዳር ዳሽቦርድ',

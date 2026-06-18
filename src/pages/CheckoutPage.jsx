@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { usePageMeta } from '../hooks/usePageMeta'
-import { birr } from '../utils/format'
+import { birr, formatDeliveryDate, addCalendarDays } from '../utils/format'
 import { fetchCategories, fetchProducts, fetchSubcategories, recalculateBestSellers } from '../services/productsService'
 import { completeReferralReward } from '../services/referral'
 import { notifyAdmins } from '../services/notificationsService'
@@ -59,7 +59,7 @@ const STUDENT_DISCOUNT_CAP = 500
 const FIRST_ORDER_DISCOUNT_AMOUNT = 500
 
 export function CheckoutPage() {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const { state, dispatch } = useStore()
   const navigate = useNavigate()
   usePageMeta(t('meta.checkout.title'), t('meta.checkout.desc'))
@@ -177,6 +177,9 @@ export function CheckoutPage() {
 
   // First-order flat discount — all new customers, regardless of referral status
   const firstOrderDiscount = isFirstOrder ? FIRST_ORDER_DISCOUNT_AMOUNT : 0
+
+  // Estimated delivery: 3 calendar days from today, computed once per checkout session
+  const estimatedDeliveryDate = useMemo(() => addCalendarDays(3), [])
 
   // Sequential discount chain — each step clamps to 0 so total never goes negative.
   // Order: subtotal → student → first-order → referral → delivery → wallet
@@ -347,8 +350,9 @@ export function CheckoutPage() {
         status:             'order_received',
         referral_discount:    referralDiscount,
         student_discount:     studentDiscount,
-        first_order_discount: firstOrderDiscount,
-        wallet_credit_used:   walletCreditApplied,
+        first_order_discount:     firstOrderDiscount,
+        wallet_credit_used:       walletCreditApplied,
+        estimated_delivery_date:  estimatedDeliveryDate,
       }
       console.log('[Checkout] inserting order — payload:', orderPayload)
       const { error: insertError } = await supabase.from('orders').insert(orderPayload)
@@ -418,6 +422,7 @@ export function CheckoutPage() {
         referralDiscount,
         firstOrderDiscount,
         walletCreditUsed: walletCreditApplied,
+        estimatedDeliveryDate,
         shipping,
         payment,
         paymentStatus: 'pending',
@@ -791,6 +796,10 @@ export function CheckoutPage() {
         <div className="chk-line chk-line--total">
           <span>{t('cart.total')}</span>
           <span>{birr(finalTotal)}</span>
+        </div>
+
+        <div className="chk-line chk-line--delivery-date">
+          <span>{t('checkout.estimatedDelivery', { date: formatDeliveryDate(estimatedDeliveryDate, language) })}</span>
         </div>
 
         {firstOrderDiscount > 0 && (
