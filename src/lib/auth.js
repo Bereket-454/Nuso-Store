@@ -39,14 +39,27 @@ export async function signUp(email, password, phone, name, referralCode) {
   if (referralCode && referralCode.trim()) {
     meta.referral_code_used = referralCode.trim().toUpperCase()
   }
-  console.log('attempting signup with email:', email)
+  console.log('[signUp] attempting signup — email:', email, '| metadata being sent:', meta)
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: meta },
   })
   if (error) {
-    console.log('supabase signUp error:', error, '| message:', error.message, '| status:', error.status, '| code:', error.code)
+    console.log('[signUp] error:', error.message, '| status:', error.status, '| code:', error.code)
+  } else {
+    console.log('[signUp] success — user id:', data?.user?.id, '| user metadata stored:', data?.user?.user_metadata)
+    // Wait 1 s then check whether the trigger created the referral row
+    if (meta.referral_code_used && data?.user?.id) {
+      setTimeout(async () => {
+        const { data: row, error: rowErr } = await supabase
+          .from('referrals')
+          .select('*')
+          .eq('referred_user_id', data.user.id)
+          .maybeSingle()
+        console.log('[signUp] referrals row for new user (1 s after signup):', row, '| error:', rowErr)
+      }, 1000)
+    }
   }
   return { data, error }
 }

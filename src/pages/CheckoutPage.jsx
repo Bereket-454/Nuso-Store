@@ -175,6 +175,28 @@ export function CheckoutPage() {
     return Math.min(Math.floor(subtotal * STUDENT_DISCOUNT_PCT), STUDENT_DISCOUNT_CAP)
   }, [state.user?.student_discount_enabled, subtotal])
 
+  // Diagnostic: log discount state whenever relevant user flags or subtotal change
+  useEffect(() => {
+    if (!state.user?.id) return
+    console.log('[Checkout] discount diagnostics:', {
+      student_verified:         state.user?.student_verified,
+      student_discount_enabled: state.user?.student_discount_enabled,
+      studentDiscount,
+      referred_by:              state.user?.referred_by,
+      isFirstOrder,
+      referralDiscount,
+      subtotal,
+    })
+  }, [
+    state.user?.student_verified,
+    state.user?.student_discount_enabled,
+    state.user?.referred_by,
+    studentDiscount,
+    isFirstOrder,
+    referralDiscount,
+    subtotal,
+  ])
+
   // First-order flat discount — all new customers, regardless of referral status
   const firstOrderDiscount = isFirstOrder ? FIRST_ORDER_DISCOUNT_AMOUNT : 0
 
@@ -400,8 +422,11 @@ export function CheckoutPage() {
 
       // Post-order rewards (fire-and-forget)
       if (userId) {
+        console.log('[Checkout] post-order rewards — userId:', userId, '| referred_by:', state.user?.referred_by, '| will call completeReferralReward:', !!state.user?.referred_by)
         if (state.user?.referred_by) {
-          completeReferralReward(orderId, userId).catch(console.error)
+          completeReferralReward(orderId, userId)
+            .then((result) => console.log('[Checkout] completeReferralReward result:', result))
+            .catch((err)  => console.error('[Checkout] completeReferralReward threw:', err))
         }
         if (walletCreditApplied > 0) {
           useWalletCredit(userId, walletCreditApplied, orderId).then(({ success, newBalance }) => {

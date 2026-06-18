@@ -5,6 +5,7 @@ import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { birr } from '../utils/format'
 import { getReferralStats } from '../services/referral'
+import { supabase } from '../lib/supabase'
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -114,9 +115,24 @@ export function ReferralPage() {
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return }
-    getReferralStats(user.id).then(({ stats: s }) => {
+
+    getReferralStats(user.id).then(({ stats: s, error }) => {
+      console.log('[ReferralPage] get_referral_stats RPC — data:', s, '| error:', error)
       setStats(s)
       setLoading(false)
+    })
+
+    // Diagnostic: check referrals rows directly from both perspectives
+    supabase.from('referrals').select('*').eq('referrer_id', user.id).then(({ data, error }) => {
+      console.log('[ReferralPage] referrals WHERE referrer_id = me:', data, '| error:', error)
+    })
+    supabase.from('referrals').select('*').eq('referred_user_id', user.id).then(({ data, error }) => {
+      console.log('[ReferralPage] referrals WHERE referred_user_id = me:', data, '| error:', error)
+    })
+
+    // Diagnostic: check profiles.referred_by for this user
+    supabase.from('profiles').select('id, referral_code, referred_by').eq('id', user.id).single().then(({ data, error }) => {
+      console.log('[ReferralPage] my profile — referral_code:', data?.referral_code, '| referred_by:', data?.referred_by, '| error:', error)
     })
   }, [user?.id])
 
