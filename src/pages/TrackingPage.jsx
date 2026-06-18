@@ -372,7 +372,7 @@ export function TrackingPage() {
             {result.estimatedDeliveryDate && result.status !== 'delivered' && result.status !== 'cancelled' && (
               <div className="tracking-detail-row">
                 <span className="muted">{t('tracking.estimatedDelivery')}</span>
-                <span style={{ fontWeight: 600 }}>
+                <span style={{ fontWeight: 700, color: '#FF6B00' }}>
                   {formatDeliveryDate(result.estimatedDeliveryDate, language)}
                 </span>
               </div>

@@ -2914,10 +2914,38 @@ textarea {
   margin-top: 0.4rem;
 }
 
-.chk-line--delivery-date {
-  font-size: 0.82rem;
+.chk-delivery-promise {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.7rem 0 0.35rem;
+  padding: 0.7rem 0.9rem;
+  background: #fff7ed;
+  border: 1.5px solid #fdba74;
+  border-radius: var(--radius);
+}
+
+.chk-delivery-promise__icon {
+  flex-shrink: 0;
+  color: #FF6B00;
+}
+
+.chk-delivery-promise__label {
+  font-size: 0.72rem;
   color: var(--muted);
-  margin-top: 0.4rem;
+  font-weight: 500;
+  margin: 0 0 0.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.chk-delivery-promise__date {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #FF6B00;
+  margin: 0;
+  line-height: 1.3;
 }
 
 /* ── Payment method selection ──────────────────────────────────────────────── */
@@ -4108,6 +4136,40 @@ textarea {
   color: var(--muted);
   line-height: 1.6;
   margin: 0;
+}
+
+.ord-confirm__delivery-promise {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.1rem 0 0;
+  padding: 1rem 1.25rem;
+  background: #fff7ed;
+  border: 2px solid #FF6B00;
+  border-radius: var(--radius);
+}
+
+.ord-confirm__delivery-icon {
+  flex-shrink: 0;
+  color: #FF6B00;
+}
+
+.ord-confirm__delivery-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin: 0 0 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.ord-confirm__delivery-date {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #FF6B00;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .ord-confirm__details {
@@ -5822,10 +5884,18 @@ textarea {
 
 /* ── Order card support link ──────────────────────────────────────────────── */
 .dash-order__est-delivery {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
   width: 100%;
-  margin: 0.3rem 0 0;
+  margin: 0.4rem 0 0;
   font-size: 0.82rem;
   color: var(--muted);
+}
+
+.dash-order__est-delivery strong {
+  color: #FF6B00;
+  font-weight: 700;
 }
 
 .dash-order__support-link {

@@ -1042,6 +1042,12 @@ function ProfileCard({ user, t, state, dispatch }) {
                         {/* Estimated delivery — active orders only */}
                         {ACTIVE_ORDER_STATUSES.has(order.status) && order.estimatedDeliveryDate && (
                           <p className="dash-order__est-delivery">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FF6B00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <rect x="1" y="3" width="15" height="13" rx="1"/>
+                              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                              <circle cx="5.5" cy="18.5" r="2.5"/>
+                              <circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
                             {t('account.estimatedDelivery')}: <strong>{formatDeliveryDate(order.estimatedDeliveryDate, language)}</strong>
                           </p>
                         )}

@@ -226,7 +226,7 @@ export const translations = {
       firstOrderBanner:   'Welcome! Enjoy 500 ETB off your first order',
       firstOrderDiscount: 'First Order Discount',
       firstOrderApplied:  '500 ETB first-order discount applied',
-      estimatedDelivery:  'Estimated delivery: {{date}}',
+      estimatedDelivery:  'Delivery by',
     },
     payment: {
       mock: 'Test mode — payments are simulated.',
@@ -308,7 +308,7 @@ export const translations = {
       noActiveOrders:     'No active orders right now.',
       noDeliveredOrders:  'No delivered orders yet.',
       noCancelledOrders:  'No cancelled orders.',
-      estimatedDelivery:  'Est. delivery',
+      estimatedDelivery:  'Arriving by',
       deleteAccountBtn:   'Delete Account',
       deleteAccountDesc:  'Permanently delete your account and remove your personal data.',
       deleteModalTitle:   'Delete your account?',
@@ -403,7 +403,7 @@ export const translations = {
       statusLine:          'Status: {{status}}',
       trackOrder:          'Track My Order',
       continueShopping:    'Continue Shopping',
-      estimatedDelivery:   'Estimated delivery',
+      estimatedDelivery:   'Arriving by',
     },
     tracking: {
       title: 'Track Your Order',
@@ -417,7 +417,7 @@ export const translations = {
       currentStatus: 'Current status',
       payment: 'Payment',
       deliveryAddress:    'Delivery address',
-      estimatedDelivery:  'Estimated delivery',
+      estimatedDelivery:  'Arriving by',
     },
     admin: {
       title: 'Admin Dashboard',
@@ -925,7 +925,7 @@ export const translations = {
       firstOrderBanner:   'እንኳን ደህና መጡ! በመጀመሪያ ትዕዛዝዎ 500 ብር ቅናሽ ያገኛሉ',
       firstOrderDiscount: 'የመጀመሪያ ትዕዛዝ ቅናሽ',
       firstOrderApplied:  '500 ብር የመጀመሪያ ትዕዛዝ ቅናሽ ተተግብሯል',
-      estimatedDelivery:  'የሚደርስበት: {{date}}',
+      estimatedDelivery:  'ይደርሳል',
       uploadFailed: 'መጫን አልተሳካም — እንደገና ለመሞከር ይጫኑ',
     },
     payment: {
@@ -1007,7 +1007,7 @@ export const translations = {
       noActiveOrders:  'አሁን ንቁ ትዕዛዞች የሉም።',
       noDeliveredOrders: 'እስካሁን የተረከቡ ትዕዛዞች የሉም።',
       noCancelledOrders: 'የተሰረዙ ትዕዛዞች የሉም።',
-      estimatedDelivery: 'የሚደርስበት ቀን',
+      estimatedDelivery: 'ይደርሳል',
       deleteAccountBtn:   'መለያ ሰርዝ',
       deleteAccountDesc:  'መለያዎን ለዘለዓለም ሰርዘው የግል ዳታዎን ያስወግዱ።',
       deleteModalTitle:   'መለያዎን ይሰርዛሉ?',
@@ -1094,7 +1094,7 @@ export const translations = {
       trackOrder: 'ትዕዛዝ ይከታተሉ',
       continueShopping: 'ግዢ ይቀጥሉ',
       paymentStatus: 'የክፍያ ሁኔታ',
-      estimatedDelivery: 'የሚደርስበት ቀን',
+      estimatedDelivery: 'ይደርሳል',
     },
     tracking: {
       title: 'ትዕዛዝዎን ይከታተሉ',
@@ -1108,7 +1108,7 @@ export const translations = {
       currentStatus: 'የአሁኑ ሁኔታ',
       payment: 'ክፍያ',
       deliveryAddress: 'የማድረሻ አድራሻ',
-      estimatedDelivery: 'የሚደርስበት ቀን',
+      estimatedDelivery: 'ይደርሳል',
     },
     admin: {
       title: 'የአስተዳዳር ዳሽቦርድ',

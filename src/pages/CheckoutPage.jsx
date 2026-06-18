@@ -798,8 +798,17 @@ export function CheckoutPage() {
           <span>{birr(finalTotal)}</span>
         </div>
 
-        <div className="chk-line chk-line--delivery-date">
-          <span>{t('checkout.estimatedDelivery', { date: formatDeliveryDate(estimatedDeliveryDate, language) })}</span>
+        <div className="chk-delivery-promise">
+          <svg className="chk-delivery-promise__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="1" y="3" width="15" height="13" rx="1"/>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+            <circle cx="5.5" cy="18.5" r="2.5"/>
+            <circle cx="18.5" cy="18.5" r="2.5"/>
+          </svg>
+          <div>
+            <p className="chk-delivery-promise__label">{t('checkout.estimatedDelivery')}</p>
+            <p className="chk-delivery-promise__date">{formatDeliveryDate(estimatedDeliveryDate, language)}</p>
+          </div>
         </div>
 
         {firstOrderDiscount > 0 && (

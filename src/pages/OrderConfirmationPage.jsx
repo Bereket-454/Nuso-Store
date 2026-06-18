@@ -78,6 +78,22 @@ export function OrderConfirmationPage() {
       {/* Primary message */}
       <p className="ord-confirm__msg">{t('orderConfirm.received')}</p>
 
+      {/* Delivery promise — most important info, shown prominently */}
+      {order.estimatedDeliveryDate && (
+        <div className="ord-confirm__delivery-promise">
+          <svg className="ord-confirm__delivery-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="1" y="3" width="15" height="13" rx="1"/>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+            <circle cx="5.5" cy="18.5" r="2.5"/>
+            <circle cx="18.5" cy="18.5" r="2.5"/>
+          </svg>
+          <div>
+            <p className="ord-confirm__delivery-label">{t('orderConfirm.estimatedDelivery')}</p>
+            <p className="ord-confirm__delivery-date">{formatDeliveryDate(order.estimatedDeliveryDate, language)}</p>
+          </div>
+        </div>
+      )}
+
       <hr style={{ border: '1px solid var(--border)', margin: '1.25rem 0' }} />
 
       {/* Order details */}
@@ -98,14 +114,6 @@ export function OrderConfirmationPage() {
           <span className="muted">{t('orderConfirm.paymentStatus')}</span>
           <PaymentStatusBadge status={order.paymentStatus || 'pending'} />
         </div>
-        {order.estimatedDeliveryDate && (
-          <div className="ord-confirm__row">
-            <span className="muted">{t('orderConfirm.estimatedDelivery')}</span>
-            <span style={{ fontWeight: 600 }}>
-              {formatDeliveryDate(order.estimatedDeliveryDate, language)}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Delivery address */}
