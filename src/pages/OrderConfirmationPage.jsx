@@ -157,13 +157,13 @@ export function OrderConfirmationPage() {
             {t('support.chatTelegram')}
           </a>
           <a
-            href="tel:0987312250"
+            href="tel:0992728667"
             className="support-box__link support-box__link--phone"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C9.61 21 3 14.39 3 6.5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z"/>
             </svg>
-            0987312250
+            0992728667
           </a>
         </div>
         <p className="support-box__note">{t('support.replyTime')}</p>

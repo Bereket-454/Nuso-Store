@@ -374,7 +374,7 @@ export function Layout() {
           </nav>
           <div className="footer-contact">
             <a href="https://t.me/nusostore" target="_blank" rel="noopener noreferrer">Chat on Telegram</a>
-            <a href="tel:0987312250">0987312250</a>
+            <a href="tel:0992728667">0992728667</a>
           </div>
           <p className="footer-copyright">© 2026 Nuso Store · Wolaita Sodo, Ethiopia</p>
         </div>

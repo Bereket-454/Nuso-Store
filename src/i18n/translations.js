@@ -677,7 +677,7 @@ export const translations = {
       supportTitle: 'Get in touch',
       supportSub: 'We usually reply within 30 minutes.',
       chatTelegram: 'Chat on Telegram',
-      callPhone: 'Call 0987312250',
+      callPhone: 'Call 0992728667',
     },
     studentDiscount: {
       pageTitle: 'Student Discount',
@@ -1367,7 +1367,7 @@ export const translations = {
       supportTitle: 'ያግኙን',
       supportSub: 'ብዙውን ጊዜ በ30 ደቂቃ ውስጥ እንመልሳለን።',
       chatTelegram: 'በቴሌግራም ያናግሩን',
-      callPhone: '0987312250 ይደውሉ',
+      callPhone: '0992728667 ይደውሉ',
     },
     studentDiscount: {
       pageTitle: 'የተማሪ ቅናሽ',

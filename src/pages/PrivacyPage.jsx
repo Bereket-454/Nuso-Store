@@ -19,7 +19,7 @@ export function PrivacyPage() {
         <p>
           If you have any questions, contact us on{' '}
           <a href="https://t.me/nusostore" target="_blank" rel="noopener noreferrer">Telegram</a>{' '}
-          or call <a href="tel:0987312250">0987312250</a>.
+          or call <a href="tel:0992728667">0992728667</a>.
         </p>
       </div>
 
@@ -84,7 +84,7 @@ export function PrivacyPage() {
         <p>
           To exercise any of these rights, contact us on{' '}
           <a href="https://t.me/nusostore" target="_blank" rel="noopener noreferrer">Telegram</a>{' '}
-          or call <a href="tel:0987312250">0987312250</a>.
+          or call <a href="tel:0992728667">0992728667</a>.
         </p>
       </div>
 
