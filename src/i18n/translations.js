@@ -223,6 +223,9 @@ export const translations = {
       applyWallet: 'Use wallet credit ({{amount}})',
       referralMinNote: 'Referral discount requires min. {{min}} order',
       referralApplied: '10% referral discount applied (−{{amount}})',
+      firstOrderBanner:   'Welcome! Enjoy 500 ETB off your first order',
+      firstOrderDiscount: 'First Order Discount',
+      firstOrderApplied:  '500 ETB first-order discount applied',
     },
     payment: {
       mock: 'Test mode — payments are simulated.',
@@ -915,6 +918,9 @@ export const translations = {
       applyWallet: 'የዋሌት ክሬዲት ተጠቀም ({{amount}})',
       referralMinNote: 'የሪፈራል ቅናሽ ቢያንስ {{min}} ትዕዛዝ ይፈልጋል',
       referralApplied: '10% የሪፈራል ቅናሽ ተተግብሯል (−{{amount}})',
+      firstOrderBanner:   'እንኳን ደህና መጡ! በመጀመሪያ ትዕዛዝዎ 500 ብር ቅናሽ ያገኛሉ',
+      firstOrderDiscount: 'የመጀመሪያ ትዕዛዝ ቅናሽ',
+      firstOrderApplied:  '500 ብር የመጀመሪያ ትዕዛዝ ቅናሽ ተተግብሯል',
       uploadFailed: 'መጫን አልተሳካም — እንደገና ለመሞከር ይጫኑ',
     },
     payment: {

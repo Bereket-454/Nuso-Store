@@ -55,6 +55,9 @@ const REFERRAL_MIN_ORDER     = 300
 const STUDENT_DISCOUNT_PCT = 0.05
 const STUDENT_DISCOUNT_CAP = 500
 
+// First-order welcome discount (flat amount, all new customers)
+const FIRST_ORDER_DISCOUNT_AMOUNT = 500
+
 export function CheckoutPage() {
   const { t } = useTranslation()
   const { state, dispatch } = useStore()
@@ -115,17 +118,16 @@ export function CheckoutPage() {
     })
   }, [state.user?.id])
 
-  // Load referral eligibility and wallet balance.
+  // Check first-order status (all users) and load wallet balance.
   useEffect(() => {
     if (!state.user?.id) return
-    if (state.user.referred_by) {
-      supabase
-        .from('orders')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', state.user.id)
-        .eq('payment_status', 'paid')
-        .then(({ count }) => setIsFirstOrder(count === 0))
-    }
+    // First-order: true when this user has placed zero orders ever.
+    // No payment_status filter — any existing order means they're not new.
+    supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', state.user.id)
+      .then(({ count }) => setIsFirstOrder(count === 0))
     supabase
       .from('wallets')
       .select('balance')
@@ -161,11 +163,11 @@ export function CheckoutPage() {
   const subtotal    = cartItems.reduce((s, i) => s + i.product.price * i.quantity, 0)
   const deliveryFee = 0
 
-  // Referral discount
+  // Referral discount — only for referred users placing their first order
   const referralDiscount = useMemo(() => {
-    if (!isFirstOrder || subtotal < REFERRAL_MIN_ORDER) return 0
+    if (!isFirstOrder || !state.user?.referred_by || subtotal < REFERRAL_MIN_ORDER) return 0
     return Math.min(Math.floor(subtotal * REFERRAL_DISCOUNT_PCT), REFERRAL_DISCOUNT_CAP)
-  }, [isFirstOrder, subtotal])
+  }, [isFirstOrder, subtotal, state.user?.referred_by])
 
   // Student discount
   const studentDiscount = useMemo(() => {
@@ -173,11 +175,18 @@ export function CheckoutPage() {
     return Math.min(Math.floor(subtotal * STUDENT_DISCOUNT_PCT), STUDENT_DISCOUNT_CAP)
   }, [state.user?.student_discount_enabled, subtotal])
 
-  // Wallet credit
-  const afterDiscount       = subtotal - referralDiscount - studentDiscount + deliveryFee
-  const maxWalletApplicable = Math.min(walletBalance, afterDiscount)
+  // First-order flat discount — all new customers, regardless of referral status
+  const firstOrderDiscount = isFirstOrder ? FIRST_ORDER_DISCOUNT_AMOUNT : 0
+
+  // Sequential discount chain — each step clamps to 0 so total never goes negative.
+  // Order: subtotal → student → first-order → referral → delivery → wallet
+  const afterStudent    = Math.max(0, subtotal - studentDiscount)
+  const afterFirstOrder = Math.max(0, afterStudent - firstOrderDiscount)
+  const afterReferral   = Math.max(0, afterFirstOrder - referralDiscount)
+  const afterDelivery   = afterReferral + deliveryFee
+  const maxWalletApplicable = Math.min(walletBalance, afterDelivery)
   const walletCreditApplied = useWallet && maxWalletApplicable > 0 ? maxWalletApplicable : 0
-  const finalTotal          = afterDiscount - walletCreditApplied
+  const finalTotal          = afterDelivery - walletCreditApplied
 
   if (!state.cart.length) {
     return (
@@ -336,9 +345,10 @@ export function CheckoutPage() {
         total:              finalTotal,
         payment_status:     'pending',
         status:             'order_received',
-        referral_discount:  referralDiscount,
-        student_discount:   studentDiscount,
-        wallet_credit_used: walletCreditApplied,
+        referral_discount:    referralDiscount,
+        student_discount:     studentDiscount,
+        first_order_discount: firstOrderDiscount,
+        wallet_credit_used:   walletCreditApplied,
       }
       console.log('[Checkout] inserting order — payload:', orderPayload)
       const { error: insertError } = await supabase.from('orders').insert(orderPayload)
@@ -406,6 +416,7 @@ export function CheckoutPage() {
         deliveryFee,
         total: finalTotal,
         referralDiscount,
+        firstOrderDiscount,
         walletCreditUsed: walletCreditApplied,
         shipping,
         payment,
@@ -650,6 +661,12 @@ export function CheckoutPage() {
 
       {/* ── Right column: order summary ──────────────────────────────────────── */}
       <aside className="card card-body">
+        {isFirstOrder && (
+          <div className="chk-first-order-banner">
+            {t('checkout.firstOrderBanner')}
+          </div>
+        )}
+
         <h3>{t('checkout.orderSummary')}</h3>
 
         {cartItems.map((item) => (
@@ -720,17 +737,24 @@ export function CheckoutPage() {
           <span>{birr(subtotal)}</span>
         </div>
 
-        {referralDiscount > 0 && (
-          <div className="chk-line chk-line--discount">
-            <span>🎁 {t('checkout.referralDiscount')}</span>
-            <span>−{birr(referralDiscount)}</span>
-          </div>
-        )}
-
         {studentDiscount > 0 && (
           <div className="chk-line chk-line--discount">
             <span>🎓 {t('studentDiscount.discountLine')}</span>
             <span>−{birr(studentDiscount)}</span>
+          </div>
+        )}
+
+        {firstOrderDiscount > 0 && (
+          <div className="chk-line chk-line--first-order">
+            <span>{t('checkout.firstOrderDiscount')}</span>
+            <span>−{birr(firstOrderDiscount)}</span>
+          </div>
+        )}
+
+        {referralDiscount > 0 && (
+          <div className="chk-line chk-line--discount">
+            <span>🎁 {t('checkout.referralDiscount')}</span>
+            <span>−{birr(referralDiscount)}</span>
           </div>
         )}
         {isFirstOrder && subtotal > 0 && subtotal < REFERRAL_MIN_ORDER && state.user?.referred_by && (
@@ -769,6 +793,11 @@ export function CheckoutPage() {
           <span>{birr(finalTotal)}</span>
         </div>
 
+        {firstOrderDiscount > 0 && (
+          <p className="chk-note chk-note--first-order">
+            ✓ {t('checkout.firstOrderApplied')}
+          </p>
+        )}
         {referralDiscount > 0 && (
           <p className="chk-note chk-note--success">
             ✓ {t('checkout.referralApplied', { amount: birr(referralDiscount) })}

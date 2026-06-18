@@ -2885,6 +2885,35 @@ textarea {
   margin-top: 0.4rem;
 }
 
+/* First-order welcome discount */
+.chk-first-order-banner {
+  background: #fff7ed;
+  border: 1.5px solid #fdba74;
+  border-radius: var(--radius);
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #c2410c;
+  text-align: center;
+}
+
+.chk-line--first-order {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.chk-note--first-order {
+  color: #c2410c;
+  font-weight: 600;
+  background: #fff7ed;
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  display: inline-block;
+  margin-top: 0.4rem;
+}
+
 /* ── Payment method selection ──────────────────────────────────────────────── */
 
 .chk-trust-strip {
