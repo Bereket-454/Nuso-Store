@@ -1,10 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../app/store'
 import { birr } from '../utils/format'
 import { usePageMeta } from '../hooks/usePageMeta'
 import { useTranslation } from '../i18n'
 import { EmptyState } from '../components/EmptyState'
+import { supabase } from '../lib/supabase'
+
+const STUDENT_DISCOUNT_PCT = 0.05
+const STUDENT_DISCOUNT_CAP = 500
 
 function PurgeNotice({ onDismiss, t }) {
   return (
@@ -41,6 +45,23 @@ export function CartPage() {
   useEffect(() => { window.scrollTo(0, 0) }, [])
   useEffect(() => { loadCatalog() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Student discount — seed from store, then refresh from Supabase so admin
+  // approvals since last login are reflected immediately.
+  const [studentDiscountEnabled, setStudentDiscountEnabled] = useState(
+    state.user?.student_discount_enabled ?? false,
+  )
+  useEffect(() => {
+    if (!state.user?.id) return
+    supabase
+      .from('profiles')
+      .select('student_verified, student_discount_enabled')
+      .eq('id', state.user.id)
+      .single()
+      .then(({ data, error }) => {
+        if (!error && data) setStudentDiscountEnabled(data.student_discount_enabled ?? false)
+      })
+  }, [state.user?.id])
+
   // Map cart items to their products. Defensive filter: drop items with no matching
   // product or zero price. The store already cleans the cart in CATALOGUE_LOADED;
   // this guards the brief window before the catalogue has loaded.
@@ -61,7 +82,10 @@ export function CartPage() {
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   const deliveryFee = 0
-  const total = subtotal + deliveryFee
+  const studentDiscount = studentDiscountEnabled
+    ? Math.min(Math.floor(subtotal * STUDENT_DISCOUNT_PCT), STUDENT_DISCOUNT_CAP)
+    : 0
+  const total = Math.max(0, subtotal - studentDiscount) + deliveryFee
 
   // Truly empty cart — no purge involved.
   if (items.length === 0 && !showPurgeNotice) {
@@ -159,6 +183,12 @@ export function CartPage() {
         <aside className="card card-body cart-summary">
           <h3>{t('cart.summary')}</h3>
           <p>{t('cart.subtotal')}: {birr(subtotal)}</p>
+          {studentDiscount > 0 && (
+            <p className="chk-line--discount" style={{ display: 'flex', justifyContent: 'space-between', margin: '0.2rem 0', fontWeight: 600, color: 'var(--accent)' }}>
+              <span>🎓 {t('studentDiscount.discountLine')}</span>
+              <span>−{birr(studentDiscount)}</span>
+            </p>
+          )}
           <p>{t('cart.deliveryFee')}: {deliveryFee === 0 ? t('cart.free') : birr(deliveryFee)}</p>
           <p>
             <strong>{t('cart.total')}: {birr(total)}</strong>
@@ -175,6 +205,11 @@ export function CartPage() {
         <div className="cart-sticky-bar__total">
           <span className="cart-sticky-bar__label">{t('cart.total')}</span>
           <strong className="cart-sticky-bar__amount">{birr(total)}</strong>
+          {studentDiscount > 0 && (
+            <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 600, display: 'block', lineHeight: 1.2 }}>
+              🎓 −{birr(studentDiscount)}
+            </span>
+          )}
         </div>
         <Link className="btn btn-primary cart-sticky-bar__btn" to="/checkout">
           {t('cart.checkout')}
