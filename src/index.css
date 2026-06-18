@@ -7024,3 +7024,64 @@ textarea {
   white-space: nowrap;
   align-self: center;
 }
+
+/* ── Push notification permission banner (top of screen) ─────────────────── */
+.push-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  background: #1a2340;
+  color: #fff;
+  font-size: 0.82rem;
+  animation: push-banner-in 0.22s ease-out both;
+}
+@keyframes push-banner-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.push-banner__icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.push-banner__msg {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+.push-banner__allow {
+  flex-shrink: 0;
+  background: #FF6B00;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.85rem;
+  cursor: pointer;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.push-banner__allow:hover   { background: #e85f00; }
+.push-banner__allow:disabled { opacity: 0.6; cursor: default; }
+.push-banner__dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.push-banner__dismiss:hover { color: #fff; }
