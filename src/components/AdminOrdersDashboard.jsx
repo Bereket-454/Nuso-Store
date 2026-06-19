@@ -7,7 +7,7 @@ import { AdminOrderActions } from './AdminOrderActions'
 import { PaymentStatusBadge } from './PaymentStatusBadge'
 import { isSuperAdmin, isOrderManager, isDeliveryManager } from '../utils/auth'
 import { supabase } from '../lib/supabase'
-import { insertNotification, sendOrderEmail } from '../services/notificationsService'
+import { insertNotification /*, sendOrderEmail */ } from '../services/notificationsService'
 import { insertAuditLog } from '../services/auditService'
 import { archiveOrder, unarchiveOrder } from '../services/ordersService'
 import { fetchAllReturnRequests, updateReturnStatus, RETURN_REASON_LABELS, RETURN_STATUS_LABELS } from '../services/returnsService'
@@ -295,10 +295,13 @@ function OrderCard({ order, onView, onUpdated, onArchive, onUnarchive }) {
     setAdvancing(true)
     try {
       console.log(`[OrderCard.quickAdvance] called — ${new Date().toISOString()} | orderId: ${order.id} | targetStatus: ${allowedNext.id} | advancing was: ${advancing}`)
+      const _reqId = Math.random().toString(36).slice(2, 8)
+      console.log(`[DB WRITE] quickAdvance → orders.update | reqId: ${_reqId} | orderId: ${order.id} | status: ${allowedNext.id} | ts: ${new Date().toISOString()}`)
       const { error } = await supabase
         .from('orders')
         .update({ status: allowedNext.id, updated_at: new Date().toISOString() })
         .eq('id', order.id)
+      console.log(`[DB WRITE] quickAdvance → orders.update DONE | reqId: ${_reqId} | error: ${error?.message ?? 'none'}`)
       if (error) { setAdvancing(false); return }
 
       insertAuditLog({
@@ -320,9 +323,10 @@ function OrderCard({ order, onView, onUpdated, onArchive, onUnarchive }) {
           link:      '/account',
         })
       }
-      if ((allowedNext.id === 'confirmed' || allowedNext.id === 'delivered') && n) {
-        sendOrderEmail({ toEmail: order.customer_email, toName: order.customer_name, message: n.en(order.id), orderId: order.id })
-      }
+      // sendOrderEmail disabled — push notifications handle status updates instead
+      // if ((allowedNext.id === 'confirmed' || allowedNext.id === 'delivered') && n) {
+      //   sendOrderEmail({ toEmail: order.customer_email, toName: order.customer_name, message: n.en(order.id), orderId: order.id })
+      // }
 
       onUpdated({ status: allowedNext.id })
     } catch (err) {
@@ -569,10 +573,13 @@ function DeliveryOrderCard({ order, onUpdated }) {
     if (!allowedNext || advancing) return
     setAdvancing(true)
     console.log(`[DeliveryOrderCard.doAdvance] called — ${new Date().toISOString()} | orderId: ${order.id} | targetStatus: ${allowedNext.id}`)
+    const _reqId = Math.random().toString(36).slice(2, 8)
+    console.log(`[DB WRITE] doAdvance → orders.update | reqId: ${_reqId} | orderId: ${order.id} | status: ${allowedNext.id} | ts: ${new Date().toISOString()}`)
     const { error } = await supabase
       .from('orders')
       .update({ status: allowedNext.id, updated_at: new Date().toISOString() })
       .eq('id', order.id)
+    console.log(`[DB WRITE] doAdvance → orders.update DONE | reqId: ${_reqId} | error: ${error?.message ?? 'none'}`)
     if (!error) {
       insertAuditLog({
         adminUserId: state.user?.id, adminEmail: state.user?.email,
@@ -587,9 +594,10 @@ function DeliveryOrderCard({ order, onUpdated }) {
           message: n.en(order.id), messageAm: n.am(order.id), link: '/account',
         })
       }
-      if ((allowedNext.id === 'confirmed' || allowedNext.id === 'delivered') && n) {
-        sendOrderEmail({ toEmail: order.customer_email, toName: order.customer_name, message: n.en(order.id), orderId: order.id })
-      }
+      // sendOrderEmail disabled — push notifications handle status updates instead
+      // if ((allowedNext.id === 'confirmed' || allowedNext.id === 'delivered') && n) {
+      //   sendOrderEmail({ toEmail: order.customer_email, toName: order.customer_name, message: n.en(order.id), orderId: order.id })
+      // }
       onUpdated({ status: allowedNext.id })
     }
     setAdvancing(false)

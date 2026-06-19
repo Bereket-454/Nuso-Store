@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../app/store'
-import { insertNotification, sendOrderEmail } from '../services/notificationsService'
+import { insertNotification /*, sendOrderEmail */ } from '../services/notificationsService'
 import { ORDER_STEPS, statusIndex } from './OrderTracker'
 import { isSuperAdmin, isOrderManager, isDeliveryManager } from '../utils/auth'
 import { cancelOrder, updatePaymentStatus, ADMIN_CANCEL_STATUSES } from '../services/ordersService'
@@ -147,10 +147,13 @@ export function AdminOrderActions({ order, onUpdated }) {
     setAdvError('')
     try {
       console.log(`[AdminOrderActions] advance() called — ${new Date().toISOString()} | orderId: ${order.id} | targetStatus: ${targetStatus} | currentLoading: ${loading}`)
+      const _reqId = Math.random().toString(36).slice(2, 8)
+      console.log(`[DB WRITE] advance → orders.update | reqId: ${_reqId} | orderId: ${order.id} | status: ${targetStatus} | ts: ${new Date().toISOString()}`)
       const { error } = await supabase
         .from('orders')
         .update({ status: targetStatus, updated_at: new Date().toISOString() })
         .eq('id', order.id)
+      console.log(`[DB WRITE] advance → orders.update DONE | reqId: ${_reqId} | error: ${error?.message ?? 'none'}`)
       if (error) {
         setAdvError(`Failed: ${error.message}`)
         setLoading(false)
@@ -175,14 +178,15 @@ export function AdminOrderActions({ order, onUpdated }) {
           link:      '/account',
         })
       }
-      if ((targetStatus === 'confirmed' || targetStatus === 'delivered') && notif) {
-        sendOrderEmail({
-          toEmail: order.customer_email,
-          toName:  order.customer_name,
-          message: notif.en,
-          orderId: order.id,
-        })
-      }
+      // sendOrderEmail disabled — push notifications handle status updates instead
+      // if ((targetStatus === 'confirmed' || targetStatus === 'delivered') && notif) {
+      //   sendOrderEmail({
+      //     toEmail: order.customer_email,
+      //     toName:  order.customer_name,
+      //     message: notif.en,
+      //     orderId: order.id,
+      //   })
+      // }
       setLoading(false)
       setShowMore(false)
       onUpdated?.({ status: targetStatus })
