@@ -146,6 +146,7 @@ export function AdminOrderActions({ order, onUpdated }) {
     setLoading(true)
     setAdvError('')
     try {
+      console.log(`[AdminOrderActions] advance() called — ${new Date().toISOString()} | orderId: ${order.id} | targetStatus: ${targetStatus} | currentLoading: ${loading}`)
       const { error } = await supabase
         .from('orders')
         .update({ status: targetStatus, updated_at: new Date().toISOString() })

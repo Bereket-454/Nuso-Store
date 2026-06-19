@@ -294,6 +294,7 @@ function OrderCard({ order, onView, onUpdated, onArchive, onUnarchive }) {
     if (!allowedNext || advancing) return
     setAdvancing(true)
     try {
+      console.log(`[OrderCard.quickAdvance] called — ${new Date().toISOString()} | orderId: ${order.id} | targetStatus: ${allowedNext.id} | advancing was: ${advancing}`)
       const { error } = await supabase
         .from('orders')
         .update({ status: allowedNext.id, updated_at: new Date().toISOString() })
@@ -567,6 +568,7 @@ function DeliveryOrderCard({ order, onUpdated }) {
   const doAdvance = async () => {
     if (!allowedNext || advancing) return
     setAdvancing(true)
+    console.log(`[DeliveryOrderCard.doAdvance] called — ${new Date().toISOString()} | orderId: ${order.id} | targetStatus: ${allowedNext.id}`)
     const { error } = await supabase
       .from('orders')
       .update({ status: allowedNext.id, updated_at: new Date().toISOString() })
