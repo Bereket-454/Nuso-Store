@@ -10,14 +10,14 @@ import { PaymentStatusBadge } from './PaymentStatusBadge'
 import { useTranslation } from '../i18n'
 
 const ACTION_LABELS = {
-  confirming:       'Start Confirming',
+  confirming:       'Confirm Order',
   confirmed:        'Confirm Order',
   preparing:        'Start Preparing',
   out_for_delivery: 'Out for Delivery',
   delivered:        'Mark Delivered',
 }
 
-const ORDER_MANAGER_STEPS  = new Set(['confirming', 'confirmed'])
+const ORDER_MANAGER_STEPS  = new Set(['confirmed'])
 const DELIVERY_STEPS       = new Set(['preparing', 'out_for_delivery', 'delivered'])
 
 const PAYMENT_ACTIONS = ['paid', 'failed', 'refund_needed', 'refunded']
@@ -126,9 +126,10 @@ export function AdminOrderActions({ order, onUpdated }) {
     })
   }
 
-  const currentIndex     = statusIndex(order.status)
-  const nextStep         = ORDER_STEPS[currentIndex + 1] ?? null
-  const futureSteps      = ORDER_STEPS.slice(currentIndex + 2)
+  const currentIndex   = statusIndex(order.status)
+  const rawNext        = ORDER_STEPS[currentIndex + 1] ?? null
+  const nextStep       = rawNext?.id === 'confirming' ? (ORDER_STEPS[currentIndex + 2] ?? null) : rawNext
+  const futureSteps    = ORDER_STEPS.slice(currentIndex + (rawNext?.id === 'confirming' ? 3 : 2))
   const isCancelled      = order.status === 'cancelled'
   const isDelivered      = !isCancelled && currentIndex >= ORDER_STEPS.length - 1
 

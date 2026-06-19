@@ -14,11 +14,11 @@ import { fetchAllReturnRequests, updateReturnStatus, RETURN_REASON_LABELS, RETUR
 
 // ── Role + step constants ─────────────────────────────────────────────────────
 
-const ORDER_MANAGER_STEPS = new Set(['confirming', 'confirmed'])
+const ORDER_MANAGER_STEPS = new Set(['confirmed'])
 const DELIVERY_STEPS      = new Set(['preparing', 'out_for_delivery', 'delivered'])
 
 const ACTION_LABELS = {
-  confirming:       'Start Confirming',
+  confirming:       'Confirm Order',
   confirmed:        'Confirm Order',
   preparing:        'Start Preparing',
   out_for_delivery: 'Out for Delivery',
@@ -282,7 +282,8 @@ function OrderCard({ order, onView, onUpdated, onArchive, onUnarchive }) {
     return false
   }
 
-  const nextStep    = ORDER_STEPS[currentIndex + 1] ?? null
+  const rawNext     = ORDER_STEPS[currentIndex + 1] ?? null
+  const nextStep    = rawNext?.id === 'confirming' ? (ORDER_STEPS[currentIndex + 2] ?? null) : rawNext
   const allowedNext = !isCancelled && !isDelivered && nextStep && canAdvanceTo(nextStep.id)
     ? nextStep : null
 
