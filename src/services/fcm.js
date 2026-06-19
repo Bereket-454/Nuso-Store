@@ -50,25 +50,16 @@ export async function requestAndSaveFCMToken(userId) {
   }
 }
 
-// Handle foreground push messages (when app is open)
+// Handle foreground push messages (when app tab is open).
+// Do NOT call new Notification() here — the service worker's onBackgroundMessage
+// handles display for all cases (Firebase routes push through the SW even when
+// the tab is open). Showing a Notification here too would cause duplicates.
+// Wire in-app UI updates (badge refresh, toast) here instead if needed.
 export async function listenForegroundMessages() {
   const messaging = await getFirebaseMessaging()
   if (!messaging) return () => {}
 
   return onMessage(messaging, (payload) => {
-    console.log('[FCM] foreground message received:', payload)
-    const { title, body } = payload.notification || {}
-    if (!title) return
-
-    // Show a brief notification even in foreground using the Notifications API
-    // so the user sees it regardless of which page they're on
-    if (Notification.permission === 'granted') {
-      new Notification(title, {
-        body:  body || '',
-        icon:  '/nuso-icon.png',
-        badge: '/nuso-icon.png',
-        tag:   'nuso-foreground',
-      })
-    }
+    console.log('[FCM] foreground message received (display handled by SW):', payload)
   })
 }
