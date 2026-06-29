@@ -211,7 +211,12 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
           {/* Payment + screenshot */}
           <div className="aod-modal__section">
             <p className="aod-modal__section-title">Payment</p>
-            <p className="aod-modal__address-line">{paymentLabel}{paymentWhen}</p>
+            <p className="aod-modal__address-line">
+              {paymentLabel}
+              {payment.when === 'now' && payment.screenshotUrl ? (
+                <> · <a href={payment.screenshotUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>Screenshot ↗</a></>
+              ) : paymentWhen}
+            </p>
             {payment.screenshotUrl && (
               <a
                 href={payment.screenshotUrl}
