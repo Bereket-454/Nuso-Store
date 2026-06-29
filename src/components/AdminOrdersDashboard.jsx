@@ -121,6 +121,13 @@ function OrderDetailModal({ order, onClose, onUpdated }) {
   const shipping = order.shipping ?? {}
   const payment  = order.payment  ?? {}
 
+  useEffect(() => {
+    console.log('[OrderDetailModal] order.payment raw:', order.payment)
+    console.log('[OrderDetailModal] payment object keys:', Object.keys(payment))
+    console.log('[OrderDetailModal] payment.screenshotUrl:', payment.screenshotUrl)
+    console.log('[OrderDetailModal] payment.when:', payment.when)
+  }, [order.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const paymentLabel =
     payment.method === 'cod'      ? 'Cash on Delivery'
     : payment.method === 'telebirr' ? 'Telebirr'
