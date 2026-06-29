@@ -146,14 +146,14 @@ export function AdminDashboardPage() {
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(ordersChannel) }
-
+    console.log('[AdminDashboard] fetching product_requests — filter: archived=false')
     supabase
       .from('product_requests')
       .select('*')
       .eq('archived', false)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
+        console.log('[AdminDashboard] product_requests result — count:', data?.length ?? 0, '| error:', error?.message ?? 'none', '| data:', data)
         if (!error && data) setRequests(data)
       })
 
@@ -176,6 +176,8 @@ export function AdminDashboardPage() {
       .then(({ data }) => { if (data) setStaffProducts(data) })
 
     loadAuditLogs()
+
+    return () => { supabase.removeChannel(ordersChannel) }
   }, [loadAuditLogs])
 
   const updateRequestStatus = async (id, status) => {
